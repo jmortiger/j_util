@@ -11,6 +11,10 @@ dependencies:
   # path: ^1.8.0
   flutter:
     sdk: flutter
+  json_annotation: ^4.9.0
+  json_serializable: ^6.8.0
+  oauth2: ^2.0.2
+  webview_flutter: ^4.8.0
 
 dev_dependencies:
   lints: ^2.1.0

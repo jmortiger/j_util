@@ -3,8 +3,5 @@
 /// More dartdocs go here.
 library;
 
-export 'src/j_util_base.dart';
-export 'src/types.dart';
-export 'src/extensions.dart';
-
-// TODO: Export any libraries intended for clients of this package.
+export 'j_util.dart';
+export 'j_util_widgets.dart';
