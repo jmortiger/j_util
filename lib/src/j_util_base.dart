@@ -1,0 +1,17 @@
+// /// Checks if you are awesome. Spoiler: you are.
+// class Awesome {
+//   bool get isAwesome => true;
+// }
+final removeZerosFromTimeString = RegExp(
+    r'(^0+:|^0+(?=[123456789]+:)|(?<=:)(?<!.*[123456789].*)0{2}:|(?<=:)(?<!.*[123456789].*)0{1}|(?<=\.\d*?[123456789]*?)(?<!\.)0+(?!\d+$))');
+final matchSnakeCase = RegExp(
+    r'((?:.*?[^_\u2028\n\r\u000B\f\u2029\u0085]))([A-Z])((?:.*?(?=.[A-Z]|[\u2028\n\r\u000B\f\u2029\u0085])))');
+
+/// Matches \*THIS_STUFF\*, captures THIS_STUFF in group 1
+final matchAsteriskBoundConstantName = RegExp(r'\*((?:[A-Z_]+))\*');
+
+/// Matches \*THIS_STUFF\*, captures \*THIS_STUFF\* in group 1
+final matchAsteriskBoundConstantNameAndAsterisks =
+    RegExp(r'\*((?:[A-Z_]+))\*');
+
+const defaultIndent = "  ";
