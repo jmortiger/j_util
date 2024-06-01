@@ -1,4 +1,5 @@
 import 'package:j_util/src/extensions.dart';
+import 'package:j_util/platform_finder.dart' as pf;
 
 typedef ReduceConditional<T, U> = bool Function(
     U accumulator, T elem, int index, Iterable<T> list);
@@ -45,10 +46,10 @@ class IteratorInjector<From, To> implements Iterator<To> {
 }
 
 mixin PrettyPrintEnum on Enum {
-  String get namePretty   => name.toSentenceCaseFromCamel();
-  String get nameUpper    => name.toUpperCase();
+  String get namePretty => name.toSentenceCaseFromCamel();
+  String get nameUpper => name.toUpperCase();
   String get nameConstant => name.toConstantCase();
-  String get nameSnake    => name.toSnakeCaseFromCamelCase();
+  String get nameSnake => name.toSnakeCaseFromCamelCase();
 }
 
 enum TimeInterval {
@@ -64,4 +65,25 @@ enum PrettyPrintPrefixStyle {
   doNotApplyPrefix,
   applyPrefixToAllLinesButFirst,
   applyPrefixToAllLines,
+}
+
+enum Platform {
+  android,
+  fuchsia,
+  iOS,
+  linux,
+  macOS,
+  windows,
+  web,
+  ;
+
+  static Platform getPlatform() => pf.getPlatform();
+  static final _platform = pf.getPlatform();
+  static bool get isAndroid => _platform == Platform.android;
+  static bool get isFuchsia => _platform == Platform.fuchsia;
+  static bool get isIOS     => _platform == Platform.iOS;
+  static bool get isLinux   => _platform == Platform.linux;
+  static bool get isMacOS   => _platform == Platform.macOS;
+  static bool get isWindows => _platform == Platform.windows;
+  static bool get isWeb     => _platform == Platform.web;
 }

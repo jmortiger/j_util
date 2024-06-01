@@ -1,6 +1,5 @@
 import 'package:j_util/src/j_util_base.dart';
 import 'package:j_util/src/types.dart';
-import 'package:flutter/foundation.dart' /* if(dart.library.io) 'dart:io' */;
 
 // #region Iterable
 extension ListIterators<T> on List<T> {
@@ -106,9 +105,9 @@ extension Iterators<T> on Iterable<T> {
 // #region Numerics
 extension NumExtensions on num {
   static int get maxInteger =>
-      kIsWeb ? double.maxFinite.toInt() : 0x7FFFFFFFFFFFFFFF;
+      Platform.isWeb ? double.maxFinite.toInt() : 0x7FFFFFFFFFFFFFFF;
   static int get minInteger =>
-      kIsWeb ? -double.maxFinite.toInt() : -0x8000000000000000;
+      Platform.isWeb ? -double.maxFinite.toInt() : -0x8000000000000000;
   static const int maxPreciseWebInt = 0x20000000000000;
 
   /// Converts to a Duration assuming this number represents a number of milliseconds.

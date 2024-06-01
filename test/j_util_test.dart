@@ -1,4 +1,5 @@
 import 'package:j_util/j_util.dart';
+import 'package:j_util/src/types.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -11,6 +12,12 @@ void main() {
   //     expect(awesome.isAwesome, isTrue);
   //   });
   // });
+  group("platform_finder", () {
+    test("Works w/o crashing", () {
+      expect(Platform.isAndroid, isNot(isA<Error>()));
+      expect(Platform.isWeb, isNot(isA<Error>()));
+    });
+  });
   group("List Extensions", () {
     late List<int> l0To4growable;
     late List<int> l5To9growable;
@@ -18,8 +25,10 @@ void main() {
     late List<int> l5To9notGrowable;
     setUp(() {
       l0To4growable = List<int>.generate(5, (index) => index, growable: true);
-      l0To4notGrowable = List<int>.generate(5, (index) => index, growable: false);
-      l5To9growable = List<int>.generate(5, (index) => index + 5, growable: true);
+      l0To4notGrowable =
+          List<int>.generate(5, (index) => index, growable: false);
+      l5To9growable =
+          List<int>.generate(5, (index) => index + 5, growable: true);
       l5To9notGrowable =
           List<int>.generate(5, (index) => index + 5, growable: false);
       assert([0, 1, 2, 3, 4].toString() == l0To4growable.toString());
@@ -32,19 +41,24 @@ void main() {
         expect(l0To4notGrowable.filter((e, i, list) => e % 2 == 0), [0, 2, 4]);
       });
       test("Mutate Growable; fail silently", () {
-        var ret = l0To4growable.filter((e, i, list) => e % 2 == 0, mutate: true, failSilently: true);
+        var ret = l0To4growable.filter((e, i, list) => e % 2 == 0,
+            mutate: true, failSilently: true);
         expect(ret, [0, 2, 4]);
         expect(l0To4growable, [0, 2, 4]);
         expect(l0To4growable, isNot(same(ret)));
       });
       test("Mutate Growable; don't fail silently", () {
-        var ret = l0To4growable.filter((e, i, list) => e % 2 == 0, mutate: true, failSilently: false);
+        var ret = l0To4growable.filter((e, i, list) => e % 2 == 0,
+            mutate: true, failSilently: false);
         expect(ret, [0, 2, 4]);
         expect(l0To4growable, [0, 2, 4]);
         expect(l0To4growable, same(ret));
       });
       test("Mutate Non Growable; fail silently", () {
-        expect(l0To4notGrowable.filter((e, i, list) => e % 2 == 0, mutate: true, failSilently: true), [0, 2, 4]);
+        expect(
+            l0To4notGrowable.filter((e, i, list) => e % 2 == 0,
+                mutate: true, failSilently: true),
+            [0, 2, 4]);
       });
     });
   });
