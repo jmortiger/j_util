@@ -4,4 +4,5 @@
 library;
 
 export 'j_util.dart';
+export 'src/types.dart';
 export 'j_util_widgets.dart';

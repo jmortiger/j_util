@@ -2,6 +2,7 @@ import 'package:j_util/j_util.dart';
 import 'package:j_util/src/types.dart';
 import 'package:test/test.dart';
 
+// WidgetsFlutterBinding.ensureInitialized
 void main() {
   // group('A group of tests', () {
   //   final awesome = Awesome();
@@ -16,6 +17,28 @@ void main() {
     test("Works w/o crashing", () {
       expect(Platform.isAndroid, isNot(isA<Error>()));
       expect(Platform.isWeb, isNot(isA<Error>()));
+    });
+  });
+  group("Late<T>", () {
+    test("error on access before assign", () {
+      final Late<int> l = Late();
+      try {
+        expect(l.item, isA<Error>());
+      } catch (e) {
+        expect(e, isA<Error>());
+      }
+      l.item = 5;
+      try {
+        expect(l.item, isNot(isA<Error>()));
+      } catch (e) {
+        expect(e, isNot(isA<Error>()));
+      }
+    });
+    test("isAssigned works correctly", () {
+      final Late<int> l = Late();
+      expect(l.isAssigned, false);
+      l.item = 5;
+      expect(l.isAssigned, true);
     });
   });
   group("List Extensions", () {

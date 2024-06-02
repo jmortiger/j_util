@@ -81,9 +81,98 @@ enum Platform {
   static final _platform = pf.getPlatform();
   static bool get isAndroid => _platform == Platform.android;
   static bool get isFuchsia => _platform == Platform.fuchsia;
-  static bool get isIOS     => _platform == Platform.iOS;
-  static bool get isLinux   => _platform == Platform.linux;
-  static bool get isMacOS   => _platform == Platform.macOS;
+  static bool get isIOS => _platform == Platform.iOS;
+  static bool get isLinux => _platform == Platform.linux;
+  static bool get isMacOS => _platform == Platform.macOS;
   static bool get isWindows => _platform == Platform.windows;
-  static bool get isWeb     => _platform == Platform.web;
+  static bool get isWeb => _platform == Platform.web;
+}
+
+/// Handles safely accessing and initializing an asynchronously created asset
+/// that's otherwise constant.
+///
+/// TODO: Test
+/// TODO: Extend with optional event-based assignment triggering.
+class LazyInitializer<T> {
+  final Future<T> Function() initializer;
+  final T? defaultValue;
+
+  /// The true item. Accessing before assignment will
+  /// throw a [LateInitializationError].
+  late final T _item;
+
+  /// Accesses the true item. Accessing before assignment will
+  /// throw a [LateInitializationError].
+  T get item => _item;
+
+  /// Synchronously accesses and returns the item, immediately
+  /// asynchronously setting the item with [initializer] and
+  /// returning [defaultValue] if that fails.
+  T? get itemSafe {
+    return _itemSafe() ??
+        (() {
+          initializer().then((value) => _item = value);
+          return defaultValue;
+        })();
+  }
+
+  LazyInitializer(this.initializer, {this.defaultValue});
+
+  T? _itemSafe() {
+    try {
+      return _item;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Synchronously accesses and returns the item, immediately asynchronously
+  /// accessing and setting the item with [initializer] if that fails.
+  Future<T> getItem() async => _itemSafe() ?? (_item = await initializer());
+}
+
+///
+///
+/// TODO: Test
+/// TODO: Extension w/ default val and initializer
+class Late<T> {
+  /// The true item. Accessing before assignment will
+  /// throw a [LateInitializationError].
+  late final T _item;
+
+  /// Accesses the true item. Accessing before assignment will
+  /// throw a [LateInitializationError].
+  T get item => _item;
+  set item(T value) {
+    try {
+      _item = value;
+    } catch (e) {} // TODO: Warn
+  }
+
+  T? get itemSafe {
+    try {
+      return _item;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  bool get isAssigned {
+    try {
+      return _item == _item;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  @override
+  T operator +(T value) {
+    item = value;
+    return item;
+  }
+
+  @override
+  T? operator ~() {
+    return itemSafe;
+  }
 }
