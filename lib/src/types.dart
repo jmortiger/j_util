@@ -140,30 +140,20 @@ class Late<T> {
   /// throw a [LateInitializationError].
   late final T _item;
 
+  bool _isAssigned = false;
+  bool get isAssigned => _isAssigned;
+
   /// Accesses the true item. Accessing before assignment will
   /// throw a [LateInitializationError].
   T get item => _item;
   set item(T value) {
-    try {
+    if (!_isAssigned) {
       _item = value;
-    } catch (e) {} // TODO: Warn
+      _isAssigned = true;
+    } else {} // TODO: Warn
   }
 
-  T? get itemSafe {
-    try {
-      return _item;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  bool get isAssigned {
-    try {
-      return _item == _item;
-    } catch (e) {
-      return false;
-    }
-  }
+  T? get itemSafe => _isAssigned ? _item : null;
 
   @override
   T operator +(T value) {
