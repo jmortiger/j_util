@@ -5,6 +5,7 @@ final matchSnakeCase = RegExp(
 
 /// Matches \*THIS_STUFF\*, captures THIS_STUFF in group 1
 final matchAsteriskBoundConstantName = RegExp(r'\*([A-Z_]+)\*');
+const matchAsteriskBoundConstantNameString = r'\*([A-Z_]+)\*';
 
 /// Matches \*THIS_STUFF\*, captures \*THIS_STUFF\* in group 1
 final matchAsteriskBoundConstantNameAndAsterisks = RegExp(r'(\*(?:[A-Z_]+)\*)');
@@ -13,3 +14,8 @@ final matchAsteriskBoundConstantNameAndAsterisks = RegExp(r'(\*(?:[A-Z_]+)\*)');
 final matchCamelCaseWordBorders = RegExp(r'(?<!^)(?=[A-Z])');
 
 const defaultIndent = "  ";
+
+// String findMostRelated(List<String> strings, String searchString) {}
+// double findRelationValue(String str, String searchString) {
+//   if (searchString.compareTo(str) == 0) return double.infinity;
+// }

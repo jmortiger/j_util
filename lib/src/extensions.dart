@@ -104,10 +104,12 @@ extension Iterators<T> on Iterable<T> {
 
 // #region Numerics
 extension NumExtensions on num {
-  static int get maxInteger =>
-      Platform.isWeb ? double.maxFinite.toInt() : 0x7FFFFFFFFFFFFFFF;
-  static int get minInteger =>
-      Platform.isWeb ? -double.maxFinite.toInt() : -0x8000000000000000;
+  static int get maxInteger => Platform.isWeb
+      ? double.maxFinite.toInt()
+      : double.maxFinite.toInt() /* 0x7FFFFFFFFFFFFFFF */;
+  static int get minInteger => Platform.isWeb
+      ? -double.maxFinite.toInt()
+      : -double.maxFinite.toInt() /* -0x8000000000000000 */;
   static const int maxPreciseWebInt = 0x20000000000000;
 
   /// Converts to a Duration assuming this number represents a number of milliseconds.
@@ -137,7 +139,9 @@ extension NumExtensions on num {
             Duration.millisecondsPerHour,
         TimeInterval.days => (this * Duration.millisecondsPerDay).truncate() /
             Duration.millisecondsPerDay,
-        _ => throw UnsupportedError("type not supported"),
+        _ => throw UnsupportedError(
+            "TimeInterval.${represents.name} not supported",
+          ),
       };
 
   /// Converts to a Duration.
@@ -158,7 +162,9 @@ extension NumExtensions on num {
                       (this * Duration.microsecondsPerHour).truncate(),
                     TimeInterval.days =>
                       (this * Duration.microsecondsPerDay).truncate(),
-                    _ => throw UnsupportedError("type not supported"),
+                    _ => throw UnsupportedError(
+                        "TimeInterval.${represents.name} not supported",
+                      ),
                   } *
                   (discardMicroseconds ? 1 / 1000 : 1))
               .truncate());

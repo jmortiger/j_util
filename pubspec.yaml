@@ -9,8 +9,10 @@ environment:
 # Add regular dependencies here.
 dependencies:
   # path: ^1.8.0
+  archive: ^3.6.1
   flutter:
     sdk: flutter
+  http: ^1.2.0
   json_annotation: ^4.9.0
   json_serializable: ^6.8.0
   oauth2: ^2.0.2

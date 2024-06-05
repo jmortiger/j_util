@@ -1,3 +1,4 @@
+import 'package:j_util/j_util.dart' as util;
 import 'package:j_util/src/extensions.dart';
 import 'package:j_util/platform_finder.dart' as pf;
 
@@ -131,6 +132,8 @@ class LazyInitializer<T> {
   Future<T> getItem() async => _itemSafe() ?? (_item = await initializer());
 }
 
+// TODO: Create a store that lazily converts an iterable to a list as it's iterated through.
+
 ///
 ///
 /// TODO: Test
@@ -146,6 +149,9 @@ class Late<T> {
   /// Accesses the true item. Accessing before assignment will
   /// throw a [LateInitializationError].
   T get item => _item;
+
+  /// Sets the true item. Safely assigns the item once,
+  /// gracefully fails afterwards.
   set item(T value) {
     if (!_isAssigned) {
       _item = value;
@@ -155,14 +161,100 @@ class Late<T> {
 
   T? get itemSafe => _isAssigned ? _item : null;
 
-  @override
   T operator +(T value) {
     item = value;
     return item;
   }
 
-  @override
   T? operator ~() {
     return itemSafe;
   }
+}
+
+/* ReturnType Function() */
+class Generator<ReturnType, Signature extends Function> {
+  final Signature generator;
+  final ReturnType Function(Signature generatorFunction)? dispatcher;
+
+  Generator({required this.generator, this.dispatcher});
+
+  ReturnType generate(
+          ReturnType Function(Signature generatorFunction)? dispatcher) =>
+      (dispatcher ??
+              this.dispatcher ??
+              (throw ArgumentError.value(
+                dispatcher,
+                "dispatcher",
+                "Both internal dispatcher and parameter "
+                    "dispatcher are null; cannot fire generator: ",
+              )))
+          .call(generator);
+}
+
+// TODO: Finish
+class StringFormatArchive {
+  // final Set<String> templateParameters;
+  // final List<String> fragments;
+  // Set<String> getTemplateParameters(String s, RegExp? templateFormat) =>
+  //     <String>{}..addAll((templateFormat ?? util.matchAsteriskBoundConstantName)
+  //         .allMatches(s)
+  //         .mapTo((elem, index, list) => elem.group(1) ?? ""));
+  // List<String> getFragments(String s, RegExp? templateFormat) =>
+  //     (templateFormat ?? util.matchAsteriskBoundConstantName)
+  //         .allMatches(s)
+  //         .mapAsList((elem, index, list) =>  elem.group(1) ?? "");
+}
+
+class PriorityQueue<T extends Comparable<T>>/*  extends Iterable<T> */ {
+  // @override
+  // // TODO: implement iterator
+  // Iterator<T> get iterator => throw UnimplementedError();
+
+  final List<List<T>> queue = [];
+
+  PriorityQueue(List<T> collection) {
+    // collection.sort(/* (a, b) => b.compareTo(a) */);
+    // var queue = <List<T>>[];
+    for (var element in collection) {
+      if (element == queue[0][0]) continue;
+      queue.add([collection.first]);
+      var i = queue.length ~/ 2;
+      var placed = false;
+      // TODO: Show-off recursive skillz
+      while (!placed) {
+        var comp = queue[i][0].compareTo(element);
+        switch (comp) {
+          case < 0:
+            if (i == 0) {
+              queue.insert(i, [element]);
+              placed = true;
+            } else {
+              i ~/= i;
+            }
+            break;
+          case > 0:
+            if (i == queue.length - 2) {
+              i = queue.length - 1;
+              break;
+            } else if (i == queue.length - 1) {
+              queue.add([element]);
+              placed = true;
+            } else {
+              i = (i + queue.length /*  - 1 */) ~/ 2;
+            }
+            break;
+          case == 0:
+          default:
+            queue[i].add(element);
+            placed = true;
+            break;
+        }
+      }
+    }
+    // this.queue = List.from(queue, growable: false);
+  }
+  // TODO: IMPLEMENT
+  // static void getSortedByPriority<T>(List<T> collection) {
+  //   collection
+  // }
 }
