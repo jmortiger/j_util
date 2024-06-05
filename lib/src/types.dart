@@ -205,12 +205,15 @@ class StringFormatArchive {
   //         .mapAsList((elem, index, list) =>  elem.group(1) ?? "");
 }
 
-class PriorityQueue<T extends Comparable<T>>/*  extends Iterable<T> */ {
+class PriorityQueue<T extends Comparable<T>> /*  extends Iterable<T> */ {
   // @override
   // // TODO: implement iterator
   // Iterator<T> get iterator => throw UnimplementedError();
 
   final List<List<T>> queue = [];
+  final Late<List<T>> _queueToList = Late();
+  List<T> get squashedList =>
+      _queueToList.isAssigned ? _queueToList.item : (_queueToList.item = queue.fold(<T>[], (previousValue, element) => previousValue..addAll(element)));
 
   PriorityQueue(List<T> collection) {
     // collection.sort(/* (a, b) => b.compareTo(a) */);
@@ -222,25 +225,43 @@ class PriorityQueue<T extends Comparable<T>>/*  extends Iterable<T> */ {
       var placed = false;
       // TODO: Show-off recursive skillz
       while (!placed) {
-        var comp = queue[i][0].compareTo(element);
+        var comp = element.compareTo(queue[i][0]);
         switch (comp) {
           case < 0:
             if (i == 0) {
-              queue.insert(i, [element]);
+              queue.insert(0, [element]);
               placed = true;
             } else {
-              i ~/= i;
+              var compNext = element.compareTo(queue[i - 1][0]);
+              if (compNext == 0) {
+                queue[i - 1].add(element);
+                placed = true;
+              } else if (compNext > 0) {
+                queue[i].add(element);
+                placed = true;
+              } else {
+                i ~/= 2;
+              }
             }
             break;
           case > 0:
-            if (i == queue.length - 2) {
-              i = queue.length - 1;
-              break;
-            } else if (i == queue.length - 1) {
+            if (i == queue.length - 1) {
               queue.add([element]);
               placed = true;
             } else {
-              i = (i + queue.length /*  - 1 */) ~/ 2;
+              var compNext = element.compareTo(queue[i + 1][0]);
+              if (compNext == 0) {
+                queue[i + 1].add(element);
+                placed = true;
+              } else if (compNext < 0) {
+                queue[i].add(element);
+                placed = true;
+              } else if (i == queue.length - 2) {
+                i = queue.length - 1;
+                break;
+              } else {
+                i = (i + queue.length /*  - 1 */) ~/ 2;
+              }
             }
             break;
           case == 0:
