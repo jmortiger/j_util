@@ -215,9 +215,9 @@ class PriorityQueue<T extends Comparable<T>>/*  extends Iterable<T> */ {
   PriorityQueue(List<T> collection) {
     // collection.sort(/* (a, b) => b.compareTo(a) */);
     // var queue = <List<T>>[];
+    queue.add([collection.first]);
     for (var element in collection) {
       if (element == queue[0][0]) continue;
-      queue.add([collection.first]);
       var i = queue.length ~/ 2;
       var placed = false;
       // TODO: Show-off recursive skillz
