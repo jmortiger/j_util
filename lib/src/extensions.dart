@@ -1,6 +1,8 @@
 import 'package:j_util/src/j_util_base.dart';
 import 'package:j_util/src/types.dart';
 
+import 'collections.dart';
+
 // #region Iterable
 extension ListIterators<T> on List<T> {
   List<U> mapAsList<U>(U Function(T e, int index, List<T> list) mapper) {
