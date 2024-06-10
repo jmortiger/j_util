@@ -10,6 +10,73 @@ mixin PrettyPrintEnum on Enum {
   String get nameConstant => name.toConstantCase();
   String get nameSnake => name.toSnakeCaseFromCamelCase();
 }
+/// TODO: Make BitFlag enums easier
+// mixin Flag<T extends Enum> on Enum {
+//   Map<T, int> get flagMap;
+//   static const int pendingFlag = 1; //int.parse("000001", radix: 2);
+//   static const int flaggedFlag = 2; //int.parse("000010", radix: 2);
+//   static const int noteLockedFlag = 4; //int.parse("000100", radix: 2);
+//   static const int statusLockedFlag = 8; //int.parse("001000", radix: 2);
+//   static const int ratingLockedFlag = 16; //int.parse("010000", radix: 2);
+//   static const int deletedFlag = 32; //int.parse("100000", radix: 2);
+//   int getFlag(T f);
+//   bool hasFlag(int f) =>
+//       (PostFlags.getFlag(this) & f) == PostFlags.getFlag(this);
+// }
+// TEMPLATE
+// enum PostFlags {
+//   /// int.parse("000001", radix: 2);
+//   pending(bit: 1),
+
+//   /// int.parse("000010", radix: 2);
+//   flagged(bit: 2),
+
+//   /// int.parse("000100", radix: 2);
+//   noteLocked(bit: 4),
+
+//   /// int.parse("001000", radix: 2);
+//   statusLocked(bit: 8),
+
+//   /// int.parse("010000", radix: 2);
+//   ratingLocked(bit: 16),
+
+//   /// int.parse("100000", radix: 2);
+//   deleted(bit: 32);
+
+//   final int bit;
+//   const PostFlags({required this.bit});
+
+//   /// int.parse("000001", radix: 2);
+//   static const int pendingFlag = 1;
+
+//   /// int.parse("000010", radix: 2);
+//   static const int flaggedFlag = 2;
+
+//   /// int.parse("000100", radix: 2);
+//   static const int noteLockedFlag = 4;
+
+//   /// int.parse("001000", radix: 2);
+//   static const int statusLockedFlag = 8;
+
+//   /// int.parse("010000", radix: 2);
+//   static const int ratingLockedFlag = 16;
+
+//   /// int.parse("100000", radix: 2);
+//   static const int deletedFlag = 32;
+//   static int toInt(PostFlags f) => f.bit;
+//   static List<PostFlags> getFlags(int f) {
+//     var l = <PostFlags>[];
+//     if (f & pending.bit == pending.bit) l.add(pending);
+//     if (f & flagged.bit == flagged.bit) l.add(flagged);
+//     if (f & noteLocked.bit == noteLocked.bit) l.add(noteLocked);
+//     if (f & statusLocked.bit == statusLocked.bit) l.add(statusLocked);
+//     if (f & ratingLocked.bit == ratingLocked.bit) l.add(ratingLocked);
+//     if (f & deleted.bit == deleted.bit) l.add(deleted);
+//     return l;
+//   }
+
+//   bool hasFlag(int f) => (PostFlags.toInt(this) & f) == PostFlags.toInt(this);
+// }
 
 enum TimeInterval {
   microseconds,
@@ -118,6 +185,11 @@ class Late<T> {
   }
 
   T? get itemSafe => _isAssigned ? _item : null;
+
+  /// If the given value is null or [item] has been assigned, will not set value,
+  /// even if [T] is a nullable type.
+  set itemSafe(T? valOrNull) =>
+      (!_isAssigned && valOrNull != null) ? _item = valOrNull : null;
 
   T operator +(T value) {
     item = value;

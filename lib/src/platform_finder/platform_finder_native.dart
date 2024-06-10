@@ -26,3 +26,8 @@ Platform getPlatform() => switch (io.Platform.operatingSystem) {
 //             : (io.Platform.isFuchsia)
 //               ? Platform.fuchsia
 //               : throw UnimplementedError("It shouldn't be possible to see this unless the # of supported platforms increased or you accessed this function's file directly. Use the library to access.");
+
+
+void registerImgElement() => throw UnsupportedError("Only supported on web");
+
+Object getViewById(int viewId) => throw UnsupportedError("Only supported on web");

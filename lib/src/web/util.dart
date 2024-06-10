@@ -8,12 +8,26 @@ import 'package:j_util/src/extensions.dart';
 import 'package:j_util/src/j_util_base.dart' as util;
 //import 'package:logging/logging.dart' as logging;
 
-String getBasicAuthHeaderValue(String identifier, String secret) =>
-    'Basic ${dc.base64Encode(
-      dc.ascii.encode(
+/* String getBasicAuthHeaderValue(String identifier, String secret) =>
+    'Basic ${dc.base64Encode(dc.ascii.encode(
         '${Uri.encodeFull(identifier)}:${Uri.encodeFull(secret)}',
-      ),
+      ))}'; */
+String getBasicAuthHeaderValue(String identifier, String secret) =>
+    'Basic ${getAsciiBase64Encoding(
+      '${Uri.encodeFull(identifier)}:${Uri.encodeFull(secret)}',
     )}';
+/// [input] should follow the format `urlEncodedIdentifier:urlEncodedSecret` 
+/// for a Basic Authorization header value, and should prepend the return value
+/// with `Basic `.
+String getAsciiBase64Encoding(String input) =>
+    dc.base64Encode(dc.ascii.encode(input));
+
+Future<String> decompressGzPlainTextStream(http.StreamedResponse r) => r
+  .stream
+  .toBytes()
+  .then((v) => http.ByteStream.fromBytes(
+      archive.GZipDecoder().decodeBytes(v.toList(growable: false)),
+    ).bytesToString());
 
 enum HttpMethod with PrettyPrintEnum {
   get,
@@ -47,22 +61,45 @@ enum RequestParameterType with PrettyPrintEnum {
 typedef ValueValidator = (bool, dynamic?) Function(
   Map<String, dynamic>? variableToProposedValue,
 );
-typedef ParamToValueMapping = Map<String, dynamic>;
+typedef ParamValueMap = Map<String, dynamic>;
 typedef Validator<T> = String Function(String replacedParam, T proposedValue);
 typedef MapGenerator = String Function(
-  ParamToValueMapping? variableToProposedValue,
+  ParamValueMap? variableToProposedValue,
 );
-typedef UriModifier = Uri Function(Uri, RegExp?, Map<String, dynamic>);
+typedef UriModifier = Uri Function(String baseUri, RegExp? matcher, Map<String, dynamic> map);
 
 final class RequestValue {
+  /// The basic format of the value. e.g. for a `Content-Type` header, might look
+  /// like `*MIME_TYPE*/*MIME_SUBTYPE*; *OPTIONAL_PARAMETER*=*OPTIONAL_VALUE*`,
+  /// which could be result in an ultimate output of `text/html; charset=utf-8`.
+  /// This may not represent the output's format; the [typedGenerator] can
+  /// completely ignore this if that behavior is desired, or it can use it in a
+  /// different way (like a basic `Authorization` using `*IDENTIFIER*:*SECRET*`
+  /// in order to set up the string for base64 encoding and the return a value
+  /// of `Basic encodedStringHere`). This should remove as much formatting as
+  /// possible from the [typedGenerator]. If there remains no formatting to be
+  /// done at all, and only parameters to replace, then the default value for
+  /// [typedGenerator] will suffice.
   final String baseString;
+  /// {@template RequestValue.templateFormat}
+  /// The *group* matched by [templateFormat] must be the *key* in the map 
+  /// passed to [generate], and the *entire match* will be replaced.
+  ///
+  /// e.g. If [baseString] is `Bearer *YOUR_ACCESS_TOKEN*`, then 
+  /// [templateFormat] must match `*YOUR_ACCESS_TOKEN*`, and if 
+  /// `YOUR_ACCESS_TOKEN` is grouped, that must be the key in the map passed to
+  /// [generate], but if `*YOUR_ACCESS_TOKEN*` is grouped, that must be the key
+  /// in the map passed to [generate] instead.
+  /// {@endtemplate}
   final String templateFormatStr;
+  /// {@macro RequestValue.templateFormat}
   RegExp get templateFormat => RegExp(templateFormatStr);
   final Generator? generator;
   final MapGenerator? _typedGenerator;
   MapGenerator get typedGenerator => _typedGenerator ?? _defaultGenerator;
   final Validator? validator;
   final List<Type>? validTypes;
+  List<String> get parameters => templateFormat.allMatches(baseString).reduceToType((accumulator, elem, index, list) => (elem.group(1)?.isNotEmpty ?? false) ? (accumulator..add(elem.group(1)!)) : accumulator, <String>[]);
 
   const RequestValue({
     required this.baseString,
@@ -72,16 +109,16 @@ final class RequestValue {
     this.validTypes,
     String? templateFormat,
   })  : templateFormatStr =
-            templateFormat ?? util.matchAsteriskBoundConstantNameString,
+            templateFormat ?? RegExpExt.asteriskBoundConstantString,
         _typedGenerator = typedGenerator;
 
-  String generate(ParamToValueMapping? mapping) =>
-      (_typedGenerator ?? _defaultGenerator).call(mapping);
+  String generate(ParamValueMap? mapping) =>
+      typedGenerator.call(mapping);
 
   String dispatchGenerator(String Function(Function)? dispatcher) =>
       generator?.generate(dispatcher);
 
-  String _defaultGenerator(ParamToValueMapping? mapping) =>
+  String _defaultGenerator(ParamValueMap? mapping) =>
       baseString.replaceAllMapped(templateFormat, (match) {
         var group = match.group(1) ??
             (throw ArgumentError.value(
@@ -101,12 +138,20 @@ final class RequestValue {
 final class RequestParameter {
   final List<String>? validValues;
   bool get requiresParameters =>
-      (validValues?.isNotEmpty ?? false) &&
-      !validValues!.any((element) => templateFormat.hasMatch(element));
+      ((validValues?.isNotEmpty ?? false) &&
+      !validValues!.any((element) => templateFormat.hasMatch(element))) ||
+      ((validValueGenerators?.isNotEmpty ?? false) &&
+      !validValueGenerators!.any((element) => element.parameters.isNotEmpty));
   int get nonGeneratedValueIndex =>
       validValues?.indexWhere((element) => templateFormat.hasMatch(element)) ??
       -1;
+  List<List<String>> get validValueParameters => (validValues ?? []).reduceToType(
+    (acc, elem, i, l) => acc..add(templateFormat.allMatches(elem).reduceToType(
+      (a, e, _, __) => (e.group(1)?.isNotEmpty ?? false) ? (a..add(e.group(1)!)) : a, 
+      <String>[])), 
+    <List<String>>[]);
   final List<RequestValue>? validValueGenerators;
+  List<List<String>> get valueGeneratorParams => (validValueGenerators ?? []).mapAsList((e, index, list) => e.parameters);
   final bool required;
   final String templateFormatStr;
   RegExp get templateFormat => RegExp(templateFormatStr);
@@ -149,6 +194,40 @@ final class RequestParameter {
     // TODO: Validating template strings not implemented
     throw UnimplementedError("Validating template strings not implemented");
   }
+  /// TODO: Better account for same # of matching params (e.g. which has few overall params).
+  int findNonGeneratedIndexOfParams(List<String> params) {
+    // validValueParameters.reduceUntilTrue((accumulator, elem, index, list) {
+    //   var t = elem.where((element) => params.contains(element)).length;
+    //   if (t == list.length) {
+    //     return (accumulator..add(t), true);
+    //   }
+    //   return (accumulator..add(t), false);
+    // }, []);
+    /* validValueParameters.reduceToType((acc, elem, i, l) => acc..add(
+      elem.where((element) => params.contains(element)).length,
+      ), []); */
+    return validValueParameters.reduceToType((acc, elem, i, l) {
+      var t = elem.where((element) => params.contains(element)).length;
+      return (t > acc.$1) ? (t, i) : acc;
+    }, (-1, -1)).$2;
+  }
+  /// TODO: Better account for same # of matching params (e.g. which has few overall params).
+  int findGeneratorIndexOfParams(List<String> params) {
+    // valueGeneratorParams.reduceUntilTrue((accumulator, elem, index, list) {
+    //   var t = elem.where((element) => params.contains(element)).length;
+    //   if (t == list.length) {
+    //     return (accumulator..add(t), true);
+    //   }
+    //   return (accumulator..add(t), false);
+    // }, []);
+    /* valueGeneratorParams.reduceToType((acc, elem, i, l) => acc..add(
+      elem.where((element) => params.contains(element)).length,
+      ), []); */
+    return valueGeneratorParams.reduceToType((acc, elem, i, l) {
+      var t = elem.where((element) => params.contains(element)).length;
+      return (t > acc.$1) ? (t, i) : acc;
+    }, (-1, -1)).$2;
+  }
 
   /// TODO: Add support for reformatting strings based on [myType] (i.e. invalid chars)
   ///
@@ -163,7 +242,7 @@ final class RequestParameter {
   /// [valueIndex]\] has a parameter name not present in [paramToValueMapping].
   String generateValidValue({
     int valueIndex = -1,
-    ParamToValueMapping? paramToValueMapping,
+    ParamValueMap? paramToValueMapping,
     RequestParameterType myType = RequestParameterType.body,
   }) {
     if (validValueGenerators == null) {
@@ -171,6 +250,7 @@ final class RequestParameter {
         throw UnsupportedError(
             "validValues or validValueGenerators must be defined to use this method.");
       } else {
+        // TODO: WARN defaulting to nonGeneratedValueIndex
         valueIndex = valueIndex < 0 ? nonGeneratedValueIndex : valueIndex;
         if (valueIndex < 0) {
           if (paramToValueMapping == null) {
@@ -180,7 +260,12 @@ final class RequestParameter {
                 "All values are templates that must have values "
                     "in paramToValueMapping to resolve.");
           }
-          valueIndex = 0;
+          if (valueIndex < 0) {
+            // TODO: WARN we're guessing which index to use
+            valueIndex = findNonGeneratedIndexOfParams(paramToValueMapping.keys.toList());
+          }
+        // TODO: WARN defaulting to zero
+          if (valueIndex < 0) valueIndex = 0;
         }
         var selectedValue = validValues![valueIndex], retVal = selectedValue;
         if (templateFormat.hasMatch(selectedValue)) {
@@ -217,6 +302,16 @@ final class RequestParameter {
         return retVal;
       }
     }
+    if (valueIndex < 0) {
+      if (paramToValueMapping != null) {
+        // TODO: WARN we're guessing which index to use
+        valueIndex = findGeneratorIndexOfParams(paramToValueMapping.keys.toList());
+      }
+      if (valueIndex < 0) {
+        // TODO: WARN defaulting to zero
+        valueIndex = 0;
+      }
+    }
     return validValueGenerators![valueIndex].generate(paramToValueMapping);
   }
 
@@ -224,7 +319,7 @@ final class RequestParameter {
   /// instead. Use for non-required parameters.
   String? tryGenerateValidValue({
     int valueIndex = -1,
-    ParamToValueMapping? paramToValueMapping,
+    ParamValueMap? paramToValueMapping,
     RequestParameterType myType = RequestParameterType.body,
   }) {
     try {
@@ -239,12 +334,15 @@ final class RequestParameter {
     }
   }
 }
-
+typedef RequestParameterValues = Map<String, (int, ParamValueMap?)>;
 // TODO: Test
 // TODO: Make and manage http.Client (maybe?)
 class ApiEndpoint {
   final String method;
-  final Uri uri;
+  Uri get uri => (_uriString != null) ? Uri.parse(_uriString!) : _uri!;
+  final Uri? _uri;
+  final String? _uriString;
+  String get uriString => (_uriString != null) ? _uriString! : _uri!.toString();
   final UriModifier? uriModifier;
   final RegExp? uriMatcher;
 
@@ -263,14 +361,26 @@ class ApiEndpoint {
   final Map<String, List<String>?>? responseFormat;
   const ApiEndpoint({
     required this.method,
-    required this.uri,
+    required Uri /* this. */uri,
     this.uriModifier,
     this.uriMatcher,
     this.headers,
     this.bodyParameters,
     this.queryParameters,
     this.responseFormat,
-  });
+  }) : _uriString = null,
+      _uri = uri;
+  const ApiEndpoint.parameterizedUri({
+    required this.method,
+    required String /* this. */uriString,
+    this.uriModifier,
+    this.uriMatcher,
+    this.headers,
+    this.bodyParameters,
+    this.queryParameters,
+    this.responseFormat,
+  }) : _uriString = uriString,
+      _uri = null;
   bool isValid({
     required Map<String, List<String>?> rules,
     required Map<String, String> submission,
@@ -418,8 +528,8 @@ class ApiEndpoint {
   }
 
   static Uri applyUriModification(
-    Uri Function(Uri, RegExp?, Map<String, dynamic>)? uriModifier,
-    Uri baseUri,
+    UriModifier? uriModifier,
+    String baseUri,
     RegExp? uriMatcher,
     Map<String, dynamic>? uriModifierParam,
   ) {
@@ -431,36 +541,37 @@ class ApiEndpoint {
           "uri requires modification.",
         );
       }
-      baseUri = uriModifier.call(baseUri, uriMatcher, uriModifierParam);
+      return uriModifier.call(baseUri, uriMatcher, uriModifierParam);
     }
-    return baseUri;
+    return Uri.parse(baseUri);
   }
 
   static bool validateParams(
           Map<String, RequestParameter>? local,
-          Map<String, (int, ParamToValueMapping?)>?
+          Map<String, (int, ParamValueMap?)>?
               arg) => /* (arg?.isNotEmpty ?? false) && */
-      local!.entries.reduceUntilTrue(
+      local?.entries.reduceUntilTrue(
           (bAcc, elem, i, _) => (!elem.value.required ||
                   !elem.value.requiresParameters ||
                   !(arg?.containsKey(elem.key) ?? false))
               ? (bAcc, false)
               : (false, true),
-          true);
+          true) ?? false;
   static void perform(
       Map<String, RequestParameter>? local,
-      Map<String, (int, ParamToValueMapping?)>? arg,
+      Map<String, (int, ParamValueMap?)>? arg,
       void Function(String key, String output) onSuccess) {
-    for (var element in (arg ?? {}).entries) {
+    for (var element in (local ?? {}).entries) {
       var rp = local![element.key];
       if (rp != null) {
+        var a = arg?[element.key];
         var output = rp.required
             ? rp.generateValidValue(
-                valueIndex: element.value.$1,
-                paramToValueMapping: element.value.$2)
+                valueIndex: a?.$1 ?? 0,
+                paramToValueMapping: a?.$2)
             : rp.tryGenerateValidValue(
-                valueIndex: element.value.$1,
-                paramToValueMapping: element.value.$2);
+                valueIndex: a?.$1 ?? 0,
+                paramToValueMapping: a?.$2);
         if (output != null) {
           // newQP[element.key] = output;
           onSuccess(element.key, output);
@@ -474,13 +585,13 @@ class ApiEndpoint {
   }
 
   http.Request genRequest({
-    Map<String, (int, ParamToValueMapping?)>? query,
-    Map<String, (int, ParamToValueMapping?)>? body,
-    Map<String, (int, ParamToValueMapping?)>? headers,
+    RequestParameterValues? query,
+    RequestParameterValues? body,
+    RequestParameterValues? headers,
     Map<String, dynamic>? uriModifierParam,
   }) =>
       requestGeneration(
-          uri: uri,
+          uriString: uriString,
           method: method,
           uriMatcher: uriMatcher,
           uriModifier: uriModifier,
@@ -493,21 +604,21 @@ class ApiEndpoint {
           uriModifierParam: uriModifierParam);
 
   static http.Request requestGeneration({
-    required Uri uri,
+    required String uriString,
     required String method,
     required RegExp? uriMatcher,
     required UriModifier? uriModifier,
     required Map<String, RequestParameter>? headerParameters,
     required Map<String, RequestParameter>? bodyParameters,
     required Map<String, RequestParameter>? queryParameters,
-    Map<String, (int, ParamToValueMapping?)>? query,
-    Map<String, (int, ParamToValueMapping?)>? body,
-    Map<String, (int, ParamToValueMapping?)>? headers,
+    Map<String, (int, ParamValueMap?)>? query,
+    Map<String, (int, ParamValueMap?)>? body,
+    Map<String, (int, ParamValueMap?)>? headers,
     Map<String, dynamic>? uriModifierParam,
   }) {
     var tempUrl = applyUriModification(
       uriModifier,
-      uri,
+      uriString,
       uriMatcher,
       uriModifierParam,
     );
@@ -574,9 +685,9 @@ class ApiEndpoint {
 
   Future<http.StreamedResponse> fireRequest(
     http.Client client, {
-    Map<String, (int, ParamToValueMapping?)>? query,
-    Map<String, (int, ParamToValueMapping?)>? body,
-    Map<String, (int, ParamToValueMapping?)>? headers,
+    Map<String, (int, ParamValueMap?)>? query,
+    Map<String, (int, ParamValueMap?)>? body,
+    Map<String, (int, ParamValueMap?)>? headers,
     Map<String, dynamic>? uriModifierParam,
   }) =>
       client.send(genRequest(
@@ -587,9 +698,9 @@ class ApiEndpoint {
       ));
 
   Future<http.StreamedResponse> sendRequest({
-    Map<String, (int, ParamToValueMapping?)>? query,
-    Map<String, (int, ParamToValueMapping?)>? body,
-    Map<String, (int, ParamToValueMapping?)>? headers,
+    Map<String, (int, ParamValueMap?)>? query,
+    Map<String, (int, ParamValueMap?)>? body,
+    Map<String, (int, ParamValueMap?)>? headers,
     Map<String, dynamic>? uriModifierParam,
   }) =>
       genRequest(
@@ -613,12 +724,22 @@ class ApiEndpoint {
 
 class ApiEndpointInstance implements ApiEndpoint {
   @override
+  // TODO: implement _uri
+  Uri? get _uri => throw UnimplementedError();
+
+  @override
+  // TODO: implement _uriString
+  String? get _uriString => throw UnimplementedError();
+
+  @override
+  // TODO: implement uriString
+  String get uriString => throw UnimplementedError();
+  @override
   String method;
   @override
   Uri uri;
   @override
-  Uri Function(Uri base, RegExp? matcher, Map<String, dynamic> map)?
-      uriModifier;
+  UriModifier? uriModifier;
   @override
   RegExp? uriMatcher;
 
@@ -800,13 +921,13 @@ class ApiEndpointInstance implements ApiEndpoint {
 
   @override
   http.Request genRequest({
-    Map<String, (int, ParamToValueMapping?)>? query,
-    Map<String, (int, ParamToValueMapping?)>? body,
-    Map<String, (int, ParamToValueMapping?)>? headers,
+    Map<String, (int, ParamValueMap?)>? query,
+    Map<String, (int, ParamValueMap?)>? body,
+    Map<String, (int, ParamValueMap?)>? headers,
     Map<String, dynamic>? uriModifierParam,
   }) =>
       ApiEndpoint.requestGeneration(
-          uri: uri,
+          uriString: uriString,
           method: method,
           uriMatcher: uriMatcher,
           uriModifier: uriModifier,
@@ -820,9 +941,9 @@ class ApiEndpointInstance implements ApiEndpoint {
   @override
   Future<http.StreamedResponse> fireRequest(
     http.Client client, {
-    Map<String, (int, ParamToValueMapping?)>? query,
-    Map<String, (int, ParamToValueMapping?)>? body,
-    Map<String, (int, ParamToValueMapping?)>? headers,
+    Map<String, (int, ParamValueMap?)>? query,
+    Map<String, (int, ParamValueMap?)>? body,
+    Map<String, (int, ParamValueMap?)>? headers,
     Map<String, dynamic>? uriModifierParam,
   }) =>
       client.send(genRequest(
@@ -834,9 +955,9 @@ class ApiEndpointInstance implements ApiEndpoint {
 
   @override
   Future<http.StreamedResponse> sendRequest({
-    Map<String, (int, ParamToValueMapping?)>? query,
-    Map<String, (int, ParamToValueMapping?)>? body,
-    Map<String, (int, ParamToValueMapping?)>? headers,
+    Map<String, (int, ParamValueMap?)>? query,
+    Map<String, (int, ParamValueMap?)>? body,
+    Map<String, (int, ParamValueMap?)>? headers,
     Map<String, dynamic>? uriModifierParam,
   }) =>
       genRequest(
@@ -858,10 +979,3 @@ class ApiEndpointInstance implements ApiEndpoint {
         uriModifier: uriModifier,
       );
 }
-
-Future<String> decompressGzPlainTextStream(http.StreamedResponse r) => r
-  .stream
-  .toBytes()
-  .then((v) => http.ByteStream.fromBytes(
-      archive.GZipDecoder().decodeBytes(v.toList(growable: false)),
-    ).bytesToString());

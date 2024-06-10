@@ -5,17 +5,24 @@ import 'collections.dart';
 
 // #region Iterable
 extension ListIterators<T> on List<T> {
-  List<U> mapAsList<U>(U Function(T e, int index, List<T> list) mapper) {
-    final r = <U>[];
-    for (int i = 0; i < length; i++) {
-      r.add(mapper(this[i], i, this));
-    }
-    return r;
-  }
-
-  List<T> addChain(T item) {
-    add(item);
-    return this;
+  /// Unlike the built-in [List.map] this:
+  /// 1. Completes synchronously
+  /// 1. Allows the current index and the list as a whole to affect the outcome
+  /// 1. Returns a [List] instead of an [Iterable]
+  List<U> mapAsList<U>(
+    U Function(T e, int index, List<T> list) mapper, [
+    bool growable = true,
+  ]) {
+    // final r = <U>[];
+    // for (int i = 0; i < length; i++) {
+    //   r.add(mapper(this[i], i, this));
+    // }
+    // return r;
+    return List<U>.generate(
+      length,
+      (index) => mapper(this[index], index, this),
+      growable: growable,
+    );
   }
 
   U reduceToType<U>(
@@ -45,8 +52,11 @@ extension ListIterators<T> on List<T> {
   /// * ![failSilently] -> don't create new list, mutate and return this list, no error handling.
   ///
   /// Else JS behavior; create new list, mutate only new list, return new list.
-  List<T> filter(bool Function(T e, int i, List<T> l) compareFunction,
-      {bool mutate = false, bool failSilently = false}) {
+  List<T> filter(
+    bool Function(T e, int i, List<T> l) compareFunction, {
+    bool mutate = false,
+    bool failSilently = false,
+  }) {
     bool? isMutable;
     final r = mutate && !failSilently ? this : <T>[];
     for (int i = 0; i < length; i++) {
@@ -57,6 +67,19 @@ extension ListIterators<T> on List<T> {
         removeAt(i);
         i--;
       }
+    }
+    return r;
+  }
+
+  List<int> indicesWhere(
+    Mapper<T, bool> condition, [
+    int start = 0,
+    int end = -1,
+  ]) {
+    if (end == -1) end = length;
+    var r = <int>[];
+    for (var i = start; i < length; i++) {
+      if (condition(this[i], i, this)) r.add(i);
     }
     return r;
   }
@@ -240,6 +263,88 @@ extension DurationExtensions on Duration {
     return t;
   }
 }
+
+extension DateTimeExtensions on DateTime {
+  // TODO: Implement formatting
+  // String toISO8601Substring({
+  //   bool includeYear = false,
+  //   bool includeMonth = false,
+  //   bool includeDay = false,
+  //   bool includeHour = false,
+  //   bool includeMinute = false,
+  //   bool includeSecond = false,
+  //   bool includeMillisecond = false,
+  //   bool includeMicrosecond = false,
+  //   bool forceIncludeMicrosecond = false,
+  // }) {
+  //   var t = toIso8601String();
+  //   var start = 0, end = t.length;
+  //   if (!includeYear) start = 5;
+  //   if (!includeYear) start = 5;
+
+  // }
+  String toISO8601DateString() => toIso8601String().substring(0, 10);
+
+  ///
+  ///
+  /// W for weekday, D for days, M for months, Y for years.
+  ///
+  /// Lowercase means textual representation (e.g. mmm -> May|Mar).
+  ///
+  /// A single char means discard trailing 0's (e.g. D -> 5|23).
+  ///
+  /// TODO: Test
+  String toFormattedDateString({
+    String format = "YYYY-MM-DD",
+  }) {
+    var t = toIso8601String().substring(0, 10);
+    if (format == "YYYY-MM-DD") return t;
+    format = format.replaceAll("YYYY", t.substring(0, 4));
+    format = format.replaceAll("YY", t.substring(2, 4));
+    format = format.replaceAll("MM", t.substring(5, 7));
+    format = format.replaceAll("M", (t[5] == "0") ? t.substring(5, 7) : t[6]);
+    for (var match in RegExp(r"m+").allMatches(format)) {
+      var s = matchMonth(month), delta = match.end - match.start;
+      s = s.length >= delta ? s.substring(0, delta) : s;
+      format.replaceRange(match.start, match.end, s);
+    }
+    format = format.replaceAll("DD", t.substring(8, 10));
+    format = format.replaceAll("D", (t[5] == "0") ? t.substring(8, 10) : t[9]);
+    for (var match in RegExp(r"w+").allMatches(format)) {
+      var s = matchMonth(month), delta = match.end - match.start;
+      s = s.length >= delta ? s.substring(0, delta) : s;
+      format.replaceRange(match.start, match.end, s);
+    }
+    return format;
+  }
+
+  static String matchMonth(int m) => switch (m) {
+        DateTime.january => "January",
+        DateTime.february => "February",
+        DateTime.march => "March",
+        DateTime.april => "April",
+        DateTime.may => "May",
+        DateTime.june => "June",
+        DateTime.july => "July",
+        DateTime.august => "August",
+        DateTime.september => "September",
+        DateTime.october => "October",
+        DateTime.november => "November",
+        DateTime.december => "December",
+        _ => throw UnsupportedError("$m not supported"),
+      };
+
+  static String matchWeekday(int w) => switch (w) {
+        DateTime.sunday => "Sunday",
+        DateTime.monday => "Monday",
+        DateTime.tuesday => "Tuesday",
+        DateTime.wednesday => "Wednesday",
+        DateTime.thursday => "Thursday",
+        DateTime.friday => "Friday",
+        DateTime.saturday => "Saturday",
+        _ => throw UnsupportedError("$w not supported"),
+      };
+}
 // #endregion Numerics
 
 // #region Strings & Printing
@@ -282,6 +387,39 @@ extension PrettyPrintCollection on Iterable {
             PrettyPrintPrefixStyle.applyPrefixToAllLinesButFirst =>
               index != 0 ? prefix : "",
           }}${e.toString().replaceAll("\n", "\n$indent")}${index < list.length - 1 ? "$elementDelimiter${lineBreakCollectionStart && elementDelimiter.contains("\n") ? indent : ""}" : ""}").reduce((value, element) => value + element)}${lineBreakCollectionStart ? "\n" : ""}]";
+}
+
+extension RegExpExt on RegExp {
+  static final removeZerosFromTime = RegExp(
+      r'(^0+:|^0+(?=[123456789]+:)|(?<=:)(?<!.*[123456789].*)0{2}:|(?<=:)(?<!.*[123456789].*)0{1}|(?<=\.\d*?[123456789]*?)(?<!\.)0+(?!\d+$))');
+
+  /// If a match is found, matches the whole input in segments. Matches
+  /// everything preceding the first uppercase letter (that isn't preceded
+  /// by whitespace or an underscore `_`) to the second to last character
+  /// before the next uppercase letter. To convert to `CONSTANT_CASE`, use
+  /// [String.toUpperCase] on each group and prepend group 2 with `_`. To
+  /// convert to `snake_case`, use [String.toLowerCase] on each group and
+  /// prepend group 2 with `_`.
+  ///
+  /// e.g. `CamelCaseMeBro` -> match 1: `CamelCas` (group 1: `Camel`, 2: `C`, 3: `as`), match 2: `eM` (group 1: `e`, 2: `M`, 3: empty), match 3: `eBro` (group 1: `e`, 2: `B`, 3: `ro`)
+  static final camelCase = RegExp(
+      r'((?:.*?[^_\u2028\n\r\u000B\f\u2029\u0085]))([A-Z])((?:.*?(?=.[A-Z]|[\u2028\n\r\u000B\f\u2029\u0085])))');
+
+  /// Matches \*THIS_STUFF\*, captures THIS_STUFF in group 1
+  static final asteriskBoundConstant = RegExp(asteriskBoundConstantString);
+  static const asteriskBoundConstantString =
+      r'\*(' + constantCaseString + r')\*';
+  static const constantCaseString = r'[A-Z_]+';
+
+  /// Matches \*THIS_STUFF\*, captures \*THIS_STUFF\* in group 1
+  static final asteriskBoundConstantNameAndAsterisks =
+      RegExp(r'(\*(?:[A-Z_]+)\*)');
+
+  /// Matches the space between camel cased words (exempting the start of a
+  /// string/line).
+  static final camelCaseWordBorders = RegExp(r'(?<!^)(?=[A-Z])');
+
+  static final lowercase = RegExp(r'([a-z]+)');
 }
 
 // #endregion Strings & Printing

@@ -42,8 +42,12 @@ void main() {
     });
   });
   // group("StringComparisons", () {
-    
+
   // });
+  // TODO: Check if postfix doesn't interfere with assignment
+  // var i = 1;
+  // (1, 2) || (2, 2) ?
+  // return (i++, i);
   group("List Extensions", () {
     late List<int> l0To4growable;
     late List<int> l5To9growable;
