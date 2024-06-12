@@ -41,6 +41,11 @@ void main() {
       expect(l.isAssigned, true);
     });
   });
+  // test("extends Abst Inter", () {
+  //   foo y = foo();
+  //   expect(y.check(), true);
+  //   expect(y.doubleCheck(), true);
+  // });
   // group("StringComparisons", () {
 
   // });

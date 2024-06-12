@@ -6,7 +6,7 @@ class ExpandableFab extends StatefulWidget {
   const ExpandableFab({
     super.key,
     this.initialOpen,
-    required this.distance,
+    /* required  */this.distance = 112,
     required this.children,
     this.openIcon = const Icon(Icons.create),
     this.closeIcon = const Icon(

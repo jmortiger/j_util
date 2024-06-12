@@ -6,12 +6,19 @@ class JEventArgs {
 }
 
 class JPureEvent {
-  final List<VoidDelegate> _subscribers =
+  JPureEvent(): _subscribers =
       List<VoidDelegate>.empty(growable: true);
+  const JPureEvent.makeConst(List<VoidDelegate> subscribers) : _subscribers = subscribers;
+  final List<VoidDelegate> _subscribers;
   JPureEvent operator +(VoidDelegate subscription) =>
+      this.._subscribers.add(subscription);
+  JPureEvent subscribe(VoidDelegate subscription) =>
       this.._subscribers.add(subscription);
 
   JPureEvent operator -(VoidDelegate subscription) =>
+      this.._subscribers.remove(subscription);
+
+  JPureEvent unsubscribe(VoidDelegate subscription) =>
       this.._subscribers.remove(subscription);
 
   bool invoke() {
@@ -23,12 +30,19 @@ class JPureEvent {
 }
 
 class JEvent<EventArgs extends JEventArgs> {
-  final List<Function(EventArgs)> _subscribers =
+  JEvent(): _subscribers =
       List<Function(EventArgs)>.empty(growable: true);
+  const JEvent.makeConst(List<Function(EventArgs)> subscribers) : _subscribers = subscribers;
+  final List<Function(EventArgs)> _subscribers;
   JEvent operator +(Function(EventArgs) subscription) =>
+      this.._subscribers.add(subscription);
+  JEvent subscribe(Function(EventArgs) subscription) =>
       this.._subscribers.add(subscription);
 
   JEvent operator -(Function(EventArgs) subscription) =>
+      this.._subscribers.remove(subscription);
+
+  JEvent unsubscribe(Function(EventArgs) subscription) =>
       this.._subscribers.remove(subscription);
 
   bool invoke(EventArgs args) {
@@ -48,11 +62,17 @@ class JOwnedEvent<Owner, EventArgs extends JEventArgs> {
   // JOwnedEvent(this.owner);
   // final Owner? owner;
   // JOwnedEvent({this.owner});
-  final List<OwnedEventDelegate> _subscribers =
+  JOwnedEvent(): _subscribers =
       List<OwnedEventDelegate>.empty(growable: true);
+  const JOwnedEvent.makeConst(List<OwnedEventDelegate> subscribers) : _subscribers = subscribers;
+  final List<OwnedEventDelegate> _subscribers;
   JOwnedEvent<Owner, EventArgs> operator +(OwnedEventDelegate subscription) =>
       this.._subscribers.add(subscription);
+  JOwnedEvent<Owner, EventArgs> subscribe(OwnedEventDelegate subscription) =>
+      this.._subscribers.add(subscription);
   JOwnedEvent<Owner, EventArgs> operator -(OwnedEventDelegate subscription) =>
+      this.._subscribers.remove(subscription);
+  JOwnedEvent<Owner, EventArgs> unsubscribe(OwnedEventDelegate subscription) =>
       this.._subscribers.remove(subscription);
 
   bool invoke(Owner owner, EventArgs args) {

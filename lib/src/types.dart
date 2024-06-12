@@ -5,11 +5,17 @@ import 'package:j_util/platform_finder.dart' as pf;
 typedef VoidFunction = void Function();
 
 mixin PrettyPrintEnum on Enum {
+  /// Camel case to sentence formatting; `lowerCamelCase` -> Lower Camel Case
   String get namePretty => name.toSentenceCaseFromCamel();
+
+  /// Capitalize everything; just it's `name.toUpperCase()`
   String get nameUpper => name.toUpperCase();
+
+  /// TODO: UNIMPLEMENTED
   String get nameConstant => name.toConstantCase();
   String get nameSnake => name.toSnakeCaseFromCamelCase();
 }
+
 /// TODO: Make BitFlag enums easier
 // mixin Flag<T extends Enum> on Enum {
 //   Map<T, int> get flagMap;
@@ -123,6 +129,9 @@ class LazyInitializer<T> {
   final Future<T> Function() initializer;
   final T? defaultValue;
 
+  bool _isAssigned = false;
+  bool get isAssigned => _isAssigned;
+
   /// The true item. Accessing before assignment will
   /// throw a [LateInitializationError].
   late final T _item;
@@ -135,26 +144,23 @@ class LazyInitializer<T> {
   /// asynchronously setting the item with [initializer] and
   /// returning [defaultValue] if that fails.
   T? get itemSafe {
-    return _itemSafe() ??
+    return _isAssigned ? _item :
         (() {
-          initializer().then((value) => _item = value);
+          initializer().then((value) {
+            _item = value;
+            _isAssigned = true;
+          });
           return defaultValue;
         })();
   }
 
   LazyInitializer(this.initializer, {this.defaultValue});
 
-  T? _itemSafe() {
-    try {
-      return _item;
-    } catch (e) {
-      return null;
-    }
-  }
-
   /// Synchronously accesses and returns the item, immediately asynchronously
   /// accessing and setting the item with [initializer] if that fails.
-  Future<T> getItem() async => _itemSafe() ?? (_item = await initializer());
+  Future<T> getItem() async => _isAssigned
+      ? _item
+      : (_item = await (initializer()..then((v) => _isAssigned = true)));
 }
 
 // TODO: Create a store that lazily converts an iterable to a list as it's iterated through.
@@ -163,7 +169,15 @@ class LazyInitializer<T> {
 ///
 /// TODO: Test
 /// TODO: Extension w/ default val and initializer
-class Late<T> {
+@Deprecated(
+    "Use LateFinal. Will be replaced with the non-final LateInstance field soon.")
+typedef Late<T> = LateFinal<T>;
+
+///
+///
+/// TODO: Test
+/// TODO: Extension w/ default val and initializer
+class LateFinal<T> {
   /// The true item. Accessing before assignment will
   /// throw a [LateInitializationError].
   late final T _item;
@@ -188,8 +202,47 @@ class Late<T> {
 
   /// If the given value is null or [item] has been assigned, will not set value,
   /// even if [T] is a nullable type.
+  set itemSafe(T? valOrNull) => (valOrNull != null) ? (item = valOrNull) : null;
+
+  T operator +(T value) {
+    item = value;
+    return item;
+  }
+
+  T? operator ~() {
+    return itemSafe;
+  }
+}
+
+///
+///
+/// TODO: Test
+/// TODO: Extension w/ default val and initializer
+class LateInstance<T> {
+  /// The true item. Accessing before assignment will
+  /// throw a [LateInitializationError].
+  late T _item;
+
+  bool _isAssigned = false;
+  bool get isAssigned => _isAssigned;
+
+  /// Accesses the true item. Accessing before assignment will
+  /// throw a [LateInitializationError].
+  T get item => _item;
+
+  /// Sets the true item. Safely assigns the item once,
+  /// gracefully fails afterwards.
+  set item(T value) {
+    _item = value;
+    _isAssigned = true;
+  }
+
+  T? get itemSafe => _isAssigned ? _item : null;
+
+  /// If the given value is null, will not set value,
+  /// even if [T] is a nullable type.
   set itemSafe(T? valOrNull) =>
-      (!_isAssigned && valOrNull != null) ? _item = valOrNull : null;
+      (valOrNull != null) ? (_item = valOrNull) : null;
 
   T operator +(T value) {
     item = value;
@@ -250,3 +303,46 @@ class StringFormatArchive {
   //         .allMatches(s)
   //         .mapAsList((elem, index, list) =>  elem.group(1) ?? "");
 }
+
+// mixin SingletonRegistry<
+//     T /* extends SingletonRegistrant<T> */ > /*  on SingletonRegistrant<T> */ {
+//   static final Map<Type, Function> _instanceInitializer = {};
+//   static final Map<Type, dynamic> _instances = {};
+//   static bool registerInitializer<T>(T Function() initializer) {
+//     if (_instanceInitializer.containsKey(T)) return false;
+//     _instanceInitializer[T] = initializer;
+//     return true;
+//   }
+
+//   // final T Function() initializer;
+//   bool registerMyInitializer(T Function() initializer) {
+//     if (_instanceInitializer.containsKey(T)) return false;
+//     _instanceInitializer[T] = initializer;
+//     return true;
+//   }
+
+//   T get instance => (_instances[T] != null)
+//       ? _instances[T]
+//       : _instances[T] = _instanceInitializer[T]!();
+//   static T getInstanceOf<T>() => (_instances[T] != null)
+//       ? _instances[T]
+//       : _instances[T] = _instanceInitializer[T]!();
+// }
+
+// abstract interface class SingletonRegistrant<T extends SingletonRegistrant<T>> {
+//   final T Function() initializer;
+//   bool check() => initializer != null;
+//   bool doubleCheck();
+//   SingletonRegistrant({required this.initializer});
+// }
+
+// class foo extends SingletonRegistrant<foo> {
+//   foo({super.initializer = foo.new});
+//   @override
+//   bool doubleCheck() => initializer != null;
+// }
+
+// abstract interface class ISingleton<T extends ISingleton<T>> {
+//   late final instanceField;
+//   get instance;
+// }
