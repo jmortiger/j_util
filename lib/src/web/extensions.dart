@@ -28,3 +28,21 @@ extension MethodJumpTable on http.Client {
               headers: headers, body: body, encoding: encoding)
           : jumpTable[method]!(url, headers: headers);
 }
+
+extension StatusCodes on http.BaseResponse {
+  // bool get hasSuccessfulStatusCode => statusCode >= 200 && statusCode < 300;
+  // bool get hasClientErrorStatusCode => statusCode >= 400 && statusCode < 500;
+  // bool get hasServerErrorStatusCode => statusCode >= 500 /* && statusCode < 600*/;
+  StatusCode get statusCodeInfo => StatusCode(statusCode);
+}
+
+class StatusCode {
+  int statusCode;
+  StatusCode(this.statusCode);
+  bool get isInformative => statusCode >= 100 && statusCode < 200;
+  bool get isSuccessful => statusCode >= 200 && statusCode < 300;
+  bool get isRedirect => statusCode >= 300 && statusCode < 400;
+  bool get isClientError => statusCode >= 400 && statusCode < 500;
+  bool get isServerError => statusCode >= 500 /*  && statusCode < 300 */;
+  bool get isError => isClientError || isServerError;
+}
