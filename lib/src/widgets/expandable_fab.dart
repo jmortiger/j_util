@@ -6,14 +6,26 @@ class ExpandableFab extends StatefulWidget {
   const ExpandableFab({
     super.key,
     this.initialOpen,
-    /* required  */this.distance = 112,
+    /* required  */ this.distance = 112,
     required this.children,
     this.openIcon = const Icon(Icons.create),
     this.closeIcon = const Icon(
       Icons.close,
       // color: Theme.of(context).primaryColor,
     ),
-  });
+  }) : childrenBuilder = null;
+  /* const  */ ExpandableFab.builder({
+    super.key,
+    this.initialOpen,
+    /* required  */ this.distance = 112,
+    // required this.children,
+    required this.childrenBuilder,
+    this.openIcon = const Icon(Icons.create),
+    this.closeIcon = const Icon(
+      Icons.close,
+      // color: Theme.of(context).primaryColor,
+    ),
+  }) : children = List<Widget>.empty(growable: true);
 
   final Widget openIcon;
   final Widget closeIcon;
@@ -21,6 +33,7 @@ class ExpandableFab extends StatefulWidget {
   final bool? initialOpen;
   final double distance;
   final List<Widget> children;
+  final List<Widget> Function(BuildContext context)? childrenBuilder;
 
   @override
   State<ExpandableFab> createState() => _ExpandableFabState();
@@ -73,7 +86,7 @@ class _ExpandableFabState extends State<ExpandableFab>
         clipBehavior: Clip.none,
         children: [
           _buildTapToCloseFab(),
-          ..._buildExpandingActionButtons(),
+          ..._buildExpandingActionButtons(context),
           _buildTapToOpenFab(),
         ],
       ),
@@ -93,10 +106,12 @@ class _ExpandableFabState extends State<ExpandableFab>
             onTap: _toggle,
             child: Padding(
               padding: const EdgeInsets.all(8),
-              child: widget.closeIcon/* Icon(
+              child: widget
+                  .closeIcon /* Icon(
                 Icons.close,
                 color: Theme.of(context).primaryColor,
-              ) */,
+              ) */
+              ,
             ),
           ),
         ),
@@ -104,9 +119,11 @@ class _ExpandableFabState extends State<ExpandableFab>
     );
   }
 
-  List<Widget> _buildExpandingActionButtons() {
+  List<Widget> _buildExpandingActionButtons(BuildContext context) {
     final children = <Widget>[];
-    final count = widget.children.length;
+    final widgetChildren =
+        widget.childrenBuilder?.call(context) ?? widget.children;
+    final count = widgetChildren.length;
     final step = 90.0 / (count - 1);
     for (var i = 0, angleInDegrees = 0.0;
         i < count;
@@ -116,7 +133,7 @@ class _ExpandableFabState extends State<ExpandableFab>
           directionInDegrees: angleInDegrees,
           maxDistance: widget.distance,
           progress: _expandAnimation,
-          child: widget.children[i],
+          child: widgetChildren[i],
         ),
       );
     }
@@ -141,7 +158,7 @@ class _ExpandableFabState extends State<ExpandableFab>
           duration: const Duration(milliseconds: 250),
           child: FloatingActionButton(
             onPressed: _toggle,
-            child: widget.openIcon,//const Icon(Icons.create),
+            child: widget.openIcon, //const Icon(Icons.create),
           ),
         ),
       ),

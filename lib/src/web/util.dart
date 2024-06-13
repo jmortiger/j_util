@@ -7,7 +7,7 @@ import 'package:j_util/src/types.dart';
 import 'package:j_util/src/extensions.dart';
 import 'package:j_util/src/j_util_base.dart' as util;
 //import 'package:logging/logging.dart' as logging;
-
+// TODO: http.Client override w/ auto rate-limiting
 /* String getBasicAuthHeaderValue(String identifier, String secret) =>
     'Basic ${dc.base64Encode(dc.ascii.encode(
         '${Uri.encodeFull(identifier)}:${Uri.encodeFull(secret)}',
