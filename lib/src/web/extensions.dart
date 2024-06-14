@@ -16,6 +16,22 @@ extension MethodJumpTable on http.Client {
     HttpMethod.delete: http.delete,
     HttpMethod.patch: http.patch,
   };
+  Function jumper(HttpMethod method) => switch (method) {
+        HttpMethod.get => get,
+        HttpMethod.post => post,
+        HttpMethod.head => head,
+        HttpMethod.put => put,
+        HttpMethod.delete => delete,
+        HttpMethod.patch => patch,
+      };
+
+  /// If [body] is a String, it's encoded using [encoding] and used as the body of the request. The content-type of the request will default to "text/plain".
+
+  /// If [body] is a List, it's used as a list of bytes for the body of the request.
+  ///
+  /// If [body] is a Map, it's encoded as form fields using [encoding]. The content-type of the request will be set to "application/x-www-form-urlencoded"; this cannot be overridden.
+  ///
+  /// [encoding] defaults to [utf8].
   Future<http.Response> sendGenericRequest(
     HttpMethod method,
     Uri url, {
@@ -24,9 +40,27 @@ extension MethodJumpTable on http.Client {
     dc.Encoding? encoding,
   }) =>
       (method.canHaveBody())
-          ? jumpTable[method]!(url,
-              headers: headers, body: body, encoding: encoding)
-          : jumpTable[method]!(url, headers: headers);
+          ? jumper(method)(
+              url,
+              headers: headers,
+              body: body,
+              encoding: encoding,
+            )
+          : jumper(method)(
+              url,
+              headers: headers,
+            );
+
+  /// TODO: More robust body/encoding/Content-Type resolution
+  Future<http.Response> sendNonStreamedRequest(http.Request request) {
+    return sendGenericRequest(
+      HttpMethod.getFromString(request.method),
+        request.url,
+        headers: request.headers,
+        body: request.body.isEmpty ? null : request.body,
+        encoding: request.encoding,
+    );
+  }
 }
 
 extension StatusCodes on http.BaseResponse {

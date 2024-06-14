@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert' as dc;
 
 import 'package:archive/archive.dart' as archive
@@ -45,6 +46,15 @@ enum HttpMethod with PrettyPrintEnum {
   static const String DELETE = "DELETE";
   static const String PATCH = "PATCH";
 
+  static HttpMethod getFromString(String method) => switch (method.toUpperCase()) {
+    "GET" => get,
+    "POST" => post,
+    "HEAD" => head,
+    "PUT" => put,
+    "DELETE" => delete,
+    "PATCH" => patch,
+    _ => throw UnsupportedError("Unsupported method"),
+  };
   bool canHaveBody() => this == HttpMethod.get || this == HttpMethod.head;
 
   @override
