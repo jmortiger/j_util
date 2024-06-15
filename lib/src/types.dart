@@ -144,14 +144,18 @@ class LazyInitializer<T> {
   /// asynchronously setting the item with [initializer] and
   /// returning [defaultValue] if that fails.
   T? get itemSafe {
-    return _isAssigned ? _item :
-        (() {
-          initializer().then((value) {
-            _item = value;
-            _isAssigned = true;
-          });
-          return defaultValue;
-        })();
+    return _isAssigned
+        ? _item
+        : (() {
+            initializer().then((value) {
+              if (!_isAssigned) {
+                _isAssigned = true;
+                _item = value;
+              } else
+                ; // TODO: Warn, shouldn't ever happen
+            });
+            return defaultValue;
+          })();
   }
 
   LazyInitializer(this.initializer, {this.defaultValue});
@@ -160,7 +164,16 @@ class LazyInitializer<T> {
   /// accessing and setting the item with [initializer] if that fails.
   Future<T> getItem() async => _isAssigned
       ? _item
-      : (_item = await (initializer()..then((v) => _isAssigned = true)));
+      : (await (initializer()
+        ..then((v) {
+          if (!_isAssigned) {
+            _isAssigned = true;
+            return _item = v;
+          } else {
+            // TODO: Warn, shouldn't ever happen
+            return _item;
+          }
+        })));
 }
 
 // TODO: Create a store that lazily converts an iterable to a list as it's iterated through.

@@ -251,7 +251,7 @@ extension DurationExtensions on Duration {
     var t = toString();
     t = discardMicroseconds ? t.substring(0, t.length - 3) : t;
     if (!fillZeros) {
-      return removeZerosFromTimeString
+      return RegExpExt.removeZerosFromTime
           .allMatches(t)
           .toList()
           .reversed
@@ -360,10 +360,11 @@ extension StringExtensions on String {
     return finalResult;
   }
 
-  String toSnakeCaseFromCamelCase() => matchSnakeCase.allMatches(this).reduceToType(
-      (accumulator, elem, index, list) =>
-          "$accumulator${(elem.group(1)?.toLowerCase() ?? "")}_${(elem.group(2)?.toLowerCase() ?? "")}${(elem.group(3)?.toLowerCase() ?? "")}",
-      "");
+  String toSnakeCaseFromCamelCase() =>
+      RegExpExt.camelCase.allMatches(this).reduceToType(
+          (accumulator, elem, index, list) =>
+              "$accumulator${(elem.group(1)?.toLowerCase() ?? "")}_${(elem.group(2)?.toLowerCase() ?? "")}${(elem.group(3)?.toLowerCase() ?? "")}",
+          "");
 }
 
 extension PrettyPrint on Object? {
@@ -390,6 +391,7 @@ extension PrettyPrintCollection on Iterable {
 }
 
 extension RegExpExt on RegExp {
+  static final whitespace = RegExp(r'[\u2028\n\r\u000B\f\u2029\u0085]');
   static final removeZerosFromTime = RegExp(
       r'(^0+:|^0+(?=[123456789]+:)|(?<=:)(?<!.*[123456789].*)0{2}:|(?<=:)(?<!.*[123456789].*)0{1}|(?<=\.\d*?[123456789]*?)(?<!\.)0+(?!\d+$))');
 
