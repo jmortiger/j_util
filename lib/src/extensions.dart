@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:j_util/src/j_util_base.dart';
 import 'package:j_util/src/types.dart';
 
@@ -365,6 +367,8 @@ extension StringExtensions on String {
           (accumulator, elem, index, list) =>
               "$accumulator${(elem.group(1)?.toLowerCase() ?? "")}_${(elem.group(2)?.toLowerCase() ?? "")}${(elem.group(3)?.toLowerCase() ?? "")}",
           "");
+  /// Will throw an error if T doesn't have a `fromJson` named constructor.
+  T decodeRawJson<T>() => (T as dynamic).fromJson(json.decode(this));
 }
 
 extension PrettyPrint on Object? {
