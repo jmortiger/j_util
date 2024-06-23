@@ -371,6 +371,23 @@ class Api {
   // #endregion Pools
 }
 
+class ResponseParsing {
+  /// When an attempt to add a fav fails due to hitting the 80000 post cap, the code is 422 and the body is as follows:
+  /// ```{
+  ///   "success": false,
+  ///   "message": "You can only keep up to 80000 favorites.",
+  ///   "code": null
+  /// }```
+  /*{
+  "success": false,
+  "message": "You can only keep up to 80000 favorites.",
+  "code": null
+}*/
+  static String retrieveErrorMessage(String body) {
+    return dc.jsonDecode(body)["message"];
+  }
+}
+
 class Pool {
   /// The ID of the pool.
   final int id;
