@@ -6,9 +6,10 @@ class JEventArgs {
 }
 
 class JPureEvent {
-  JPureEvent(): _subscribers =
-      List<VoidDelegate>.empty(growable: true);
-  const JPureEvent.makeConst(List<VoidDelegate> subscribers) : _subscribers = subscribers;
+  JPureEvent([List<VoidDelegate>? subscribers])
+      : _subscribers = subscribers ?? List<VoidDelegate>.empty(growable: true);
+  const JPureEvent.makeConst(List<VoidDelegate> subscribers)
+      : _subscribers = subscribers;
   final List<VoidDelegate> _subscribers;
   JPureEvent operator +(VoidDelegate subscription) =>
       this.._subscribers.add(subscription);
@@ -30,9 +31,11 @@ class JPureEvent {
 }
 
 class JEvent<EventArgs extends JEventArgs> {
-  JEvent(): _subscribers =
-      List<Function(EventArgs)>.empty(growable: true);
-  const JEvent.makeConst(List<Function(EventArgs)> subscribers) : _subscribers = subscribers;
+  JEvent([List<Function(EventArgs)>? subscribers])
+      : _subscribers =
+            subscribers ?? List<Function(EventArgs)>.empty(growable: true);
+  const JEvent.makeConst(List<Function(EventArgs)> subscribers)
+      : _subscribers = subscribers;
   final List<Function(EventArgs)> _subscribers;
   JEvent operator +(Function(EventArgs) subscription) =>
       this.._subscribers.add(subscription);
@@ -62,9 +65,11 @@ class JOwnedEvent<Owner, EventArgs extends JEventArgs> {
   // JOwnedEvent(this.owner);
   // final Owner? owner;
   // JOwnedEvent({this.owner});
-  JOwnedEvent(): _subscribers =
-      List<OwnedEventDelegate>.empty(growable: true);
-  const JOwnedEvent.makeConst(List<OwnedEventDelegate> subscribers) : _subscribers = subscribers;
+  JOwnedEvent([List<OwnedEventDelegate>? subscribers])
+      : _subscribers =
+            subscribers ?? List<OwnedEventDelegate>.empty(growable: true);
+  const JOwnedEvent.makeConst(List<OwnedEventDelegate> subscribers)
+      : _subscribers = subscribers;
   final List<OwnedEventDelegate> _subscribers;
   JOwnedEvent<Owner, EventArgs> operator +(OwnedEventDelegate subscription) =>
       this.._subscribers.add(subscription);
