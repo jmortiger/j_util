@@ -132,13 +132,19 @@ class LazyInitializer<T> {
   bool _isAssigned = false;
   bool get isAssigned => _isAssigned;
 
-  /// The true item. Accessing before assignment will
-  /// throw a [LateInitializationError].
+  /// The true item.
+  /// {@template lateError}
+  /// Accessing before assignment will throw a [LateInitializationError].
+  /// {@endtemplate}
   late final T _item;
 
-  /// Accesses the true item. Accessing before assignment will
-  /// throw a [LateInitializationError].
+  /// Accesses the true item.
+  /// {@macro lateError}
   T get item => _item;
+
+  /// Accesses the true item.
+  /// {@macro lateError}
+  T get $ => _item;
 
   /// Synchronously accesses and returns the item, immediately
   /// asynchronously setting the item with [initializer] and
@@ -159,6 +165,9 @@ class LazyInitializer<T> {
   }
 
   LazyInitializer(this.initializer, {this.defaultValue});
+  LazyInitializer.immediate(this.initializer, {this.defaultValue}) {
+    getItem();
+  }
 
   /// Synchronously accesses and returns the item, immediately asynchronously
   /// accessing and setting the item with [initializer] if that fails.
@@ -176,8 +185,6 @@ class LazyInitializer<T> {
         })));
 }
 
-// TODO: Create a store that lazily converts an iterable to a list as it's iterated through.
-
 ///
 ///
 /// TODO: Test
@@ -191,16 +198,20 @@ typedef Late<T> = LateFinal<T>;
 /// TODO: Test
 /// TODO: Extension w/ default val and initializer
 class LateFinal<T> {
-  /// The true item. Accessing before assignment will
-  /// throw a [LateInitializationError].
+  /// The true item.
+  /// {@macro lateError}
   late final T _item;
 
   bool _isAssigned = false;
   bool get isAssigned => _isAssigned;
 
-  /// Accesses the true item. Accessing before assignment will
-  /// throw a [LateInitializationError].
+  /// Accesses the true item.
+  /// {@macro lateError}
   T get item => _item;
+
+  /// Accesses the true item.
+  /// {@macro lateError}
+  T get $ => _item;
 
   /// Sets the true item. Safely assigns the item once,
   /// gracefully fails afterwards.
@@ -210,6 +221,10 @@ class LateFinal<T> {
       _isAssigned = true;
     } else {} // TODO: Warn
   }
+
+  /// Sets the true item. Safely assigns the item once,
+  /// gracefully fails afterwards.
+  set $(T value) => item = value;
 
   T? get itemSafe => _isAssigned ? _item : null;
 
@@ -232,23 +247,29 @@ class LateFinal<T> {
 /// TODO: Test
 /// TODO: Extension w/ default val and initializer
 class LateInstance<T> {
-  /// The true item. Accessing before assignment will
-  /// throw a [LateInitializationError].
+  /// The true item.
+  /// {@macro lateError}
   late T _item;
 
   bool _isAssigned = false;
   bool get isAssigned => _isAssigned;
 
-  /// Accesses the true item. Accessing before assignment will
-  /// throw a [LateInitializationError].
+  /// Accesses the true item.
+  /// {@macro lateError}
   T get item => _item;
+  /// Accesses the true item.
+  /// {@macro lateError}
+  T get $ => _item;
 
-  /// Sets the true item. Safely assigns the item once,
-  /// gracefully fails afterwards.
+  /// Sets the true item. Safely assigns the item
+  /// and sets the [isAssigned] flag.
   set item(T value) {
     _item = value;
     _isAssigned = true;
   }
+  /// Sets the true item. Safely assigns the item
+  /// and sets the [isAssigned] flag.
+  set $(T value) => item = value;
 
   T? get itemSafe => _isAssigned ? _item : null;
 
