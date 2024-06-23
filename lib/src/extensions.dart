@@ -395,7 +395,7 @@ extension PrettyPrintCollection on Iterable {
 }
 
 extension RegExpExt on RegExp {
-  static final whitespace = RegExp(r'[\u2028\n\r\u000B\f\u2029\u0085]');
+  static final whitespace = RegExp(r'[\u2028\n\r\u000B\f\u2029\u0085 ]');
   static final removeZerosFromTime = RegExp(
       r'(^0+:|^0+(?=[123456789]+:)|(?<=:)(?<!.*[123456789].*)0{2}:|(?<=:)(?<!.*[123456789].*)0{1}|(?<=\.\d*?[123456789]*?)(?<!\.)0+(?!\d+$))');
 
