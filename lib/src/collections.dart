@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:j_util/src/types.dart' show Late;
+import 'package:j_util/src/types.dart' show LateFinal;
 
 typedef ReduceConditional<T, U> = bool Function(
     U accumulator, T elem, int index, Iterable<T> list);
@@ -10,6 +10,11 @@ typedef ConditionalReducer<T, U> = (U, bool) Function(
     U accumulator, T elem, int index, Iterable<T> list);
 typedef Mapper<T, U> = U Function(T elem, int index, Iterable<T> list);
 typedef MapperSparse<T, U> = U Function(T elem, Iterable<T> list);
+
+extension StringFold on Iterable<String> {
+  String foldToString([String delimiter = ""]) =>
+      fold("", (acc, e) => "$acc$delimiter$e");
+}
 
 class IterableInjector<From, To> extends Iterable<To> {
   final Iterable<From> _baseIterable;
@@ -510,7 +515,7 @@ class _PriorityQueue<T extends Comparable<T>> /*  extends Iterable<T> */ {
   // Iterator<T> get iterator => throw UnimplementedError();
 
   final List<List<T>> queue = [];
-  final Late<List<T>> _queueToList = Late();
+  final LateFinal<List<T>> _queueToList = LateFinal();
   List<T> get squashedList => _queueToList.isAssigned
       ? _queueToList.item
       : (_queueToList.item = queue.fold(
@@ -587,7 +592,7 @@ class CoarsePriorityQueue<T extends IComparable<T>>
   @override
   final List<List<T>> queue = [];
   @override
-  final Late<List<T>> _queueToList = Late();
+  final LateFinal<List<T>> _queueToList = LateFinal();
   @override
   List<T> get squashedList => _queueToList.isAssigned
       ? _queueToList.item
@@ -665,15 +670,23 @@ typedef PostAdvance<T> = bool Function(
     T element, int index, LazyList<T> lazyList);
 
 class LazyList<T> implements List<T> {
-  final Iterable<T> _lazyCollection;
+  // final Iterable<T> _lazyCollection;
   final Iterator<T> _iterator;
-  final List<T> _list = <T>[];
+  final List<T> _list;
 
   LazyList({
     required Iterable<T> lazyCollection,
     /* required Iterator<T> iterator, */
-  })  : _lazyCollection = lazyCollection,
-        _iterator = lazyCollection.iterator;
+  })  : //_lazyCollection = lazyCollection,
+        _iterator = lazyCollection.iterator,
+        _list = <T>[];
+  LazyList.partiallyDone({
+    // required Iterable<T> lazyCollection,
+    required Iterator<T> iterator,
+    List<T>? preDoneElements,
+  })  : //_lazyCollection = lazyCollection,
+        _iterator = iterator,
+        _list = preDoneElements ?? <T>[];
   int get count => _list.length;
   bool _isComplete = false;
   bool get isComplete => _isComplete;
@@ -682,37 +695,56 @@ class LazyList<T> implements List<T> {
 
   @override
   set first(T value) {
-    // TODO: implement first
+    _advanceTo(0);
+    _list.first = value;
   }
 
+  /// {@template will}
+  /// Will complete the iteration.
+  /// {@endtemplate}
+  ///
+  /// The last element.
+  ///
+  /// Throws a [StateError] if this is empty. Otherwise may iterate through the elements and returns the last one seen. Some iterables may have more efficient ways to find the last element (for example a list can directly access the last element, without iterating through the previous ones).
+  ///
+  /// {@macro copy}
   @override
   T get last => _isComplete ? _list.last : complete();
 
+  /// {@macro will}
   @override
   set last(T value) {
-    // TODO: implement last
+    if (!_isComplete) complete();
+    _list.last = value;
   }
 
+  /// {@macro will}
   T complete() {
     if (_isComplete) return _list.last;
     _advanceUntil(conditionPreAdvance: null);
     return _list.last;
   }
 
+  /// {@template may}
+  /// May complete the iteration.
+  /// {@endtemplate}
   T _advanceTo(int index) {
-    _advanceUntil(
-      conditionPreAdvance: (i, _) => i <= index,
-      precondition: (l) => l.count <= index,
-    );
+    if (count <= index) {
+      _advanceUntil(
+        conditionPreAdvance: (i, _) => i <= index,
+        // precondition: (l) => l.count <= index,
+      );
+    }
     return _list[index];
   }
 
+  /// {@macro may}
   /* T */ void _advanceUntil({
     required PreAdvance<T>? conditionPreAdvance,
     PostAdvance<T>? conditionPostAdvance,
-    Precondition<T>? precondition,
+    // Precondition<T>? precondition,
   }) {
-    if (precondition?.call(this) ?? true && !_isComplete) {
+    if (/* precondition?.call(this) ?? true &&  */ !_isComplete) {
       for (var i = _list.length;
           (conditionPreAdvance?.call(i, this) ?? true) &&
               !(_isComplete = !_iterator.moveNext());
@@ -725,8 +757,6 @@ class LazyList<T> implements List<T> {
     }
   }
 
-  @override
-
   /// The number of objects in this list.
   ///
   /// The valid indices for a list are `0` through `length - 1`.
@@ -735,53 +765,89 @@ class LazyList<T> implements List<T> {
   /// final numbers = <int>[1, 2, 3];
   /// print(numbers.length); // 3
   /// ```
+  /// {@template copy}
+  ///
   /// Copied from `List`.
   ///
-  /// This will finish the iteration, essentially causing
+  /// {@endtemplate}
+  ///
+  /// {@macro will}
+  /// This will essentially cause
   /// a decomposition to a normal [List]
+  @override
   int get length => _isComplete
       ? _list.length
       : (() {
           complete();
           return count;
         })();
+  void _enforceCompletion() => (!_isComplete) ? complete() : "";
 
+  /// {@macro will}
   @override
   set length(int newLength) {
-    // TODO: implement length
+    _enforceCompletion();
+    _list.length = newLength;
   }
 
+  /// TODO: Implement in a way that doesn't finish the iteration.
+  ///
+  /// {@macro will}
+  ///
+  /// Returns the concatenation of this list and [other].
+  ///
+  /// Returns a new list containing the elements of this list followed by the elements of [other].
+  ///
+  /// The default behavior is to return a normal growable list. Some list types may choose to return a list of the same type as themselves (see [Uint8List.+]);
+  ///
+  /// {@macro copy}
   @override
   List<T> operator +(List<T> other) {
-    // TODO: implement +
-    throw UnimplementedError();
+    _enforceCompletion();
+    return _list + other;
   }
 
+  /// The object at the given [index] in the list.
+  ///
+  /// The [index] must be a valid index of this list, which means that index must be non-negative and less than [length].
+  ///
+  /// {@macro copy}
+  ///
+  /// {@macro may}
   @override
-  T operator [](int index) {
-    // TODO: implement []
-    throw UnimplementedError();
-  }
+  T operator [](int index) => _advanceTo(index);
 
+  /// Sets the value at the given [index] in the list to [value].
+  ///
+  /// The [index] must be a valid index of this list, which means that index must be non-negative and less than [length].
+  ///
+  /// {@macro copy}
+  ///
+  /// {@macro may}
   @override
   void operator []=(int index, T value) {
-    // TODO: implement []=
+    _advanceTo(index);
+    _list[index] = value;
   }
 
+  // TODO: Implement in a way that doesn't finish the iteration.
   @override
   void add(T value) {
-    // TODO: implement add
+    _enforceCompletion();
+    _list.add(value);
   }
 
+  // TODO: Implement in a way that doesn't finish the iteration.
   @override
   void addAll(Iterable<T> iterable) {
-    // TODO: implement addAll
+    _enforceCompletion();
+    _list.addAll(iterable);
   }
 
   @override
   bool any(bool Function(T element) test) {
-    // TODO: implement any
-    throw UnimplementedError();
+    _enforceCompletion();
+    return _list.any(test);
   }
 
   @override
@@ -808,15 +874,12 @@ class LazyList<T> implements List<T> {
   }
 
   @override
-  T elementAt(int index) {
-    // TODO: implement elementAt
-    throw UnimplementedError();
-  }
+  T elementAt(int index) => _list[index];
 
   @override
   bool every(bool Function(T element) test) {
-    // TODO: implement every
-    throw UnimplementedError();
+    _enforceCompletion();
+    return _list.every(test);
   }
 
   @override
@@ -832,8 +895,21 @@ class LazyList<T> implements List<T> {
 
   @override
   T firstWhere(bool Function(T element) test, {T Function()? orElse}) {
-    // TODO: implement firstWhere
-    throw UnimplementedError();
+    T? ret;
+    bool wasSet = false;
+    _advanceUntil(
+        conditionPreAdvance: null,
+        conditionPostAdvance: (element, index, lazyList) {
+          if (test(element)) {
+            ret = element;
+            return wasSet = true;
+          }
+          return wasSet = false;
+        });
+    if (!wasSet) {
+      return orElse?.call() ?? (throw StateError("test was never satisfied"));
+    }
+    return (ret as T);
   }
 
   @override
