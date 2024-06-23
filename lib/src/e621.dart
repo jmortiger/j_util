@@ -405,7 +405,8 @@ class Api {
               < 0 => -1,
               > 0 => 1,
               // == 0 => 1,
-              _ => throw ArgumentError.value(score, "score", "Must be +/- 1; cannot be 0"),
+              _ => throw ArgumentError.value(
+                  score, "score", "Must be +/- 1; cannot be 0"),
             },
             if (noUnvote != null) "no_unvote": noUnvote,
           },
@@ -1024,6 +1025,98 @@ class Api {
   }
   // #endregion Pools
 }
+//https://e621.net/forum_topics/21958
+// Form data:
+// _method: patch
+// authenticity_token: MwYipMby8SqSTPPG9-1NdXebekJRZcq28AqwxASfULwPoXSM3MASwrl65Wkqvjuc2uiU_INkQKB2xY4Ip1xekA
+// post_set[name]: ***REMOVED***character
+// post_set[shortname]: ***REMOVED***character
+// post_set[description]:
+// post_set[is_public]: 0
+// post_set[transfer_on_delete]: 0
+// commit: Submit
+// Url encoded: _method=patch&authenticity_token=MwYipMby8SqSTPPG9-1NdXebekJRZcq28AqwxASfULwPoXSM3MASwrl65Wkqvjuc2uiU_INkQKB2xY4Ip1xekA&post_set%5Bname%5D=***REMOVED***character&post_set%5Bshortname%5D=***REMOVED***character&post_set%5Bdescription%5D=&post_set%5Bis_public%5D=0&post_set%5Btransfer_on_delete%5D=0&commit=Submit
+// Create:
+// /post_sets/<Set_ID> w/ POST
+// `/post_sets/<Set_ID>.json` with `POST`
+// Edit:
+// /post_sets/<Set_ID> w/ PATCH
+// `/post_sets/<Set_ID>.json` with `PATCH`
+// post_set[transfer_on_delete] If "Transfer on Delete" is enabled, when a post is deleted from the site, its parent (if any) will be added to this set in its place. Disable if you want posts to simply be removed from this set with no replacement.
+// post_set[is_public] Private sets are only visible to you. Public sets are visible to anyone, but only you and users you assign as maintainers can edit the set. Only accounts three days or older can make public sets.
+// post_set[description]
+// post_set[shortname] The short name is used for the set's metatag name. Can only contain letters, numbers, and underscores and must contain at least one letter or underscore. set:example
+// post_set[name]
+
+// /post_sets/11775/update_posts method post
+// post_set[post_ids_string]
+enum Endpoint {
+  /// https://e621.net/wiki_pages/2425#posts_create
+  postCreate,
+
+  /// https://e621.net/wiki_pages/2425#posts_update
+  postUpdate,
+
+  /// https://e621.net/wiki_pages/2425#posts_list
+  postSearch,
+
+  /// https://e621.net/wiki_pages/2425#flags_listing
+  postFlagSearch,
+
+  /// https://e621.net/wiki_pages/2425#flags_creating
+  postFlagCreate,
+
+  /// https://e621.net/wiki_pages/2425#Posts_vote
+  postVote,
+
+  /// https://e621.net/wiki_pages/2425#favorites_list
+  favoriteSearch,
+
+  /// https://e621.net/wiki_pages/2425#favorites_create
+  favoriteCreate,
+
+  /// https://e621.net/wiki_pages/2425#favorites_delete
+  favoriteDelete,
+
+  /// https://e621.net/wiki_pages/2425#tags_listing
+  tagSearch,
+
+  /// https://e621.net/wiki_pages/2425#tag_alias_listing
+  tagAliasSearch,
+
+  /// https://e621.net/wiki_pages/2425#tag_alias_listing
+  tagImplicationSearch,
+
+  /// https://e621.net/wiki_pages/2425#notes_listing
+  noteSearch,
+
+  /// https://e621.net/wiki_pages/2425#notes_create
+  noteCreate,
+
+  /// https://e621.net/wiki_pages/2425#notes_update
+  noteUpdate,
+
+  /// https://e621.net/wiki_pages/2425#notes_delete
+  noteDelete,
+
+  /// https://e621.net/wiki_pages/2425#notes_revert
+  noteRevert,
+
+  /// https://e621.net/wiki_pages/2425#pools_listing
+  poolSearch,
+
+  /// https://e621.net/wiki_pages/2425#pools_create
+  poolCreate,
+
+  /// https://e621.net/wiki_pages/2425#pools_update
+  poolUpdate,
+
+  /// https://e621.net/wiki_pages/2425#pools_revert
+  poolRevert,
+
+  /// https://e621.net/forum_topics/34583
+  userInfo,
+}
 
 class ResponseParsing {
   /// When an attempt to add a fav fails due to hitting the 80000 post cap, the code is 422 and the body is as follows:
@@ -1348,4 +1441,152 @@ class PostScore {
         down: down ?? this.down,
         total: total ?? this.total,
       );
+}
+
+class User {
+  /// wiki_page_version_count
+  final String wikiPageVersionCount;
+
+  /// artist_version_count
+  final String artistVersionCount;
+
+  /// pool_version_count
+  final String poolVersionCount;
+
+  /// forum_post_count
+  final String forumPostCount;
+
+  /// comment_count
+  final String commentCount;
+
+  /// flag_count
+  final String flagCount;
+
+  /// positive_feedback_count
+  final String positiveFeedbackCount;
+
+  /// neutral_feedback_count
+  final String neutralFeedbackCount;
+
+  /// negative_feedback_count
+  final String negativeFeedbackCount;
+
+  /// upload_limit
+  final String uploadLimit;
+
+  /// id
+  final String id;
+
+  /// created_at
+  final String createdAt;
+
+  /// name
+  final String name;
+
+  /// level
+  final String level;
+
+  /// base_upload_limit
+  final String baseUploadLimit;
+
+  /// post_upload_count
+  final String postUploadCount;
+
+  /// post_update_count
+  final String postUpdateCount;
+
+  /// note_update_count
+  final String noteUpdateCount;
+
+  /// is_banned
+  final String isBanned;
+
+  /// can_approve_posts
+  final String canApprovePosts;
+
+  /// can_upload_free
+  final String canUploadFree;
+
+  /// level_string
+  final String levelString;
+
+  /// avatar_id
+  final String avatarId;
+
+  User({
+    required this.wikiPageVersionCount,
+    required this.artistVersionCount,
+    required this.poolVersionCount,
+    required this.forumPostCount,
+    required this.commentCount,
+    required this.flagCount,
+    required this.positiveFeedbackCount,
+    required this.neutralFeedbackCount,
+    required this.negativeFeedbackCount,
+    required this.uploadLimit,
+    required this.id,
+    required this.createdAt,
+    required this.name,
+    required this.level,
+    required this.baseUploadLimit,
+    required this.postUploadCount,
+    required this.postUpdateCount,
+    required this.noteUpdateCount,
+    required this.isBanned,
+    required this.canApprovePosts,
+    required this.canUploadFree,
+    required this.levelString,
+    required this.avatarId,
+  });
+  
+  factory User.fromJson(Map<String, dynamic> json) => User(
+    wikiPageVersionCount: json["wiki_page_version_count"],
+    artistVersionCount: json["artist_version_count"],
+    poolVersionCount: json["pool_version_count"],
+    forumPostCount: json["forum_post_count"],
+    commentCount: json["comment_count"],
+    flagCount: json["flag_count"],
+    positiveFeedbackCount: json["positive_feedback_count"],
+    neutralFeedbackCount: json["neutral_feedback_count"],
+    negativeFeedbackCount: json["negative_feedback_count"],
+    uploadLimit: json["upload_limit"],
+    id: json["id"],
+    createdAt: json["created_at"],
+    name: json["name"],
+    level: json["level"],
+    baseUploadLimit: json["base_upload_limit"],
+    postUploadCount: json["post_upload_count"],
+    postUpdateCount: json["post_update_count"],
+    noteUpdateCount: json["note_update_count"],
+    isBanned: json["is_banned"],
+    canApprovePosts: json["can_approve_posts"],
+    canUploadFree: json["can_upload_free"],
+    levelString: json["level_string"],
+    avatarId: json["avatar_id"],
+  );
+  Map<String, dynamic> toJson() => {
+        "wiki_page_version_count": wikiPageVersionCount, //0,
+        "artist_version_count": artistVersionCount, //0,
+        "pool_version_count": poolVersionCount, //0,
+        "forum_post_count": forumPostCount, //1,
+        "comment_count": commentCount, //0,
+        "flag_count": flagCount, //0,
+        "positive_feedback_count": positiveFeedbackCount, //0,
+        "neutral_feedback_count": neutralFeedbackCount, //0,
+        "negative_feedback_count": negativeFeedbackCount, //0,
+        "upload_limit": uploadLimit, //10,
+        "id": id, //1182633,
+        "created_at": createdAt, //"2022-04-17T22:02:17.872+02:00",
+        "name": name, //"wasduwu",
+        "level": level, //20,
+        "base_upload_limit": baseUploadLimit, //10,
+        "post_upload_count": postUploadCount, //0,
+        "post_update_count": postUpdateCount, //0,
+        "note_update_count": noteUpdateCount, //0,
+        "is_banned": isBanned, //false,
+        "can_approve_posts": canApprovePosts, //false,
+        "can_upload_free": canUploadFree, //false,
+        "level_string": levelString, //"Member",
+        "avatar_id": avatarId, //null,
+      };
 }
