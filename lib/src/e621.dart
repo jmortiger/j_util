@@ -1116,6 +1116,9 @@ enum Endpoint {
 
   /// https://e621.net/forum_topics/34583
   userInfo,
+
+  /// https://e621.net/post_sets/7410.json
+  setInfo,
 }
 
 class ResponseParsing {
@@ -1538,32 +1541,32 @@ class User {
     required this.levelString,
     required this.avatarId,
   });
-  
+
   factory User.fromJson(Map<String, dynamic> json) => User(
-    wikiPageVersionCount: json["wiki_page_version_count"],
-    artistVersionCount: json["artist_version_count"],
-    poolVersionCount: json["pool_version_count"],
-    forumPostCount: json["forum_post_count"],
-    commentCount: json["comment_count"],
-    flagCount: json["flag_count"],
-    positiveFeedbackCount: json["positive_feedback_count"],
-    neutralFeedbackCount: json["neutral_feedback_count"],
-    negativeFeedbackCount: json["negative_feedback_count"],
-    uploadLimit: json["upload_limit"],
-    id: json["id"],
-    createdAt: json["created_at"],
-    name: json["name"],
-    level: json["level"],
-    baseUploadLimit: json["base_upload_limit"],
-    postUploadCount: json["post_upload_count"],
-    postUpdateCount: json["post_update_count"],
-    noteUpdateCount: json["note_update_count"],
-    isBanned: json["is_banned"],
-    canApprovePosts: json["can_approve_posts"],
-    canUploadFree: json["can_upload_free"],
-    levelString: json["level_string"],
-    avatarId: json["avatar_id"],
-  );
+        wikiPageVersionCount: json["wiki_page_version_count"],
+        artistVersionCount: json["artist_version_count"],
+        poolVersionCount: json["pool_version_count"],
+        forumPostCount: json["forum_post_count"],
+        commentCount: json["comment_count"],
+        flagCount: json["flag_count"],
+        positiveFeedbackCount: json["positive_feedback_count"],
+        neutralFeedbackCount: json["neutral_feedback_count"],
+        negativeFeedbackCount: json["negative_feedback_count"],
+        uploadLimit: json["upload_limit"],
+        id: json["id"],
+        createdAt: json["created_at"],
+        name: json["name"],
+        level: json["level"],
+        baseUploadLimit: json["base_upload_limit"],
+        postUploadCount: json["post_upload_count"],
+        postUpdateCount: json["post_update_count"],
+        noteUpdateCount: json["note_update_count"],
+        isBanned: json["is_banned"],
+        canApprovePosts: json["can_approve_posts"],
+        canUploadFree: json["can_upload_free"],
+        levelString: json["level_string"],
+        avatarId: json["avatar_id"],
+      );
   Map<String, dynamic> toJson() => {
         "wiki_page_version_count": wikiPageVersionCount, //0,
         "artist_version_count": artistVersionCount, //0,
@@ -1588,5 +1591,61 @@ class User {
         "can_upload_free": canUploadFree, //false,
         "level_string": levelString, //"Member",
         "avatar_id": avatarId, //null,
+      };
+}
+
+/// https://e621.net/post_sets/7410.json
+class Set {
+  final int id;
+  final String createdAt;
+  final String updatedAt;
+  final int creatorId;
+  final bool isPublic;
+  final String name;
+  final String shortname;
+  final String description;
+  final int postCount;
+  final bool transferOnDelete;
+  final List<int> postIds;
+
+  Set({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.creatorId,
+    required this.isPublic,
+    required this.name,
+    required this.shortname,
+    required this.description,
+    required this.postCount,
+    required this.transferOnDelete,
+    required this.postIds,
+  });
+
+  factory Set.fromJson(Map<String, dynamic> json) => Set(
+    id: json["id"],
+    createdAt: json["created_at"],
+    updatedAt: json["updated_at"],
+    creatorId: json["creator_id"],
+    isPublic: json["is_public"],
+    name: json["name"],
+    shortname: json["shortname"],
+    description: json["description"],
+    postCount: json["post_count"],
+    transferOnDelete: json["transfer_on_delete"],
+    postIds: (json["post_ids"] as List).cast(),
+  );
+  Map<String, dynamic> toJson() => {
+        "id": id, //7410,
+        "created_at": createdAt, //"2017-07-06T02:07:46.736-04:00",
+        "updated_at": updatedAt, //"2024-06-10T22:22:09.068-04:00",
+        "creator_id": creatorId, //248688,
+        "is_public": isPublic, //false,
+        "name": name, //"Chubby Boys",
+        "shortname": shortname, //"chubby_***REMOVED***,
+        "description": description, //"",
+        "post_count": postCount, //808,
+        "transfer_on_delete": transferOnDelete, //false,
+        "post_ids": postIds, //[],
       };
 }
