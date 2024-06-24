@@ -1,5 +1,8 @@
 import 'dart:convert' as dc;
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:j_util/e621.dart';
+import 'package:j_util/src/types.dart';
 
 class BaseCredentials {
   static const headerKey = "Authorization";
@@ -88,7 +91,7 @@ class Api {
   // #region Credentials
   static BaseCredentials? activeCredentials;
 
-  static bool validateCredentials(BaseCredentials? credentials,
+  static bool _validateCredentials(BaseCredentials? credentials,
           [bool throwIfNeeded = true]) =>
       ((credentials ?? Api.activeCredentials) == null)
           ? throwIfNeeded
@@ -100,7 +103,7 @@ class Api {
               : false
           : true;
 
-  static BaseCredentials getValidCredentials(BaseCredentials? credentials) =>
+  static BaseCredentials _getValidCredentials(BaseCredentials? credentials) =>
       credentials ??
       activeCredentials ??
       (throw ArgumentError.value(
@@ -118,7 +121,7 @@ class Api {
   }) {
     var uri = baseUri.replace(path: path, queryParameters: queryParameters);
     var req = http.Request(method, uri);
-    getValidCredentials(credentials).addToHeadersMap(req.headers);
+    _getValidCredentials(credentials).addToHeadersMap(req.headers);
     return req;
   }
 
@@ -183,7 +186,7 @@ class Api {
   ///     "location":"/posts/<Post_ID>",
   ///     "post_id":<Post_ID>
   /// }
-  static http.Request initCreatePost({
+  static http.Request initCreatePostRequest({
     String? uploadTagString,
     String? uploadFile,
     String? uploadRating,
@@ -293,7 +296,7 @@ class Api {
   ///     * is_flagged
   ///     * is_rating_locked
   /// {@endtemplate}
-  static http.Request initSearchPosts({
+  static http.Request initSearchPostsRequest({
     int? limit,
     String? tags,
     String? page,
@@ -329,7 +332,7 @@ class Api {
   /// * `post[is_rating_locked]` Set to true to prevent others from changing the rating.
   /// * `post[is_note_locked]` Set to true to prevent others from adding notes.
   /// * `post[edit_reason]` The reason for the submitted changes. Inline DText allowed.
-  static http.Request initUpdatePost({
+  static http.Request initUpdatePostRequest({
     required int postId,
     String? postTagStringDiff,
     String? postSourceDiff,
@@ -391,7 +394,7 @@ class Api {
   ///     "message": "An unexpected error occurred.",
   ///     "code": null
   /// }
-  static http.Request initVotePost({
+  static http.Request initVotePostRequest({
     required int postId,
     required int score,
     bool? noUnvote,
@@ -459,7 +462,7 @@ class Api {
   /// ```
   /// If your query succeeds but produces no results, you will receive instead the following special value:
   /// `{ "tags":[] }`
-  static http.Request initSearchTags({
+  static http.Request initSearchTagsRequest({
     String? searchNameMatches,
     int? searchCategory,
     String? searchOrder,
@@ -525,7 +528,7 @@ class Api {
   /// If your query succeeds but produces no results, you will receive instead the following special value:
   ///
   /// { "tag_aliases":[] }
-  static http.Request initSearchTagAliases({
+  static http.Request initSearchTagAliasesRequest({
     String? searchNameMatches,
     String? searchAntecedentName,
     String? searchConsequentName,
@@ -603,7 +606,7 @@ class Api {
   /// If your query succeeds but produces no results, you will receive instead the following special value:
   ///
   /// { "tag_implications":[] }
-  static http.Request initSearchTagImplications({
+  static http.Request initSearchTagImplicationsRequest({
     String? searchNameMatches,
     String? searchAntecedentName,
     String? searchConsequentName,
@@ -668,7 +671,7 @@ class Api {
   /// * HTTP 403 if the user has hidden their favorites.
   /// * HTTP 404 if the specified user_id does not exist or user_id is not specified and the user is not authorized.
   /// {@endtemplate}
-  static http.Request initListFavorites({
+  static http.Request initListFavoritesRequest({
     int? userId,
     BaseCredentials? credentials,
   }) =>
@@ -710,7 +713,7 @@ class Api {
   /// }
   /// ```
   /// {@endtemplate}
-  static http.Request initCreateFavorite({
+  static http.Request initCreateFavoriteRequest({
     required int postId,
     BaseCredentials? credentials,
   }) =>
@@ -728,7 +731,7 @@ class Api {
   ///
   /// There is no response.
   /// {@endtemplate}
-  static http.Request initDeleteFavorite({
+  static http.Request initDeleteFavoriteRequest({
     required int postId,
     BaseCredentials? credentials,
   }) =>
@@ -738,17 +741,17 @@ class Api {
           credentials: credentials);
   // #region Redirects
   /// {@macro ListFavorites}
-  static http.Request initListFavoritesWithId({
+  static http.Request initListFavoritesWithIdRequest({
     required int userId,
     BaseCredentials? credentials,
   }) =>
-      initListFavorites(userId: userId, credentials: credentials);
+      initListFavoritesRequest(userId: userId, credentials: credentials);
 
   /// {@macro ListFavorites}
-  static http.Request initListFavoritesWithCredentials({
+  static http.Request initListFavoritesWithCredentialsRequest({
     required BaseCredentials credentials,
   }) =>
-      initListFavorites(credentials: credentials);
+      initListFavoritesRequest(credentials: credentials);
   // #endregion Redirects
   // #endregion Favorites
 
@@ -784,7 +787,7 @@ class Api {
   ///
   /// If no results are returned:
   /// ```{"notes":[]}```
-  static http.Request initSearchNotes({
+  static http.Request initSearchNotesRequest({
     String? searchBodyMatches,
     String? searchPostId,
     String? searchPostTagsMatch,
@@ -824,7 +827,7 @@ class Api {
   ///
   /// If successful it will return the added note in the format:
   /// {@macro noteListing}
-  static http.Request initCreateNote({
+  static http.Request initCreateNoteRequest({
     required int notePostId,
     required int noteX,
     required int noteY,
@@ -851,7 +854,7 @@ class Api {
   /// The base URL is ``/notes/[noteId].json`` called with `DELETE`.
   ///
   /// There is no response.
-  static http.Request initDeleteNote(
+  static http.Request initDeleteNoteRequest(
     int noteId, {
     BaseCredentials? credentials,
   }) {
@@ -866,7 +869,7 @@ class Api {
   /// The base URL is ``/notes/[noteId]/revert.json`` called with PUT.
   ///
   /// * `version_id` The note version id to revert to.
-  static http.Request initRevertNote(
+  static http.Request initRevertNoteRequest(
     int noteId, {
     required int versionId,
     BaseCredentials? credentials,
@@ -878,8 +881,163 @@ class Api {
     (credentials ?? Api.activeCredentials)?.addToHeadersMap(req.headers);
     return req;
   }
-  // #endregion Notes
 
+  // #endregion Notes
+  // #region Users
+  /// https://e621.net/users.json?search%5Bname_matches%5D=a&search%5Babout_me%5D=a&search%5Bavatar_id%5D=1&search%5Blevel%5D=10&search%5Bmin_level%5D=10&search%5Bmax_level%5D=10&search%5Bcan_upload_free%5D=true&search%5Bcan_approve_posts%5D=true&search%5Border%5D=name
+  /// `/users.json` `GET`
+  /// * `search[name_matches]`
+  /// * `search[about_me]`
+  /// * `search[avatar_id]`
+  /// * `search[level]`
+  /// * `search[min_level]`
+  /// * `search[max_level]`
+  /// * `search[can_upload_free]`
+  /// * `search[can_approve_posts]`
+  /// * `search[order]`
+  /// * limit How many items you want to retrieve. There is a hard limit of 320 items per request. Defaults to 75.
+  /// * page The page that will be returned. Can also be used with a or b + item_id to get the items after or before the specified item ID. For example a13 gets every item after item_id 13 up to the limit.
+  static http.Request initSearchUsersRequest({
+    String? searchNameMatches,
+    String? searchAboutMe,
+    int? searchAvatarId,
+    UserLevel? searchLevel,
+    UserLevel? searchMinLevel,
+    UserLevel? searchMaxLevel,
+    bool? searchCanUploadFree,
+    bool? searchCanApprovePosts,
+    UserOrder? searchOrder,
+    int? limit = 75,
+    String? page,
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsOptional(
+          path: "/users.json",
+          queryParameters: {
+            if (searchNameMatches != null) "": searchNameMatches,
+            if (searchAboutMe != null) "": searchAboutMe,
+            if (searchAvatarId != null) "": searchAvatarId,
+            if (searchLevel != null) "": searchLevel,
+            if (searchMinLevel != null) "": searchMinLevel,
+            if (searchMaxLevel != null) "": searchMaxLevel,
+            if (searchCanUploadFree != null) "": searchCanUploadFree,
+            if (searchCanApprovePosts != null) "": searchCanApprovePosts,
+            if (searchOrder != null) "": searchOrder,
+            if (limit != null) "limit": _validateLimit(limit),
+            if (page != null) "page": page,
+          },
+          method: "GET",
+          credentials: credentials);
+
+  /// https://e621.net/users/248688.json
+  /// `/users/<User_ID>.json` `GET`
+  static http.Request initGetUserRequest(
+    int userId, {
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsOptional(
+          path: "/users/$userId.json", method: "GET", credentials: credentials);
+  // #endregion Users
+  // #region Sets
+  /// https://e621.net/post_sets.json?search%5Bname%5D=*&search%5Bshortname%5D=*&search%5Bcreator_name%5D=baggie&search%5Border%5D=name
+  /// `/post_sets.json` `GET`
+  /// * `search[name]` * wildcard
+  /// * `search[shortname]` * wildcard
+  /// * `search[creator_name]` Must be a username, can't be a user id (I think)
+  /// * `search[order]`
+  /// * limit How many items you want to retrieve. There is a hard limit of 320 items per request. Defaults to 75.
+  /// * page The page that will be returned. Can also be used with a or b + item_id to get the items after or before the specified item ID. For example a13 gets every item after item_id 13 up to the limit.
+  static http.Request initSearchSetsRequest({
+    String? searchName,
+    String? searchShortname,
+    String? searchCreatorName,
+    SetOrder? searchOrder,
+    int? limit = 75,
+    String? page,
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsOptional(
+        path: "/post_sets.json",
+        method: "GET",
+        credentials: credentials,
+        queryParameters: {
+          if (searchName != null) "search[name]": searchName,
+          if (searchShortname != null) "search[shortname]": searchShortname,
+          if (searchCreatorName != null)
+            "search[creator_name]": searchCreatorName,
+          if (searchOrder != null) "search[order]": searchOrder,
+            if (limit != null) "limit": _validateLimit(limit),
+            if (page != null) "page": page,
+        },
+      );
+
+  /// https://e621.net/post_sets/35356.json
+  /// `/post_sets/$setId.json` `GET`
+  static http.Request initGetSetRequest(
+    int setId, {
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsOptional(
+        path: "/post_sets/$setId.json",
+        method: "GET",
+        credentials: credentials,
+      );
+
+  /// `/post_sets/$setId.json` `PATCH`
+  /// * `post_set[name]`
+  /// * `post_set[shortname]` The short name is used for the set's metatag name. Can only contain letters, numbers, and underscores and must contain at least one letter or underscore. set:example
+  /// * `post_set[description]`
+  /// * `post_set[is_public]` Private sets are only visible to you. Public sets are visible to anyone, but only you and users you assign as maintainers can edit the set. Only accounts three days or older can make public sets.
+  /// * `post_set[transfer_on_delete]` If "Transfer on Delete" is enabled, when a post is deleted from the site, its parent (if any) will be added to this set in its place. Disable if you want posts to simply be removed from this set with no replacement.
+  static http.Request initUpdateSetRequest(
+    int setId, {
+    String? postSetName,
+    String? postSetShortname,
+    String? postSetDescription,
+    bool? postSetIsPublic,
+    bool? postSetTransferOnDelete,
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsRequired(
+        path: "/post_sets/$setId.json",
+        method: "PATCH",
+        credentials: credentials,
+        queryParameters: {
+          if (postSetName != null) "": postSetName,
+          if (postSetShortname != null) "": postSetShortname,
+          if (postSetDescription != null) "": postSetDescription,
+          if (postSetIsPublic != null) "": postSetIsPublic,
+          if (postSetTransferOnDelete != null) "": postSetTransferOnDelete,
+        },
+      );
+
+  /// `/post_sets/$setId.json` `POST`
+  /// * `post_set[name]`
+  /// * `post_set[shortname]` The short name is used for the set's metatag name. Can only contain letters, numbers, and underscores and must contain at least one letter or underscore. set:example
+  /// * `post_set[description]`
+  /// * `post_set[is_public]` Private sets are only visible to you. Public sets are visible to anyone, but only you and users you assign as maintainers can edit the set. Only accounts three days or older can make public sets.
+  /// * `post_set[transfer_on_delete]` If "Transfer on Delete" is enabled, when a post is deleted from the site, its parent (if any) will be added to this set in its place. Disable if you want posts to simply be removed from this set with no replacement.
+  static http.Request initCreateSetRequest({
+    String? postSetName,
+    String? postSetShortname,
+    String? postSetDescription,
+    bool? postSetIsPublic,
+    bool? postSetTransferOnDelete,
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsRequired(
+        path: "/post_sets.json",
+        method: "POST",
+        credentials: credentials,
+        queryParameters: {
+          if (postSetName != null) "": postSetName,
+          if (postSetShortname != null) "": postSetShortname,
+          if (postSetDescription != null) "": postSetDescription,
+          if (postSetIsPublic != null) "": postSetIsPublic,
+          if (postSetTransferOnDelete != null) "": postSetTransferOnDelete,
+        },
+      );
+  // #endregion Sets
   // #region Pools
   /// https://e621.net/wiki_pages/2425#pools_listing
   ///
@@ -1025,6 +1183,74 @@ class Api {
   }
   // #endregion Pools
 }
+
+enum SetOrder with PrettyPrintEnum {
+  name._default("name"),
+  shortname._default("shortname"),
+  postCount._default("post_count"),
+  createdAt._default("created_at"),
+  updatedAt._default("updated_at");
+
+  @override
+  String toString() => jsonString;
+  // String get jsonString => nameSnake;
+  final String jsonString;
+  const SetOrder._default(this.jsonString);
+  // static SetOrder fromJsonString(String json) => switch (json) {
+  // factory SetOrder.fromJsonString(String json) => switch (json) {
+  factory SetOrder(String json) => switch (json) {
+        "name" => name,
+        "shortname" => shortname,
+        "post_count" => postCount,
+        "created_at" => createdAt,
+        "updated_at" => updatedAt,
+        _ => throw ArgumentError.value(
+            json,
+            "json",
+            'must be a value of '
+                '"name", '
+                '"shortname", '
+                '"post_count", '
+                '"created_at", '
+                'or "updated_at".',
+          ),
+      };
+  static const jsonPropertyName = "level_string";
+}
+
+enum UserOrder with PrettyPrintEnum {
+  joinDate._default("date"),
+  name._default("name"),
+  postUploadCount._default("post_upload_count"),
+  noteCount._default("note_count"),
+  postUpdateCount._default("post_update_count");
+
+  @override
+  String toString() => jsonString;
+  // String get jsonString => nameSnake;
+  final String jsonString;
+  const UserOrder._default(this.jsonString);
+  // static UserOrder fromJsonString(String json) => switch (json) {
+  // factory UserOrder.fromJsonString(String json) => switch (json) {
+  factory UserOrder(String json) => switch (json) {
+        "name" => name,
+        "date" => joinDate,
+        "post_upload_count" => postUploadCount,
+        "note_count" => noteCount,
+        "post_update_count" => postUpdateCount,
+        _ => throw ArgumentError.value(
+            json,
+            "json",
+            'must be a value of '
+                '"name", '
+                '"date", '
+                '"post_upload_count", '
+                '"post_update_count", '
+                'or "note_count".',
+          ),
+      };
+  static const jsonPropertyName = "level_string";
+}
 //https://e621.net/forum_topics/21958
 // Form data:
 // _method: patch
@@ -1047,6 +1273,39 @@ class Api {
 // post_set[description]
 // post_set[shortname] The short name is used for the set's metatag name. Can only contain letters, numbers, and underscores and must contain at least one letter or underscore. set:example
 // post_set[name]
+
+enum PoolCategory {
+  collection,
+  series;
+
+  dynamic toJson() => name;
+  static PoolCategory fromJson(dynamic json) => fromJsonString(json);
+
+  String toJsonString() => name;
+  static PoolCategory fromJsonString(String name) => switch (name) {
+        "collection" => collection,
+        "series" => series,
+        _ => throw UnsupportedError(
+            "Value $name not supported, must be `collection` or `series`.",
+          ),
+      };
+  static PoolCategory fromJsonStringNonStrict(String name) =>
+      switch (name.toLowerCase()) {
+        "collection" => collection,
+        "series" => series,
+        _ => throw UnsupportedError(
+            "Value $name not supported, must be `collection` or `series`.",
+          ),
+      };
+  String toParamString() => name;
+  static PoolCategory fromParamString(String name) => switch (name) {
+        "collection" => collection,
+        "series" => series,
+        _ => throw UnsupportedError(
+            "Value $name not supported, must be `collection` or `series`.",
+          ),
+      };
+}
 
 // /post_sets/11775/update_posts method post
 // post_set[post_ids_string]
@@ -1212,8 +1471,7 @@ class Pool {
         postCount: postCount ?? this.postCount,
       );
 
-  // factory Pool.fromRawJson(String str) => Pool.fromJson(json.decode(str));
-  factory Pool.fromRawJson(String str) => str.decodeRawJson();
+  factory Pool.fromRawJson(String str) => Pool.fromJson(dc.json.decode(str));
 
   // String toRawJson() => json.encode(toJson());
 
@@ -1248,76 +1506,6 @@ class Pool {
       };
 }
 
-enum PoolCategory {
-  collection,
-  series;
-
-  dynamic toJson() => name;
-  static PoolCategory fromJson(dynamic json) => fromJsonString(json);
-
-  String toJsonString() => name;
-  static PoolCategory fromJsonString(String name) => switch (name) {
-        "collection" => collection,
-        "series" => series,
-        _ => throw UnsupportedError(
-            "Value $name not supported, must be `collection` or `series`.",
-          ),
-      };
-  static PoolCategory fromJsonStringNonStrict(String name) =>
-      switch (name.toLowerCase()) {
-        "collection" => collection,
-        "series" => series,
-        _ => throw UnsupportedError(
-            "Value $name not supported, must be `collection` or `series`.",
-          ),
-      };
-  String toParamString() => name;
-  static PoolCategory fromParamString(String name) => switch (name) {
-        "collection" => collection,
-        "series" => series,
-        _ => throw UnsupportedError(
-            "Value $name not supported, must be `collection` or `series`.",
-          ),
-      };
-}
-// mixin JsonFriendlyEnum<T extends Enum> on Enum {
-//   dynamic toJson() => name;
-//   static T fromJson(dynamic json) => fromJsonString(json);
-
-//   String toJsonString() => name;
-//   static T fromJsonString(String name) => switch (name) {
-//         "collection" => collection,
-//         "series" => series,
-//         _ => throw UnsupportedError(
-//             "Value $name not supported, must be `collection` or `series`.",
-//           ),
-//       };
-//   static T fromJsonStringNonStrict(String name) =>
-//       switch (name.toLowerCase()) {
-//         "collection" => collection,
-//         "series" => series,
-//         _ => throw UnsupportedError(
-//             "Value $name not supported, must be `collection` or `series`.",
-//           ),
-//       };
-//   String toParamString() => name;
-//   static T fromParamString(String name) => switch (name) {
-//         "collection" => collection,
-//         "series" => series,
-//         _ => throw UnsupportedError(
-//             "Value $name not supported, must be `collection` or `series`.",
-//           ),
-//       };
-
-//   // static const Map<String, T> map = {
-//   //   "collection": collection,
-//   //   "series": series,
-//   // };
-//   // static const Map<T, String> reverseMap = {
-//   //   collection: "collection",
-//   //   series: "series",
-//   // };
-// }
 class Note {
   final int id;
   final DateTime createdAt;
@@ -1380,8 +1568,7 @@ class Note {
         creatorName: creatorName ?? this.creatorName,
       );
 
-  // factory Note.fromRawJson(String str) => Note.fromJson(json.decode(str));
-  factory Note.fromRawJson(String str) => str.decodeRawJson();
+  factory Note.fromRawJson(String str) => Note.fromJson(dc.json.decode(str));
 
   // String toRawJson() => json.encode(toJson());
 
@@ -1422,11 +1609,6 @@ class Note {
       };
 }
 
-extension JsonHandling on String {
-  /// Will throw an error if T doesn't have a `fromJson` named constructor.
-  T decodeRawJson<T>() => (T as dynamic).fromJson(dc.json.decode(this));
-}
-
 class PostScore {
   /// `up` The number of times voted up.
   final int up;
@@ -1447,6 +1629,140 @@ class PostScore {
 }
 
 class User {
+  final int id;
+  final String createdAt;
+  final String name;
+  final int level;
+  final int baseUploadLimit;
+  final int noteUpdateCount;
+  final int postUpdateCount;
+  final int postUploadCount;
+  final bool isBanned;
+  final bool canApprovePosts;
+  final bool canUploadFree;
+  final UserLevel levelString;
+  final int? avatarId;
+
+  User({
+    required this.id,
+    required this.createdAt,
+    required this.name,
+    required this.level,
+    required this.baseUploadLimit,
+    required this.noteUpdateCount,
+    required this.postUpdateCount,
+    required this.postUploadCount,
+    required this.isBanned,
+    required this.canApprovePosts,
+    required this.canUploadFree,
+    required this.levelString,
+    required this.avatarId,
+  });
+
+  User copyWith({
+    int? id,
+    String? createdAt,
+    String? name,
+    int? level,
+    int? baseUploadLimit,
+    int? noteUpdateCount,
+    int? postUpdateCount,
+    int? postUploadCount,
+    bool? isBanned,
+    bool? canApprovePosts,
+    bool? canUploadFree,
+    UserLevel? levelString,
+    int? avatarId,
+  }) =>
+      User(
+        id: id ?? this.id,
+        createdAt: createdAt ?? this.createdAt,
+        name: name ?? this.name,
+        level: level ?? this.level,
+        baseUploadLimit: baseUploadLimit ?? this.baseUploadLimit,
+        noteUpdateCount: noteUpdateCount ?? this.noteUpdateCount,
+        postUpdateCount: postUpdateCount ?? this.postUpdateCount,
+        postUploadCount: postUploadCount ?? this.postUploadCount,
+        isBanned: isBanned ?? this.isBanned,
+        canApprovePosts: canApprovePosts ?? this.canApprovePosts,
+        canUploadFree: canUploadFree ?? this.canUploadFree,
+        levelString: levelString ?? this.levelString,
+        avatarId: avatarId ?? this.avatarId,
+      );
+
+  factory User.fromRawJson(String str) => User.fromJson(dc.json.decode(str));
+
+  String toRawJson() => dc.json.encode(toJson());
+
+  factory User.fromJson(Map<String, dynamic> json) => User(
+        id: json["id"],
+        createdAt: json["created_at"],
+        name: json["name"],
+        level: json["level"],
+        baseUploadLimit: json["base_upload_limit"],
+        noteUpdateCount: json["note_update_count"],
+        postUpdateCount: json["post_update_count"],
+        postUploadCount: json["post_upload_count"],
+        isBanned: json["is_banned"],
+        canApprovePosts: json["can_approve_posts"],
+        canUploadFree: json["can_upload_free"],
+        levelString: UserLevel(json["level_string"]),
+        avatarId: json["avatar_id"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "created_at": createdAt,
+        "name": name,
+        "level": level,
+        "base_upload_limit": baseUploadLimit,
+        "note_update_count": noteUpdateCount,
+        "post_update_count": postUpdateCount,
+        "post_upload_count": postUploadCount,
+        "is_banned": isBanned,
+        "can_approve_posts": canApprovePosts,
+        "can_upload_free": canUploadFree,
+        "level_string": levelString.jsonString,
+        "avatar_id": avatarId,
+      };
+}
+
+enum UserLevel with PrettyPrintEnum {
+  anonymous._default(),
+  blocked._default(),
+  member._default(),
+  privileged._default(),
+  formerStaff._default(),
+  janitor._default(),
+  moderator._default(),
+  admin._default();
+
+  @override
+  String toString() => namePretty;
+  String get jsonString => namePretty;
+  const UserLevel._default();
+  // static UserLevel fromJsonString(String json) => switch (json) {
+  // factory UserLevel.fromJsonString(String json) => switch (json) {
+  factory UserLevel(String json) => switch (json) {
+        "Anonymous" => anonymous,
+        "Blocked" => blocked,
+        "Member" => member,
+        "Privileged" => privileged,
+        "Former Staff" => formerStaff,
+        "Janitor" => janitor,
+        "Moderator" => moderator,
+        "Admin" => admin,
+        _ => throw ArgumentError.value(
+            json,
+            "json",
+            'must be a value of "Anonymous", "Blocked", "Member", '
+                '"Privileged", "Former Staff", "Janitor", "Moderator", or "Admin".',
+          ),
+      };
+  static const jsonPropertyName = "level_string";
+}
+
+class UserDetailed extends User {
   /// wiki_page_version_count
   final String wikiPageVersionCount;
 
@@ -1477,46 +1793,7 @@ class User {
   /// upload_limit
   final String uploadLimit;
 
-  /// id
-  final String id;
-
-  /// created_at
-  final String createdAt;
-
-  /// name
-  final String name;
-
-  /// level
-  final String level;
-
-  /// base_upload_limit
-  final String baseUploadLimit;
-
-  /// post_upload_count
-  final String postUploadCount;
-
-  /// post_update_count
-  final String postUpdateCount;
-
-  /// note_update_count
-  final String noteUpdateCount;
-
-  /// is_banned
-  final String isBanned;
-
-  /// can_approve_posts
-  final String canApprovePosts;
-
-  /// can_upload_free
-  final String canUploadFree;
-
-  /// level_string
-  final String levelString;
-
-  /// avatar_id
-  final String avatarId;
-
-  User({
+  UserDetailed({
     required this.wikiPageVersionCount,
     required this.artistVersionCount,
     required this.poolVersionCount,
@@ -1527,22 +1804,26 @@ class User {
     required this.neutralFeedbackCount,
     required this.negativeFeedbackCount,
     required this.uploadLimit,
-    required this.id,
-    required this.createdAt,
-    required this.name,
-    required this.level,
-    required this.baseUploadLimit,
-    required this.postUploadCount,
-    required this.postUpdateCount,
-    required this.noteUpdateCount,
-    required this.isBanned,
-    required this.canApprovePosts,
-    required this.canUploadFree,
-    required this.levelString,
-    required this.avatarId,
+    required super.id,
+    required super.createdAt,
+    required super.name,
+    required super.level,
+    required super.baseUploadLimit,
+    required super.postUploadCount,
+    required super.postUpdateCount,
+    required super.noteUpdateCount,
+    required super.isBanned,
+    required super.canApprovePosts,
+    required super.canUploadFree,
+    required super.levelString,
+    required super.avatarId,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) => User(
+  factory UserDetailed.fromRawJson(String str) => UserDetailed.fromJson(dc.json.decode(str));
+
+  String toRawJson() => dc.json.encode(toJson());
+
+  factory UserDetailed.fromJson(Map<String, dynamic> json) => UserDetailed(
         wikiPageVersionCount: json["wiki_page_version_count"],
         artistVersionCount: json["artist_version_count"],
         poolVersionCount: json["pool_version_count"],
@@ -1567,34 +1848,35 @@ class User {
         levelString: json["level_string"],
         avatarId: json["avatar_id"],
       );
+  @override
   Map<String, dynamic> toJson() => {
-        "wiki_page_version_count": wikiPageVersionCount, //0,
-        "artist_version_count": artistVersionCount, //0,
-        "pool_version_count": poolVersionCount, //0,
-        "forum_post_count": forumPostCount, //1,
-        "comment_count": commentCount, //0,
-        "flag_count": flagCount, //0,
-        "positive_feedback_count": positiveFeedbackCount, //0,
-        "neutral_feedback_count": neutralFeedbackCount, //0,
-        "negative_feedback_count": negativeFeedbackCount, //0,
-        "upload_limit": uploadLimit, //10,
-        "id": id, //1182633,
-        "created_at": createdAt, //"2022-04-17T22:02:17.872+02:00",
-        "name": name, //"wasduwu",
-        "level": level, //20,
-        "base_upload_limit": baseUploadLimit, //10,
-        "post_upload_count": postUploadCount, //0,
-        "post_update_count": postUpdateCount, //0,
-        "note_update_count": noteUpdateCount, //0,
-        "is_banned": isBanned, //false,
-        "can_approve_posts": canApprovePosts, //false,
-        "can_upload_free": canUploadFree, //false,
-        "level_string": levelString, //"Member",
-        "avatar_id": avatarId, //null,
+        "wiki_page_version_count": wikiPageVersionCount,
+        "artist_version_count": artistVersionCount,
+        "pool_version_count": poolVersionCount,
+        "forum_post_count": forumPostCount,
+        "comment_count": commentCount,
+        "flag_count": flagCount,
+        "positive_feedback_count": positiveFeedbackCount,
+        "neutral_feedback_count": neutralFeedbackCount,
+        "negative_feedback_count": negativeFeedbackCount,
+        "upload_limit": uploadLimit,
+        "id": id,
+        "created_at": createdAt,
+        "name": name,
+        "level": level,
+        "base_upload_limit": baseUploadLimit,
+        "post_upload_count": postUploadCount,
+        "post_update_count": postUpdateCount,
+        "note_update_count": noteUpdateCount,
+        "is_banned": isBanned,
+        "can_approve_posts": canApprovePosts,
+        "can_upload_free": canUploadFree,
+        "level_string": levelString,
+        "avatar_id": avatarId,
       };
 }
 
-/// https://e621.net/post_sets/7410.json
+/// https://e621.net/post_sets.json?35356
 class Set {
   final int id;
   final String createdAt;
@@ -1622,30 +1904,61 @@ class Set {
     required this.postIds,
   });
 
+  Set copyWith({
+    String? createdAt,
+    int? creatorId,
+    String? description,
+    int? id,
+    bool? isPublic,
+    String? name,
+    int? postCount,
+    List<int>? postIds,
+    String? shortname,
+    bool? transferOnDelete,
+    String? updatedAt,
+  }) =>
+      Set(
+        createdAt: createdAt ?? this.createdAt,
+        creatorId: creatorId ?? this.creatorId,
+        description: description ?? this.description,
+        id: id ?? this.id,
+        isPublic: isPublic ?? this.isPublic,
+        name: name ?? this.name,
+        postCount: postCount ?? this.postCount,
+        postIds: postIds ?? this.postIds,
+        shortname: shortname ?? this.shortname,
+        transferOnDelete: transferOnDelete ?? this.transferOnDelete,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+
+  factory Set.fromRawJson(String str) => Set.fromJson(dc.json.decode(str));
+
+  String toRawJson() => dc.json.encode(toJson());
+
   factory Set.fromJson(Map<String, dynamic> json) => Set(
-    id: json["id"],
-    createdAt: json["created_at"],
-    updatedAt: json["updated_at"],
-    creatorId: json["creator_id"],
-    isPublic: json["is_public"],
-    name: json["name"],
-    shortname: json["shortname"],
-    description: json["description"],
-    postCount: json["post_count"],
-    transferOnDelete: json["transfer_on_delete"],
-    postIds: (json["post_ids"] as List).cast(),
-  );
+        id: json["id"],
+        createdAt: json["created_at"],
+        updatedAt: json["updated_at"],
+        creatorId: json["creator_id"],
+        isPublic: json["is_public"],
+        name: json["name"],
+        shortname: json["shortname"],
+        description: json["description"],
+        postCount: json["post_count"],
+        transferOnDelete: json["transfer_on_delete"],
+        postIds: (json["post_ids"] as List).cast(),
+      );
   Map<String, dynamic> toJson() => {
-        "id": id, //7410,
-        "created_at": createdAt, //"2017-07-06T02:07:46.736-04:00",
-        "updated_at": updatedAt, //"2024-06-10T22:22:09.068-04:00",
-        "creator_id": creatorId, //248688,
-        "is_public": isPublic, //false,
-        "name": name, //"Chubby Boys",
-        "shortname": shortname, //"chubby_***REMOVED***,
-        "description": description, //"",
-        "post_count": postCount, //808,
-        "transfer_on_delete": transferOnDelete, //false,
-        "post_ids": postIds, //[],
+        "id": id,
+        "created_at": createdAt,
+        "updated_at": updatedAt,
+        "creator_id": creatorId,
+        "is_public": isPublic,
+        "name": name,
+        "shortname": shortname,
+        "description": description,
+        "post_count": postCount,
+        "transfer_on_delete": transferOnDelete,
+        "post_ids": postIds,
       };
 }
