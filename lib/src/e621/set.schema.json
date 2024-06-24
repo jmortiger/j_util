@@ -1,0 +1,57 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"type": "object",
+	"properties": {
+		"id": {
+			"type": "integer"
+		},
+		"created_at": {
+			"type": "string"
+		},
+		"updated_at": {
+			"type": "string"
+		},
+		"creator_id": {
+			"type": "integer"
+		},
+		"is_public": {
+			"type": "boolean"
+		},
+		"name": {
+			"type": "string"
+		},
+		"shortname": {
+			"type": "string"
+		},
+		"description": {
+			"type": "string"
+		},
+		"post_count": {
+			"type": "integer"
+		},
+		"transfer_on_delete": {
+			"type": "boolean"
+		},
+		"post_ids": {
+			"type": "array",
+			"items": {
+				"type": "integer"
+			},
+			"additionalItems": false
+		}
+	},
+	"additionalProperties": true,
+	"required": [
+		"id",
+		"created_at",
+		"updated_at",
+		"creator_id",
+		"is_public",
+		"name",
+		"shortname",
+		"description",
+		"post_count",
+		"transfer_on_delete",
+		"post_ids"
+	]
+}
