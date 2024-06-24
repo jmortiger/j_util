@@ -2,7 +2,7 @@ import 'dart:convert' as dc;
 import 'package:http/http.dart' as http;
 import 'package:j_util/e621.dart';
 import 'package:j_util/src/types.dart';
- 
+
 import 'models.dart';
 
 class BaseCredentials {
