@@ -118,6 +118,14 @@ enum Platform {
   static bool get isMacOS => _platform == Platform.macOS;
   static bool get isWindows => _platform == Platform.windows;
   static bool get isWeb => _platform == Platform.web;
+  static bool get isDesktop => switch (_platform) {
+    android || fuchsia || iOS => false,
+    linux || macOS || windows || web => true,
+  };
+  static bool get isDesktopNative => switch (_platform) {
+    android || fuchsia || iOS || web => false,
+    linux || macOS || windows => true,
+  };
 }
 
 /// Handles safely accessing and initializing an asynchronously created asset
@@ -257,6 +265,7 @@ class LateInstance<T> {
   /// Accesses the true item.
   /// {@macro lateError}
   T get item => _item;
+
   /// Accesses the true item.
   /// {@macro lateError}
   T get $ => _item;
@@ -267,6 +276,7 @@ class LateInstance<T> {
     _item = value;
     _isAssigned = true;
   }
+
   /// Sets the true item. Safely assigns the item
   /// and sets the [isAssigned] flag.
   set $(T value) => item = value;
@@ -380,3 +390,26 @@ class StringFormatArchive {
 //   late final instanceField;
 //   get instance;
 // }
+
+mixin UniqueIdGenerator<T> {
+  static const validCharacters =
+      "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ0123456789_;:[{]}*<>";
+  static final Set<String> ids = {};
+  static bool tryAddId(String proposedId) {
+    if (ids.contains(ids)) return false;
+    ids.add(proposedId);
+    return true;
+  }
+
+  static String _generateNewProposedId(String prior) => prior.codeUnits
+      .mapAsList((e, i, l) => validCharacters[e % validCharacters.length])
+      .fold("", (acc, e) => "$acc$e");
+
+  static String getNewId([String proposedId = ""]) => _getNewId(1, proposedId);
+
+  static String _getNewId(int depth, [String proposedId = ""]) {
+    if (proposedId != "" && tryAddId(proposedId)) return proposedId;
+    if (depth >= 100) throw StateError("Failed to find new id");
+    return _getNewId(++depth, _generateNewProposedId(proposedId));
+  }
+}
