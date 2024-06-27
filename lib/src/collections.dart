@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:j_util/collections.dart';
 import 'package:j_util/src/types.dart' show LateFinal;
 
 typedef ReduceConditional<T, U> = bool Function(
@@ -669,29 +670,132 @@ typedef PreAdvance<T> = bool Function(int index, LazyList<T> lazyList);
 typedef PostAdvance<T> = bool Function(
     T element, int index, LazyList<T> lazyList);
 
-class LazyList<T> implements List<T> {
-  // final Iterable<T> _lazyCollection;
-  final Iterator<T> _iterator;
+mixin TaggedLazyIterable<T> on Iterable<T> implements TaggedIterable<T> {
+  @override
+  bool get isLazy => true;
+  @override
+  get iterator =>
+      TaggedIteratorWrapper(isLazy: isLazy, wrapped: super.iterator);
+}
+mixin TaggedNonLazyIterable<T> on Iterable<T> implements TaggedIterable<T> {
+  @override
+  bool get isLazy => true;
+  @override
+  get iterator =>
+      TaggedIteratorWrapper(isLazy: isLazy, wrapped: super.iterator);
+}
+
+abstract interface class TaggedIterable<T> implements Iterable<T> {
+  bool get isLazy;
+  @override
+  TaggedIterator<T> get iterator;
+}
+
+abstract interface class TaggedIterator<T> implements Iterator<T> {
+  bool get isLazy;
+}
+
+class TaggedIteratorWrapper<T> implements TaggedIterator<T> {
+  @override
+  final bool isLazy;
+  final Iterator<T> wrapped;
+
+  TaggedIteratorWrapper({required this.isLazy, required this.wrapped});
+
+  @override
+  // TODO: implement current
+  T get current => wrapped.current;
+
+  @override
+  bool moveNext() => wrapped.moveNext();
+}
+
+class _TaggedCombinedIterator<T> implements TaggedIterator<T> {
+  @override
+  bool get isLazy =>
+      _nextIterator.isLazy ||
+      (!_currentIteratorDone && _currentIterator.isLazy);
+  final TaggedIterator<T> _currentIterator;
+  bool _currentIteratorDone = false;
+  final TaggedIterator<T> _nextIterator;
+  bool _nextIteratorDone = false;
+
+  _TaggedCombinedIterator({
+    required TaggedIterator<T> currentIterator,
+    required TaggedIterator<T> nextIterator,
+  })  : _currentIterator = currentIterator,
+        _nextIterator = nextIterator;
+  @override
+  T get current =>
+      _currentIteratorDone ? _currentIterator.current : _nextIterator.current;
+
+  @override
+  bool moveNext() {
+    if (!_currentIteratorDone) {
+      _currentIteratorDone = _currentIterator.moveNext();
+    }
+    if (_currentIteratorDone && !_nextIteratorDone) {
+      _nextIteratorDone = _nextIterator.moveNext();
+    }
+    return _currentIteratorDone || _nextIteratorDone;
+  }
+}
+
+// abstract class _TaggedCombinedIterable<T> implements TaggedIterable<T> {
+//   @override
+//   bool get isLazy;
+//   final List<TaggedIterable<T>> _iterables;
+
+//   _TaggedCombinedIterable({required List<TaggedIterable<T>> iterables})
+//       : _iterables = iterables;
+// }
+
+class LazyList<T> implements List<T>, TaggedIterable<T> {
+  @override
+  bool get isLazy => !isComplete;
+  final Iterable<T> _lazyCollection;
+  /* final  */ Iterator<T> _iterator;
   final List<T> _list;
+  final int? projectedLength;
+
+  @override
+  // TODO: ensure performance
+  TaggedIterator<T> get iterator {
+    if (isComplete)
+      return TaggedIteratorWrapper(isLazy: false, wrapped: _list.iterator);
+    return _TaggedCombinedIterator(
+        currentIterator:
+            TaggedIteratorWrapper(isLazy: false, wrapped: _list.iterator),
+        nextIterator: TaggedIteratorWrapper(
+          isLazy: true,
+          wrapped: _lazyCollection.iterateUntilTrueLazy(
+              (accumulator, index, list, it) => (it, index + 1 == _list.length),
+              null)!,
+        ));
+  }
 
   LazyList({
     required Iterable<T> lazyCollection,
     /* required Iterator<T> iterator, */
-  })  : //_lazyCollection = lazyCollection,
+    this.projectedLength,
+  })  : _lazyCollection = lazyCollection,
         _iterator = lazyCollection.iterator,
         _list = <T>[];
+
+  /// The [iterator] must be at the last element of [preDoneElements].
   LazyList.partiallyDone({
-    // required Iterable<T> lazyCollection,
+    required Iterable<T> lazyCollection,
     required Iterator<T> iterator,
-    List<T>? preDoneElements,
-  })  : //_lazyCollection = lazyCollection,
+    required List<T> preDoneElements,
+    this.projectedLength,
+  })  : _lazyCollection = lazyCollection,
         _iterator = iterator,
-        _list = preDoneElements ?? <T>[];
+        _list = preDoneElements; // ?? <T>[];
   int get count => _list.length;
   bool _isComplete = false;
   bool get isComplete => _isComplete;
   @override
-  T get first => _list.firstOrNull ?? _advanceTo(0);
+  T get first => _list.firstOrNull ?? _advanceTo(0, false)!;
 
   @override
   set first(T value) {
@@ -728,14 +832,14 @@ class LazyList<T> implements List<T> {
   /// {@template may}
   /// May complete the iteration.
   /// {@endtemplate}
-  T _advanceTo(int index) {
+  T? _advanceTo(int index, [bool failGracefully = false]) {
     if (count <= index) {
       _advanceUntil(
         conditionPreAdvance: (i, _) => i <= index,
         // precondition: (l) => l.count <= index,
       );
     }
-    return _list[index];
+    return !failGracefully || count > index ? _list[index] : null;
   }
 
   /// {@macro may}
@@ -779,7 +883,7 @@ class LazyList<T> implements List<T> {
       ? _list.length
       : (() {
           complete();
-          return count;
+          return _list.length;
         })();
   void _enforceCompletion() => (!_isComplete) ? complete() : "";
 
@@ -803,6 +907,17 @@ class LazyList<T> implements List<T> {
   /// {@macro copy}
   @override
   List<T> operator +(List<T> other) {
+    if (isComplete && other is! LazyList) return _list + other;
+    if (isComplete && other is LazyList) {
+      return LazyList.partiallyDone(
+          lazyCollection: other,
+          iterator: other.iterator,
+          preDoneElements: _list);
+    } else if (!isComplete) {
+      // _iterator = _TaggedCombinedIterator(currentIterator: (TaggedIteratorWrapper(isLazy: true, wrapped: _iterator)), nextIterator: TaggedIteratorWrapper(wrapped: other.iterator, isLazy: false));
+      _enforceCompletion();
+      return _list + other;
+    }
     _enforceCompletion();
     return _list + other;
   }
@@ -815,7 +930,7 @@ class LazyList<T> implements List<T> {
   ///
   /// {@macro may}
   @override
-  T operator [](int index) => _advanceTo(index);
+  T operator [](int index) => _advanceTo(index)!;
 
   /// Sets the value at the given [index] in the list to [value].
   ///
@@ -852,29 +967,36 @@ class LazyList<T> implements List<T> {
 
   @override
   Map<int, T> asMap() {
-    // TODO: implement asMap
-    throw UnimplementedError();
+    _enforceCompletion();
+    return _list.asMap();
   }
 
   @override
   List<R> cast<R>() {
-    // TODO: implement cast
-    throw UnimplementedError();
+    _enforceCompletion();
+    return _list.cast<R>();
   }
 
   @override
   void clear() {
-    // TODO: implement clear
+    _isComplete = true;
+    _list.clear();
   }
 
   @override
   bool contains(Object? element) {
-    // TODO: implement contains
-    throw UnimplementedError();
+    var t = _list.contains(element);
+    if (t) return t;
+    while (!isComplete) {
+      t = _advanceTo(count) == element;
+      if (t) return t;
+    }
+    return t;
   }
 
   @override
-  T elementAt(int index) => _list[index];
+  T elementAt(int index /* , [bool failGracefully = true] */) =>
+      index < _list.length ? _list[index] : _advanceTo(index)!;
 
   @override
   bool every(bool Function(T element) test) {
@@ -882,20 +1004,40 @@ class LazyList<T> implements List<T> {
     return _list.every(test);
   }
 
+  // TODO: Implement in a way that doesn't finish the iteration.
   @override
   Iterable<U> expand<U>(Iterable<U> Function(T element) toElements) {
-    // TODO: implement expand
-    throw UnimplementedError();
+    _enforceCompletion();
+    return _list.expand(toElements);
   }
 
   @override
-  void fillRange(int start, int end, [T? fillValue]) {
-    // TODO: implement fillRange
+  void fillRange(int start, int end,
+      [T? fillValue, bool failGracefully = true]) {
+    if (fillValue == null && null is T) {
+      throw ArgumentError.value(fillValue, "fillValue",
+          "$T is not nullable, so a non-null value is required");
+    }
+    if (end <= start) {
+      throw ArgumentError.value(
+          "start($start) must be less than or equal to end ($end)");
+    }
+    if (start < 0) {
+      throw ArgumentError.value(start, "start", "must be greater than 0");
+    }
+    _advanceTo(end + 1, failGracefully);
+    if (end <= count) {
+      _list.fillRange(start, end);
+    } else {
+      failGracefully
+          ? _list.fillRange(start, count)
+          : throw StateError("Not enough values");
+    }
   }
 
   @override
   T firstWhere(bool Function(T element) test, {T Function()? orElse}) {
-    T? ret;
+    late T ret;
     bool wasSet = false;
     _advanceUntil(
         conditionPreAdvance: null,
@@ -909,13 +1051,13 @@ class LazyList<T> implements List<T> {
     if (!wasSet) {
       return orElse?.call() ?? (throw StateError("test was never satisfied"));
     }
-    return (ret as T);
+    return ret;
   }
 
   @override
   U fold<U>(U initialValue, U Function(U previousValue, T element) combine) {
-    // TODO: implement fold
-    throw UnimplementedError();
+    _enforceCompletion();
+    return _list.fold(initialValue, combine);
   }
 
   @override
@@ -926,7 +1068,8 @@ class LazyList<T> implements List<T> {
 
   @override
   void forEach(void Function(T element) action) {
-    // TODO: implement forEach
+    _enforceCompletion();
+    _list.forEach(action);
   }
 
   @override
@@ -964,10 +1107,6 @@ class LazyList<T> implements List<T> {
   @override
   // TODO: implement isNotEmpty
   bool get isNotEmpty => throw UnimplementedError();
-
-  @override
-  // TODO: implement iterator
-  Iterator<T> get iterator => throw UnimplementedError();
 
   @override
   String join([String separator = ""]) {
@@ -1109,14 +1248,14 @@ class LazyList<T> implements List<T> {
 
   @override
   List<T> toList({bool growable = true}) {
-    // TODO: implement toList
-    throw UnimplementedError();
+    _enforceCompletion();
+    return _list.toList();
   }
 
   @override
   Set<T> toSet() {
-    // TODO: implement toSet
-    throw UnimplementedError();
+    _enforceCompletion();
+    return _list.toSet();
   }
 
   @override
