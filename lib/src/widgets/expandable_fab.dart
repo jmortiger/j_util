@@ -6,34 +6,30 @@ class ExpandableFab extends StatefulWidget {
   const ExpandableFab({
     super.key,
     this.initialOpen,
-    /* required  */ this.distance = 112,
-    required this.children,
+    this.distance = 112,
+    required List<Widget> this.children,
     this.openIcon = const Icon(Icons.create),
-    this.closeIcon = const Icon(
-      Icons.close,
-      // color: Theme.of(context).primaryColor,
-    ),
+    this.closeIcon = const Icon(Icons.close),
+    this.disabledTooltip = "",
   }) : childrenBuilder = null;
-  /* const  */ ExpandableFab.builder({
+  const ExpandableFab.builder({
     super.key,
     this.initialOpen,
-    /* required  */ this.distance = 112,
-    // required this.children,
-    required this.childrenBuilder,
+    this.distance = 112,
+    required List<Widget> Function(BuildContext context) this.childrenBuilder,
     this.openIcon = const Icon(Icons.create),
-    this.closeIcon = const Icon(
-      Icons.close,
-      // color: Theme.of(context).primaryColor,
-    ),
-  }) : children = List<Widget>.empty(growable: true);
+    this.closeIcon = const Icon(Icons.close),
+    this.disabledTooltip = "",
+  }) : children = null;
 
   final Widget openIcon;
   final Widget closeIcon;
 
   final bool? initialOpen;
   final double distance;
-  final List<Widget> children;
+  final List<Widget>? children;
   final List<Widget> Function(BuildContext context)? childrenBuilder;
+  final String disabledTooltip;
 
   @override
   State<ExpandableFab> createState() => _ExpandableFabState();
@@ -44,7 +40,7 @@ class _ExpandableFabState extends State<ExpandableFab>
   late final AnimationController _controller;
   late final Animation<double> _expandAnimation;
   bool _open = false;
-
+  List<Widget> get children => (widget.childrenBuilder?.call(context) ?? widget.children)!;
   @override
   void initState() {
     super.initState();
@@ -80,17 +76,18 @@ class _ExpandableFabState extends State<ExpandableFab>
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.expand(
+    var eab = _buildExpandingActionButtons(context);
+    return eab.isNotEmpty ? SizedBox.expand(
       child: Stack(
         alignment: Alignment.bottomRight,
         clipBehavior: Clip.none,
         children: [
           _buildTapToCloseFab(),
-          ..._buildExpandingActionButtons(context),
-          _buildTapToOpenFab(),
+          ...eab,
+          _buildTapToOpenFab(eab.isNotEmpty),
         ],
       ),
-    );
+    ) : IconButton(tooltip: widget.disabledTooltip, onPressed: null, icon: widget.openIcon);
   }
 
   Widget _buildTapToCloseFab() {
@@ -106,12 +103,7 @@ class _ExpandableFabState extends State<ExpandableFab>
             onTap: _toggle,
             child: Padding(
               padding: const EdgeInsets.all(8),
-              child: widget
-                  .closeIcon /* Icon(
-                Icons.close,
-                color: Theme.of(context).primaryColor,
-              ) */
-              ,
+              child: widget.closeIcon,
             ),
           ),
         ),
@@ -121,8 +113,7 @@ class _ExpandableFabState extends State<ExpandableFab>
 
   List<Widget> _buildExpandingActionButtons(BuildContext context) {
     final children = <Widget>[];
-    final widgetChildren =
-        widget.childrenBuilder?.call(context) ?? widget.children;
+    final widgetChildren = children;
     final count = widgetChildren.length;
     final step = 90.0 / (count - 1);
     for (var i = 0, angleInDegrees = 0.0;
@@ -140,7 +131,7 @@ class _ExpandableFabState extends State<ExpandableFab>
     return children;
   }
 
-  Widget _buildTapToOpenFab() {
+  Widget _buildTapToOpenFab([bool enabled = true]) {
     return IgnorePointer(
       ignoring: _open,
       child: AnimatedContainer(
@@ -157,8 +148,8 @@ class _ExpandableFabState extends State<ExpandableFab>
           curve: const Interval(0.25, 1.0, curve: Curves.easeInOut),
           duration: const Duration(milliseconds: 250),
           child: FloatingActionButton(
-            onPressed: _toggle,
-            child: widget.openIcon, //const Icon(Icons.create),
+            onPressed: enabled ? _toggle : null,
+            child: widget.openIcon,
           ),
         ),
       ),
@@ -238,24 +229,24 @@ class ActionButton extends StatelessWidget {
   }
 }
 
-@immutable
-class FakeItem extends StatelessWidget {
-  const FakeItem({
-    super.key,
-    required this.isBig,
-  });
+// @immutable
+// class FakeItem extends StatelessWidget {
+//   const FakeItem({
+//     super.key,
+//     required this.isBig,
+//   });
 
-  final bool isBig;
+//   final bool isBig;
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
-      height: isBig ? 128 : 36,
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.all(Radius.circular(8)),
-        color: Colors.grey.shade300,
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+//       height: isBig ? 128 : 36,
+//       decoration: BoxDecoration(
+//         borderRadius: const BorderRadius.all(Radius.circular(8)),
+//         color: Colors.grey.shade300,
+//       ),
+//     );
+//   }
+// }
