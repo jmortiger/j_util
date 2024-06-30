@@ -55,12 +55,74 @@ extension MethodJumpTable on http.Client {
   Future<http.Response> sendNonStreamedRequest(http.Request request) {
     return sendGenericRequest(
       HttpMethod.getFromString(request.method),
-        request.url,
-        headers: request.headers,
-        body: request.body.isEmpty ? null : request.body,
-        encoding: request.encoding,
+      request.url,
+      headers: request.headers,
+      body: request.body.isEmpty ? null : request.body,
+      encoding: request.encoding,
     );
   }
+}
+
+extension Conversion on http.StreamedResponse {
+  /// {@template StreamConvert}
+  /// Converts the [http.StreamedResponse] to a response with a completed body.
+  /// {@endtemplate}
+  Future<http.BaseResponse> toResponse() async {
+    var t =
+        await http.ByteStream(this.stream.asBroadcastStream()).bytesToString();
+    return http.Response(
+      t,
+      this.statusCode,
+      headers: this.headers,
+      isRedirect: this.isRedirect,
+      persistentConnection: this.persistentConnection,
+      reasonPhrase: this.reasonPhrase,
+      request: this.request,
+    );
+  }
+}
+
+extension ConversionOnFut on Future<http.StreamedResponse> {
+  /// {@macro StreamConvert}
+  Future<http.Response> toResponse() => this.then((v) async {
+        var t =
+            await http.ByteStream(v.stream.asBroadcastStream()).bytesToString();
+        return http.Response(
+          t,
+          v.statusCode,
+          headers: v.headers,
+          isRedirect: v.isRedirect,
+          persistentConnection: v.persistentConnection,
+          reasonPhrase: v.reasonPhrase,
+          request: v.request,
+        );
+      });
+  /// {@macro StreamConvert}
+  Future<http.BaseResponse> toBaseResponse() => this.then((v) async {
+        var t =
+            await http.ByteStream(v.stream.asBroadcastStream()).bytesToString();
+        return http.Response(
+          t,
+          v.statusCode,
+          headers: v.headers,
+          isRedirect: v.isRedirect,
+          persistentConnection: v.persistentConnection,
+          reasonPhrase: v.reasonPhrase,
+          request: v.request,
+        );
+      });
+}
+
+extension QueryParameterPrep on Map<String, dynamic> {
+  Map<String, dynamic> prepareQueryParameters() => this
+    ..updateAll((k, v) {
+      dynamic recurse(val) => switch (val) {
+            String v1 => v1,
+            Iterable v1 => v1.map(recurse),
+            _ => val.toString(),
+          };
+      return recurse(v);
+    });
 }
 
 extension StatusCodes on http.BaseResponse {
@@ -79,4 +141,24 @@ class StatusCode {
   bool get isClientError => statusCode >= 400 && statusCode < 500;
   bool get isServerError => statusCode >= 500 /*  && statusCode < 300 */;
   bool get isError => isClientError || isServerError;
+}
+
+abstract interface class IQueryParameter<T> {
+  String get queryValueString;
+  T get queryValue;
+  String get queryName;
+  String get query;
+}
+
+// abstract interface class IEnumQueryParameter<T extends IEnumQueryParameter<T>> extends Enum implements IQueryParameter<T> {
+//   static String getQueryValueString(IEnumQueryParameter i) => i.name;
+//   static String getQuery(IEnumQueryParameter i) => "${i.queryName}=${i.queryValueString}";
+// }
+mixin EnumQueryParameter<T extends EnumQueryParameter<T>> on Enum implements IQueryParameter<T> {
+  @override
+  String get queryValueString => name;
+  @override
+  String get query => "$queryName=$queryValueString";
+  @override
+  T get queryValue => this as T;
 }
