@@ -1,5 +1,7 @@
+import 'dart:collection';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:j_util/collections.dart';
 import 'package:j_util/src/types.dart' show LateFinal;
 
@@ -70,8 +72,13 @@ class CustomPriorityQueue<T> {
   //     : (_queueToList.item = queue.fold(
   //         <T>[], (previousValue, element) => previousValue..addAll(element)));
 
-  CustomPriorityQueue(List<T> collection, Comparator<T> comparator, [bool mutateProvided = false,]) {
-    queue = (mutateProvided ? collection : collection.sublist(0))..sort(comparator);
+  CustomPriorityQueue(
+    List<T> collection,
+    Comparator<T> comparator, [
+    bool mutateProvided = false,
+  ]) {
+    queue = (mutateProvided ? collection : collection.sublist(0))
+      ..sort(comparator);
     // // queue.add([collection.first]);
     // for (var element in collection) {
     //   if (element == queue[0][0]) continue;
@@ -1254,5 +1261,65 @@ class LazyList<T> implements List<T>, TaggedIterable<T> {
   Iterable<U> whereType<U>() {
     // TODO: implement whereType
     throw UnimplementedError();
+  }
+}
+
+class SetNotifier<T> extends ChangeNotifier with SetMixin<T> {
+  final Set<T> _backing;
+
+  /// Creates an empty Set.
+  SetNotifier() : _backing = <T>{};
+
+  /// Creates a Set that contains all elements.
+  SetNotifier.from(Iterable elements) : _backing = Set.from(elements);
+
+  /// Creates an empty identity Set.
+  SetNotifier.identity() : _backing = Set.identity();
+
+  /// Creates a Set from elements.
+  SetNotifier.of(Iterable<T> elements) : _backing = Set.of(elements);
+
+  /// Creates an unmodifiable Set from elements.
+  SetNotifier.unmodifiable(Iterable<T> elements)
+      : _backing = Set.unmodifiable(elements);
+  @override
+  bool add(T value, [bool notifyRegardless = false]) {
+    var t = _backing.add(value);
+    if (t || notifyRegardless) {
+      notifyListeners();
+    }
+    return t;
+  }
+
+  @override
+  bool contains(Object? element) => _backing.contains(element);
+
+  @override
+  void clear() {
+    _backing.clear();
+    notifyListeners();
+  }
+
+  @override
+  Iterator<T> get iterator => _backing.iterator;
+
+  @override
+  int get length => _backing.length;
+
+  @override
+  T? lookup(Object? element) => _backing.lookup(element);
+
+  @override
+  bool remove(Object? value, [bool notifyRegardless = false]) {
+    var t = _backing.remove(value);
+    if (t || notifyRegardless) {
+      notifyListeners();
+    }
+    return t;
+  }
+
+  @override
+  Set<T> toSet() {
+    return _backing.toSet();
   }
 }

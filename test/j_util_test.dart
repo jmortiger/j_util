@@ -1,3 +1,4 @@
+import 'package:j_util/collections.dart';
 import 'package:j_util/j_util.dart';
 import 'package:j_util/src/types.dart';
 import 'package:test/test.dart';
@@ -97,4 +98,10 @@ void main() {
       });
     });
   });
+  // group("SetNotifier", () {
+  //   late SetNotifier<int> s;
+  //   test("Construction", () {
+  //     s = SetNotifier<int>();
+  //   });
+  // });
 }
