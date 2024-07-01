@@ -1,4 +1,3 @@
-// import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
 import 'package:j_util/web.dart';
 import 'package:j_util/e621.dart';
@@ -6,7 +5,6 @@ import 'package:j_util/e621.dart';
 import 'dev_data.dart';
 import 'package:test/test.dart';
 
-// WidgetsFlutterBinding.ensureInitialized
 void main() {
   logRequestData(Request req) {
     print(req);
@@ -30,6 +28,12 @@ void main() {
         credentials: c,
       ).send().toResponse());
 
+  searchSetId(int setId, BaseCredentials? c) async =>
+      (await Api.initGetSetRequest(
+        setId,
+        credentials: c,
+      ).send().toResponse());
+
   group("Set", () {
     late E6Credentials c;
     late int postId, postId2, setId;
@@ -39,7 +43,35 @@ void main() {
       postId2 = devData["e621"]["posts"][1]["id"];
       setId = devData["e621"]["sets"][0]["id"];
     });
-    test("AddSetPost", () async {
+    addSetPost([Response? priorStartState]) async {
+      var req = Api.initAddToSetRequest(
+        setId,
+        [postId],
+        credentials: c,
+      );
+      logRequestData(req);
+      var res = await req.send().toResponse();
+      logResponseData(res);
+      expect(res.statusCode, 201);
+      PostSet t = PostSet.fromRawJson(res.body);
+      expect(postId, isIn(t.postIds));
+    }
+
+    test("AddSetPost", addSetPost);
+    test("RemoveSetPost", ([Response? priorStartState]) async {
+      var req = Api.initRemoveFromSetRequest(
+        setId,
+        [postId],
+        credentials: c,
+      );
+      logRequestData(req);
+      var res = await req.send().toResponse();
+      logResponseData(res);
+      expect(res.statusCode, 201);
+      PostSet t = PostSet.fromRawJson(res.body);
+      expect(postId, isNot(isIn(t.postIds)));
+    });
+    addSetPosts([Response? priorStartState]) async {
       var req = Api.initAddToSetRequest(
         setId,
         [postId, postId2],
@@ -52,8 +84,16 @@ void main() {
       PostSet t = PostSet.fromRawJson(res.body);
       expect(postId, isIn(t.postIds));
       expect(postId2, isIn(t.postIds));
-    });
-    test("RemoveSetPost", () async {
+    }
+    test("AddSetPosts", addSetPosts);
+    test("RemoveSetPosts", ([Response? priorStartState]) async {
+      var startState = priorStartState ?? (await searchSetId(setId, c));
+      print(startState.body);
+      await Future.delayed(Api.softRateLimit);
+      var initialIds = PostSet.fromRawJson(startState.body).postIds;
+      if (!initialIds.contains(postId) || !initialIds.contains(postId2)) {
+        await addSetPosts(startState);
+      }
       var req = Api.initRemoveFromSetRequest(
         setId,
         [postId, postId2],
@@ -62,10 +102,17 @@ void main() {
       logRequestData(req);
       var res = await req.send().toResponse();
       logResponseData(res);
-      expect(res.statusCode, 200);
+      expect(res.statusCode, 201);
       PostSet t = PostSet.fromRawJson(res.body);
       expect(postId, isNot(isIn(t.postIds)));
       expect(postId2, isNot(isIn(t.postIds)));
+    });
+    tearDown(() {
+      Api.initRemoveFromSetRequest(
+        setId,
+        [postId, postId2],
+        credentials: c,
+      ).send();
     });
   });
   group("Favorite", () {
