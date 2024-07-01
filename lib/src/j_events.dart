@@ -1,3 +1,11 @@
+/// TODO: Expand w/ analyzer or codegen for intellisense
+const event = Event();
+
+/// TODO: Expand w/ analyzer or codegen for intellisense
+class Event {
+  const Event();
+}
+
 typedef VoidDelegate = void Function();
 
 class JEventArgs {
