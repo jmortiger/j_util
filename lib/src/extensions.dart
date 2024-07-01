@@ -27,6 +27,16 @@ extension ListIterators<T> on List<T> {
     );
   }
 
+  void mutate(
+    T Function(T e, int i, List<T> l) mapper, [
+    bool growable = true,
+  ]) {
+    for (int i = 0; i < length; i++) {
+      this[i] = mapper(this[i], i, this);
+    }
+    // return this;
+  }
+
   U reduceToType<U>(
       U Function(U accumulator, T elem, int index, List<T> list) reducer,
       U initialValue) {
@@ -123,6 +133,20 @@ extension Iterators<T> on Iterable<T> {
     for (int i = 0; i < length && iterator.moveNext(); i++) {
       if (((initialValue, _) = reducer(initialValue, iterator.current, i, this))
           .$2) break;
+    }
+    return initialValue;
+  }
+
+  U iterateUntilTrueLazy<U>(
+    (U, bool) Function(
+            U accumulator, int index, Iterable<T> list, Iterator<T> iterator)
+        reducer,
+    U initialValue,
+  ) {
+    final iterator = this.iterator;
+    for (int i = 0; i < length && iterator.moveNext(); i++) {
+      if (((initialValue, _) = reducer(initialValue, i, this, iterator)).$2)
+        break;
     }
     return initialValue;
   }
@@ -249,9 +273,14 @@ extension DurationExtensions on Duration {
   String toFormattedString({
     bool fillZeros = true,
     bool discardMicroseconds = true,
+    bool discardMilliseconds = true,
   }) {
     var t = toString();
-    t = discardMicroseconds ? t.substring(0, t.length - 3) : t;
+    t = switch ((discardMilliseconds, discardMicroseconds)) {
+      (true, _) => t.substring(0, t.length - 7),
+      (_, true) => t.substring(0, t.length - 3),
+      (_, false) => t,
+    };
     if (!fillZeros) {
       return RegExpExt.removeZerosFromTime
           .allMatches(t)
@@ -395,7 +424,9 @@ extension PrettyPrintCollection on Iterable {
 }
 
 extension RegExpExt on RegExp {
-  static final whitespace = RegExp(r'[\u2028\n\r\u000B\f\u2029\u0085 ]');
+  static const whitespaceCharacters = r'\u2028\n\r\u000B\f\u2029\u0085 ';
+  static const whitespacePattern = '[$whitespaceCharacters]';
+  static final whitespace = RegExp(whitespacePattern);
   static final removeZerosFromTime = RegExp(
       r'(^0+:|^0+(?=[123456789]+:)|(?<=:)(?<!.*[123456789].*)0{2}:|(?<=:)(?<!.*[123456789].*)0{1}|(?<=\.\d*?[123456789]*?)(?<!\.)0+(?!\d+$))');
 
