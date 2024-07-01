@@ -113,7 +113,7 @@ class _ExpandableFabState extends State<ExpandableFab>
 
   List<Widget> _buildExpandingActionButtons(BuildContext context) {
     final children = <Widget>[];
-    final widgetChildren = children;
+    final widgetChildren = this.children;
     final count = widgetChildren.length;
     final step = 90.0 / (count - 1);
     for (var i = 0, angleInDegrees = 0.0;
