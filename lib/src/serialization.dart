@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:j_util/src/types.dart';
 
+/// TODO: Add local_storage support for web testing.
 mixin Storable<T> {
   final file = LateFinal<File>();
   final _exists = LateInstance<bool>();
@@ -196,63 +197,81 @@ mixin Storable<T> {
     String filePath, {
     Encoding encoding = utf8,
   }) {
-    return getStorageAsync(filePath).then((file) => file
-        .readAsString(encoding: encoding)
-        .then((v) {
-          return ((T as dynamic).fromJson(jsonDecode(v))) as T;
-        }));
+    return getStorageAsync(filePath)
+        .then((file) => file.readAsString(encoding: encoding).then((v) {
+              return ((T as dynamic).fromJson(jsonDecode(v))) as T;
+            }));
   }
 
   static Future<T?> tryLoadToInstanceAsync<T>(String filePath,
       {Encoding encoding = utf8}) {
     try {
-      return (Storable.getStorageAsync(filePath).then((file) => file
-        .readAsString(encoding: encoding)
-        .then((v) {
-          return ((T as dynamic).fromJson(jsonDecode(v))) as T?;
-        })))
-          .onError((e, s) {
+      return (Storable.getStorageAsync(filePath)
+          .then((file) => file.readAsString(encoding: encoding).then((v) {
+                return ((T as dynamic).fromJson(jsonDecode(v))) as T?;
+              }))).onError((e, s) {
         print("tryLoadToInstanceAsync: $e");
         print(getStorageSync(filePath).readAsStringSync());
         return null;
       });
     } catch (e) {
       print("tryLoadToInstanceAsync: $e");
-      print(getStorageSync(filePath).readAsStringSync());
+      try {
+        print(getStorageSync(filePath).readAsStringSync());
+      } catch (e) {
+        print("can't print current value");
+        return Future.sync(() => null);
+      }
       return Future.sync(() => null);
     }
   }
+
   static Future<String?> tryLoadStringAsync(String filePath,
       {Encoding encoding = utf8}) {
     try {
+      // if (Platform.isWeb) {
+      //   return
+      // }
       return (Storable.getStorageAsync(filePath).then((file) => file
-        .readAsString(encoding: encoding)
-        /* .then((v) {
+          .readAsString(encoding: encoding)
+          /* .then((v) {
           return ((T as dynamic).fromJson(jsonDecode(v))) as T?;
-        }) */.then((v) => v ?? null)))
-          .onError((e, s) {
+        }) */
+          .then((v) => v ?? null))).onError((e, s) {
         print("tryLoadStringAsync: $e");
         print(getStorageSync(filePath).readAsStringSync());
         return null;
       });
     } catch (e) {
       print("tryLoadStringAsync: $e");
-      print(getStorageSync(filePath).readAsStringSync());
+      try {
+        print(getStorageSync(filePath).readAsStringSync());
+      } catch (e) {
+        print("can't print current value");
+        return Future.sync(() => null);
+      }
       return Future.sync(() => null);
-    } finally {
+    } /*  finally {
       return Future.sync(() => null);
-    }
+    } */
   }
+
   static String? tryLoadStringSync(String filePath,
       {Encoding encoding = utf8}) {
     try {
-      return Storable.getStorageSync(filePath).readAsStringSync(encoding: encoding);
+      return Storable.getStorageSync(filePath)
+          .readAsStringSync(encoding: encoding);
     } catch (e) {
       print("tryLoadStringSync: $e");
-      print(getStorageSync(filePath).readAsStringSync());
+      try {
+        print(getStorageSync(filePath).readAsStringSync());
+      } catch (e) {
+        print("can't print current value");
+        return null;
+      }
       return null;
-    } finally {
+    } /* finally {
       return null;
-    }
+    } */
   }
 }
