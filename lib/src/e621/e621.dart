@@ -1,9 +1,48 @@
 import 'dart:convert' as dc;
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:j_util/e621.dart';
-import 'package:j_util/src/types.dart';
+import 'package:j_util/j_util_full.dart';
 
 import 'models.dart';
+
+final devDataString = LazyInitializer<String>(
+    () => (rootBundle.loadString("assets/devData.json")));
+final devDataObj = LazyInitializer<Map<String, dynamic>>(
+    () async => dc.jsonDecode(await devDataString.getItem()));
+
+final class AccessData {
+  static final devAccessData = LazyInitializer<AccessData>(() async =>
+      AccessData.fromJson(
+          (await devDataObj.getItem())["e621"] as Map<String, dynamic>));
+  static String? get devApiKey => devAccessData.itemSafe?.apiKey;
+  static String? get devUsername => devAccessData.itemSafe?.username;
+  static String? get devUserAgent => devAccessData.itemSafe?.userAgent;
+  // static get devData => _devData;
+  static final userData = LateFinal<AccessData>();
+  final String apiKey;
+  final String username;
+  final String userAgent;
+  E6Credentials get cred => E6Credentials(username: username, apiKey: apiKey);
+
+  const AccessData({
+    required this.apiKey,
+    required this.username,
+    required this.userAgent,
+  });
+  Map<String, dynamic> toJson() => {
+        "apiKey": apiKey,
+        "username": username,
+        "userAgent": userAgent,
+      };
+  factory AccessData.fromJson(Map<String, dynamic> json) => AccessData(
+        apiKey: json["apiKey"] as String,
+        username: json["username"] as String,
+        userAgent: json["userAgent"] as String,
+      );
+  // Map<String,String> generateHeaders() {
+
+  // }
+}
 
 class BaseCredentials {
   static const headerKey = "Authorization";
@@ -45,11 +84,16 @@ class E6Credentials extends BaseCredentials {
     required String headerValue,
   }) : super._direct(headerValue);
   factory E6Credentials.fromJson(Map<String, dynamic> json) =>
-      E6Credentials._direct(
-        username: json["username"],
-        apiKey: json["apiKey"],
-        headerValue: json["headerValue"],
-      );
+      json["headerValue"] == null
+          ? E6Credentials(
+              username: json["username"],
+              apiKey: json["apiKey"],
+            )
+          : E6Credentials._direct(
+              username: json["username"],
+              apiKey: json["apiKey"],
+              headerValue: json["headerValue"],
+            );
   @override
   Map<String, dynamic> toJson() => {
         "username": username,
@@ -59,6 +103,17 @@ class E6Credentials extends BaseCredentials {
 }
 
 class Api {
+  // #region Tag parsing
+  /// https://e621.net/help/tags
+  /// 1 tag w/ 0 posts w/ `%` (`%82%b5%82%cc%82%e8%82%a8%82%f1_short_hair`), 0 tags w/ `#`.
+  static const disallowedInTagName = '%,#\\*';
+  static const alphabetLowerAndUpper =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  static const numerals = "0123456789";
+  static const e6ValidMetaTagCharacters =
+      "$alphabetLowerAndUpper$numerals:_!.-/*\"\"<>=~";
+  // #endregion Tag parsing
+
   // #region URI
   static final baseUri = Uri.https(authority);
   static const baseUrl = origin;
@@ -73,26 +128,35 @@ class Api {
 
   // #region Rate Limit
   /// The rate limit in seconds per request.
-  static const rateLimit = 1;
+  /// 
+  /// Duration(seconds: 1);
+  static const rateLimit = Duration(seconds: 1);
 
   /// The hard rate limit in seconds per request.
-  static const hardRateLimit = 1;
+  /// 
+  /// Duration(seconds: 1);
+  static const hardRateLimit = Duration(seconds: 1);
 
   /// The soft rate limit in seconds per request.
-  static const softRateLimit = 2;
+  /// 
+  /// Duration(seconds: 2);
+  static const softRateLimit = Duration(seconds: 2);
 
   /// The ideal rate limit in seconds per request.
-  static const idealRateLimit = 3;
+  /// 
+  /// Duration(seconds: 3);
+  static const idealRateLimit = Duration(seconds: 3);
   // #endregion Rate Limit
   static const maxPostsPerSearch = 320;
 
   /// Use this to automatically enforce rate limit.
   static final http.Client client = http.Client();
+  // TODO: Add page validator
 
   // #region Credentials
   static BaseCredentials? activeCredentials;
 
-  static bool _validateCredentials(BaseCredentials? credentials,
+  static bool validateCredentials(BaseCredentials? credentials,
           [bool throwIfNeeded = true]) =>
       ((credentials ?? Api.activeCredentials) == null)
           ? throwIfNeeded
@@ -114,13 +178,24 @@ class Api {
       ));
   // #endregion Credentials
   // #region Helpers
+  static final _angleBracketDelimited = RegExp(r'<(.*)>');
+  @Deprecated("Use _getDbExportDate")
+  static String _getDbExportDateManual(DateTime dt) =>
+      "${dt.year}-${dt.month < 10 ? "0${dt.month}" : dt.month}"
+      "-${dt.day < 10 ? "0${dt.day}" : dt.day}";
+  static String _getDbExportDate(DateTime dt) =>
+      dt.toIso8601String().substring(0, 10);
+  static String _getDbExportDateSafe() => DateTime.now().hour >= 8
+      ? _getDbExportDate(DateTime.now())
+      : _getDbExportDate(DateTime.now().subtract(const Duration(days: -1)));
   static http.Request _baseInitRequestCredentialsRequired({
     required String path,
     required String method,
     Map<String, dynamic>? queryParameters,
     BaseCredentials? credentials,
   }) {
-    var uri = baseUri.replace(path: path, queryParameters: queryParameters);
+    var uri = baseUri.replace(
+        path: path, queryParameters: queryParameters?.prepareQueryParameters());
     var req = http.Request(method, uri);
     _getValidCredentials(credentials).addToHeadersMap(req.headers);
     return req;
@@ -132,7 +207,8 @@ class Api {
     Map<String, dynamic>? queryParameters,
     BaseCredentials? credentials,
   }) {
-    var uri = baseUri.replace(path: path, queryParameters: queryParameters);
+    var uri = baseUri.replace(
+        path: path, queryParameters: queryParameters?.prepareQueryParameters());
     var req = http.Request(method, uri);
     (credentials ?? Api.activeCredentials)?.addToHeadersMap(req.headers);
     return req;
@@ -148,6 +224,14 @@ class Api {
       (limit > lowerBound && limit <= upperBound) ? limit : defaultValue;
 
   // #endregion Helpers
+
+  static http.Request initDbExportRequest({
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsOptional(
+          path: "/db_export/tags-${_getDbExportDate(DateTime.now())}.csv.gz",
+          method: "GET",
+          credentials: credentials);
   // #region Posts
   /* /// TODO: Requires multipart form 
   /// https://pub.dev/documentation/http/latest/http/MultipartRequest-class.html#:~:text=A%20multipart%2Fform%2Ddata%20request,value%20set%20by%20the%20user
@@ -312,6 +396,18 @@ class Api {
           },
           method: "GET",
           credentials: credentials);
+
+  /// [List](https://e621.net/wiki_pages/2425#posts_list)
+  ///
+  /// The base URL is /posts/<Post_ID>.json called with GET.
+  ///
+  /// {@macro PostListing}
+  static http.Request initSearchPostRequest(
+    int postId, {
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsOptional(
+          path: "/posts/$postId.json", method: "GET", credentials: credentials);
 
   /// [Update](https://e621.net/wiki_pages/2425#posts_update)
   ///
@@ -723,14 +819,15 @@ class Api {
           queryParameters: {
             "post_id": postId,
           },
-          method: "GET",
+          method: "POST",
           credentials: credentials);
 
   /// {@template DeleteFavorite}
   /// [Delete](https://e621.net/wiki_pages/2425#favorites_delete)
   /// The base URL is `/favorites/<post_id>.json` called with `DELETE`.
   ///
-  /// There is no response.
+  /// There is no response body.
+  /// Success: 204
   /// {@endtemplate}
   static http.Request initDeleteFavoriteRequest({
     required int postId,
@@ -797,21 +894,24 @@ class Api {
     String? searchIsActive,
     int? limit,
     BaseCredentials? credentials,
-  }) {
-    var uri = baseUri.replace(path: "/notes.json", queryParameters: {
-      if (searchBodyMatches != null) "search[body_matches]": searchBodyMatches,
-      if (searchPostId != null) "search[post_id]": searchPostId,
-      if (searchPostTagsMatch != null)
-        "search[post_tags_match]": searchPostTagsMatch,
-      if (searchCreatorName != null) "search[creator_name]": searchCreatorName,
-      if (searchCreatorId != null) "search[creator_id]": searchCreatorId,
-      if (searchIsActive != null) "search[is_active]": searchIsActive,
-      if (limit != null) "limit": limit,
-    });
-    var req = http.Request("GET", uri);
-    (credentials ?? Api.activeCredentials)?.addToHeadersMap(req.headers);
-    return req;
-  }
+  }) =>
+      _baseInitRequestCredentialsOptional(
+        path: "/notes.json",
+        method: "GET",
+        queryParameters: {
+          if (searchBodyMatches != null)
+            "search[body_matches]": searchBodyMatches,
+          if (searchPostId != null) "search[post_id]": searchPostId,
+          if (searchPostTagsMatch != null)
+            "search[post_tags_match]": searchPostTagsMatch,
+          if (searchCreatorName != null)
+            "search[creator_name]": searchCreatorName,
+          if (searchCreatorId != null) "search[creator_id]": searchCreatorId,
+          if (searchIsActive != null) "search[is_active]": searchIsActive,
+          if (limit != null) "limit": limit,
+        },
+        credentials: credentials,
+      );
 
   /// [Create](https://e621.net/wiki_pages/2425#notes_create)
   ///
@@ -836,19 +936,20 @@ class Api {
     required int noteHeight,
     required String noteBody,
     BaseCredentials? credentials,
-  }) {
-    var uri = baseUri.replace(path: "/notes.json", queryParameters: {
-      "note[post_id]": notePostId,
-      "note[x]": noteX,
-      "note[y]": noteY,
-      "note[width]": noteWidth,
-      "note[height]": noteHeight,
-      "note[body]": noteBody,
-    });
-    var req = http.Request("POST", uri);
-    (credentials ?? Api.activeCredentials)?.addToHeadersMap(req.headers);
-    return req;
-  }
+  }) =>
+      _baseInitRequestCredentialsRequired(
+        path: "/notes.json",
+        method: "POST",
+        queryParameters: {
+          "note[post_id]": notePostId,
+          "note[x]": noteX,
+          "note[y]": noteY,
+          "note[width]": noteWidth,
+          "note[height]": noteHeight,
+          "note[body]": noteBody,
+        },
+        credentials: credentials,
+      );
 
   /// [Delete](https://e621.net/wiki_pages/2425#notes_delete)
   ///
@@ -858,12 +959,12 @@ class Api {
   static http.Request initDeleteNoteRequest(
     int noteId, {
     BaseCredentials? credentials,
-  }) {
-    var uri = baseUri.replace(path: "/notes/$noteId.json");
-    var req = http.Request("DELETE", uri);
-    (credentials ?? Api.activeCredentials)?.addToHeadersMap(req.headers);
-    return req;
-  }
+  }) =>
+      _baseInitRequestCredentialsRequired(
+        path: "/notes/$noteId.json",
+        method: "DELETE",
+        credentials: credentials,
+      );
 
   /// [Revert](https://e621.net/wiki_pages/2425#notes_revert)
   ///
@@ -874,14 +975,13 @@ class Api {
     int noteId, {
     required int versionId,
     BaseCredentials? credentials,
-  }) {
-    var uri = baseUri.replace(
+  }) =>
+      _baseInitRequestCredentialsRequired(
         path: "/notes/$noteId.json",
-        queryParameters: {"version_id": versionId});
-    var req = http.Request("PUT", uri);
-    (credentials ?? Api.activeCredentials)?.addToHeadersMap(req.headers);
-    return req;
-  }
+        queryParameters: {"version_id": versionId},
+        method: "PUT",
+        credentials: credentials,
+      );
 
   // #endregion Notes
   // #region Users
@@ -940,11 +1040,12 @@ class Api {
           path: "/users/$userId.json", method: "GET", credentials: credentials);
   // #endregion Users
   // #region Sets
-  /// https://e621.net/post_sets.json?search%5Bname%5D=*&search%5Bshortname%5D=*&search%5Bcreator_name%5D=baggie&search%5Border%5D=name
+  /// https://e621.net/post_sets.json?search%5Bname%5D=*&search%5Bshortname%5D=*&search%5Bcreator_name%5D=baggie&search%5Bcreator_id%5D=427822&search%5Border%5D=name
   /// `/post_sets.json` `GET`
   /// * `search[name]` * wildcard
   /// * `search[shortname]` * wildcard
-  /// * `search[creator_name]` Must be a username, can't be a user id (I think)
+  /// * `search[creator_name]` Must be a username
+  /// * `search[creator_id]` Must be a user id
   /// * `search[order]`
   /// * limit How many items you want to retrieve. There is a hard limit of 320 items per request. Defaults to 75.
   /// * page The page that will be returned. Can also be used with a or b + item_id to get the items after or before the specified item ID. For example a13 gets every item after item_id 13 up to the limit.
@@ -952,6 +1053,7 @@ class Api {
     String? searchName,
     String? searchShortname,
     String? searchCreatorName,
+    String? searchCreatorId,
     SetOrder? searchOrder,
     int? limit = 75,
     String? page,
@@ -966,6 +1068,7 @@ class Api {
           if (searchShortname != null) "search[shortname]": searchShortname,
           if (searchCreatorName != null)
             "search[creator_name]": searchCreatorName,
+          if (searchCreatorId != null) "search[creator_id]": searchCreatorId,
           if (searchOrder != null) "search[order]": searchOrder,
           if (limit != null) "limit": _validateLimit(limit),
           if (page != null) "page": page,
@@ -1038,6 +1141,43 @@ class Api {
           if (postSetTransferOnDelete != null) "": postSetTransferOnDelete,
         },
       );
+
+  /// `/post_sets/$setId/add_posts.json` `POST`
+  /// * `post_ids[]` space separated list (i think)
+  /// Success: 201
+  static http.Request initAddToSetRequest(
+    int setId,
+    List<int> postIds, {
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsRequired(
+        path: "/post_sets/$setId/add_posts.json",
+        method: "POST",
+        credentials: credentials,
+        queryParameters: {
+          "post_ids[]": postIds,
+        },
+      );
+  static int success_initAddToSetRequest = 201;
+
+  /// `/post_sets/$setId/remove_posts.json` `POST`
+  /// * `post_ids[]` space separated list (i think)
+  /// Success: 201
+  static http.Request initRemoveFromSetRequest(
+    int setId,
+    List<int> postIds, {
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsRequired(
+        path: "/post_sets/$setId/remove_posts.json",
+        method: "POST",
+        credentials: credentials,
+        queryParameters: {
+          "post_ids[]": postIds,
+        },
+      );
+  static int success_initRemoveFromSetRequest = 201;
+
   // #endregion Sets
   // #region Pools
   /// https://e621.net/wiki_pages/2425#pools_listing
@@ -1069,32 +1209,35 @@ class Api {
   /// {@endtemplate}
   static http.Request initSearchPoolsRequest({
     String? searchNameMatches,
-    String? searchId,
+    List<int>? searchId,
     String? searchDescriptionMatches,
     String? searchCreatorName,
-    String? searchCreatorId,
-    String? searchIsActive,
-    String? searchCategory,
-    String? searchOrder,
+    int? searchCreatorId,
+    bool? searchIsActive,
+    PoolCategory? searchCategory,
+    PoolOrder? searchOrder,
     int? limit,
     BaseCredentials? credentials,
-  }) {
-    var uri = baseUri.replace(path: "/pools.json", queryParameters: {
-      if (searchNameMatches != null) "search[name_matches]": searchNameMatches,
-      if (searchId != null) "search[id]": searchId,
-      if (searchDescriptionMatches != null)
-        "search[description_matches]": searchDescriptionMatches,
-      if (searchCreatorName != null) "search[creator_name]": searchCreatorName,
-      if (searchCreatorId != null) "search[creator_id]": searchCreatorId,
-      if (searchIsActive != null) "search[is_active]": searchIsActive,
-      if (searchCategory != null) "search[category]": searchCategory,
-      if (searchOrder != null) "search[order]": searchOrder,
-      if (limit != null) "limit": limit,
-    });
-    var req = http.Request("GET", uri);
-    (credentials ?? Api.activeCredentials)?.addToHeadersMap(req.headers);
-    return req;
-  }
+  }) =>
+      _baseInitRequestCredentialsOptional(
+        path: "/pools.json",
+        queryParameters: {
+          if (searchNameMatches != null)
+            "search[name_matches]": searchNameMatches,
+          if (searchId != null) "search[id]": searchId,
+          if (searchDescriptionMatches != null)
+            "search[description_matches]": searchDescriptionMatches,
+          if (searchCreatorName != null)
+            "search[creator_name]": searchCreatorName,
+          if (searchCreatorId != null) "search[creator_id]": searchCreatorId,
+          if (searchIsActive != null) "search[is_active]": searchIsActive,
+          if (searchCategory != null) "search[category]": searchCategory,
+          if (searchOrder != null) "search[order]": searchOrder,
+          if (limit != null) "limit": limit,
+        },
+        credentials: credentials,
+        method: "GET",
+      );
 
   /// https://e621.net/wiki_pages/2425#pools_update
   ///
@@ -1118,20 +1261,22 @@ class Api {
     int? poolIsActive,
     PoolCategory? poolCategory,
     BaseCredentials? credentials,
-  }) {
-    var uri = baseUri.replace(path: "/pools/$poolId.json", queryParameters: {
-      if (poolName != null) "pool[name]": poolName,
-      if (poolDescription != null) "pool[description]": poolDescription,
-      if (poolPostIds != null)
-        "pool[post_ids]":
-            poolPostIds.fold("", (accumulator, elem) => "$accumulator $elem"),
-      if (poolIsActive != null) "pool[is_active]": poolIsActive,
-      if (poolCategory != null) "pool[category]": poolCategory.toJsonString(),
-    });
-    var req = http.Request("PUT", uri);
-    (credentials ?? Api.activeCredentials)?.addToHeadersMap(req.headers);
-    return req;
-  }
+  }) =>
+      _baseInitRequestCredentialsRequired(
+        path: "/pools/$poolId.json",
+        queryParameters: {
+          if (poolName != null) "pool[name]": poolName,
+          if (poolDescription != null) "pool[description]": poolDescription,
+          if (poolPostIds != null)
+            "pool[post_ids]": poolPostIds.fold(
+                "", (accumulator, elem) => "$accumulator $elem"),
+          if (poolIsActive != null) "pool[is_active]": poolIsActive,
+          if (poolCategory != null)
+            "pool[category]": poolCategory.toJsonString(),
+        },
+        method: "PUT",
+        credentials: credentials,
+      );
 
   /// https://e621.net/wiki_pages/2425#pools_create
   ///
@@ -1152,17 +1297,19 @@ class Api {
     PoolCategory? poolCategory,
     int? poolIsLocked,
     BaseCredentials? credentials,
-  }) {
-    var uri = baseUri.replace(path: "/pools.json", queryParameters: {
-      if (poolName != null) "pool[name]": poolName,
-      if (poolDescription != null) "pool[description]": poolDescription,
-      if (poolCategory != null) "pool[category]": poolCategory.toJsonString(),
-      if (poolIsLocked != null) "pool[is_locked]": poolIsLocked,
-    });
-    var req = http.Request("POST", uri);
-    (credentials ?? Api.activeCredentials)?.addToHeadersMap(req.headers);
-    return req;
-  }
+  }) =>
+      _baseInitRequestCredentialsRequired(
+        path: "/pools.json",
+        queryParameters: {
+          if (poolName != null) "pool[name]": poolName,
+          if (poolDescription != null) "pool[description]": poolDescription,
+          if (poolCategory != null)
+            "pool[category]": poolCategory.toJsonString(),
+          if (poolIsLocked != null) "pool[is_locked]": poolIsLocked,
+        },
+        credentials: credentials,
+        method: "POST",
+      );
 
   /// https://e621.net/wiki_pages/2425#pools_revert
   ///
@@ -1173,15 +1320,15 @@ class Api {
     int poolId, {
     int? versionId,
     BaseCredentials? credentials,
-  }) {
-    var uri =
-        baseUri.replace(path: "/pools/$poolId/revert.json", queryParameters: {
-      if (versionId != null) "version_id": versionId,
-    });
-    var req = http.Request("PUT", uri);
-    (credentials ?? Api.activeCredentials)?.addToHeadersMap(req.headers);
-    return req;
-  }
+  }) =>
+      _baseInitRequestCredentialsRequired(
+        path: "/pools/$poolId/revert.json",
+        queryParameters: {
+          if (versionId != null) "version_id": versionId,
+        },
+        method: "PUT",
+        credentials: credentials,
+      );
   // #endregion Pools
 }
 
@@ -1211,6 +1358,37 @@ enum SetOrder with PrettyPrintEnum {
             'must be a value of '
                 '"name", '
                 '"shortname", '
+                '"post_count", '
+                '"created_at", '
+                'or "updated_at".',
+          ),
+      };
+  static const jsonPropertyName = "level_string";
+}
+
+enum PoolOrder with PrettyPrintEnum {
+  name._default("name"),
+  postCount._default("post_count"),
+  createdAt._default("created_at"),
+  updatedAt._default("updated_at");
+
+  @override
+  String toString() => jsonString;
+  // String get jsonString => nameSnake;
+  final String jsonString;
+  const PoolOrder._default(this.jsonString);
+  // static PoolOrder fromJsonString(String json) => switch (json) {
+  // factory PoolOrder.fromJsonString(String json) => switch (json) {
+  factory PoolOrder(String json) => switch (json) {
+        "name" => name,
+        "post_count" => postCount,
+        "created_at" => createdAt,
+        "updated_at" => updatedAt,
+        _ => throw ArgumentError.value(
+            json,
+            "json",
+            'must be a value of '
+                '"name", '
                 '"post_count", '
                 '"created_at", '
                 'or "updated_at".',

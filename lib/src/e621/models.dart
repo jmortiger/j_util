@@ -37,6 +37,9 @@ class Pool {
   /// The amount of posts in the pool.
   final int postCount;
 
+  String get searchById => 'pool:$id';
+  String get searchByName => 'pool:$name';
+
   Pool({
     required this.id,
     required this.name,
@@ -213,25 +216,6 @@ class Note {
         "body": body,
         "creator_name": creatorName,
       };
-}
-
-class PostScore {
-  /// `up` The number of times voted up.
-  final int up;
-
-  /// `down` A negative number representing the number of times voted down.
-  final int down;
-
-  /// `total` The total score (up + down).
-  final int total;
-
-  PostScore({required this.up, required this.down, required this.total});
-
-  PostScore copyWith({int? up, int? down, int? total}) => PostScore(
-        up: up ?? this.up,
-        down: down ?? this.down,
-        total: total ?? this.total,
-      );
 }
 
 class User {
@@ -484,7 +468,7 @@ class UserDetailed extends User {
 }
 
 /// https://e621.net/post_sets.json?35356
-class Set {
+class PostSet {
   final int id;
   final String createdAt;
   final String updatedAt;
@@ -497,7 +481,10 @@ class Set {
   final bool transferOnDelete;
   final List<int> postIds;
 
-  Set({
+  String get searchById => 'set:$id';
+  String get searchByShortname => 'set:$shortname';
+
+  PostSet({
     required this.id,
     required this.createdAt,
     required this.updatedAt,
@@ -511,7 +498,7 @@ class Set {
     required this.postIds,
   });
 
-  Set copyWith({
+  PostSet copyWith({
     String? createdAt,
     int? creatorId,
     String? description,
@@ -524,7 +511,7 @@ class Set {
     bool? transferOnDelete,
     String? updatedAt,
   }) =>
-      Set(
+      PostSet(
         createdAt: createdAt ?? this.createdAt,
         creatorId: creatorId ?? this.creatorId,
         description: description ?? this.description,
@@ -538,11 +525,12 @@ class Set {
         updatedAt: updatedAt ?? this.updatedAt,
       );
 
-  factory Set.fromRawJson(String str) => Set.fromJson(dc.json.decode(str));
+  factory PostSet.fromRawJson(String str) =>
+      PostSet.fromJson(dc.json.decode(str));
 
   String toRawJson() => dc.json.encode(toJson());
 
-  factory Set.fromJson(Map<String, dynamic> json) => Set(
+  factory PostSet.fromJson(Map<String, dynamic> json) => PostSet(
         id: json["id"],
         createdAt: json["created_at"],
         updatedAt: json["updated_at"],
@@ -570,16 +558,16 @@ class Set {
       };
 }
 
-final class Post {
+class Post {
   // #region Json Fields
   /// The ID number of the post.
   final int id;
 
   /// The time the post was created in the format of YYYY-MM-DDTHH:MM:SS.MS+00:00.
-  final String createdAt;
+  final DateTime createdAt;
 
   /// The time the post was last updated in the format of YYYY-MM-DDTHH:MM:SS.MS+00:00.
-  final String updatedAt;
+  final DateTime updatedAt;
 
   /// (array group)
   final File file;
@@ -615,7 +603,7 @@ final class Post {
   final List<String> sources;
 
   /// An array of Pool IDs that the post is a part of.
-  final List<String> pools;
+  final List<int> pools;
 
   /// (array group)
   final PostRelationships relationships;
@@ -671,10 +659,18 @@ final class Post {
     required this.duration,
   });
 
+  factory Post.fromRawJson(String json) {
+    var t = dc.jsonDecode(json);
+    try {
+      return Post.fromJson(t);
+    } catch (e) {
+      return Post.fromJson(t["post"]);
+    }
+  }
   factory Post.fromJson(Map<String, dynamic> json) => Post(
         id: json["id"] as int,
-        createdAt: json["created_at"] as String,
-        updatedAt: json["updated_at"] as String,
+        createdAt: DateTime.parse(json["created_at"]),
+        updatedAt: DateTime.parse(json["updated_at"]),
         file: File.fromJson(json["file"]),
         preview: Preview.fromJson(json["preview"]),
         sample: Sample.fromJson(json["sample"]),
@@ -686,7 +682,7 @@ final class Post {
         rating: json["rating"] as String,
         favCount: json["fav_count"] as int,
         sources: (json["sources"] as List).cast<String>(),
-        pools: (json["pools"] as List).cast<String>(),
+        pools: (json["pools"] as List).cast<int>(),
         relationships: PostRelationships.fromJson(json["relationships"]),
         approverId: json["approver_id"] as int?,
         uploaderId: json["uploader_id"] as int,
@@ -698,8 +694,8 @@ final class Post {
       );
   Post copyWith({
     int? id,
-    String? createdAt,
-    String? updatedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
     File? file,
     Preview? preview,
     Sample? sample,
@@ -711,7 +707,7 @@ final class Post {
     String? rating,
     int? favCount,
     List<String>? sources,
-    List<String>? pools,
+    List<int>? pools,
     PostRelationships? relationships,
     int? approverId = -1,
     int? uploaderId,
@@ -772,8 +768,7 @@ class File extends Preview {
     required this.md5,
     required Map<String, dynamic> json,
   }) : super.fromJsonGen(json);
-  factory File.fromJson(Map<String, dynamic> json) =>
-      File._useParentFromJson(
+  factory File.fromJson(Map<String, dynamic> json) => File._useParentFromJson(
         ext: json["ext"] as String,
         size: json["size"] as int,
         md5: json["md5"] as String,
@@ -854,6 +849,7 @@ class Score {
     required this.down,
     required this.total,
   });
+  factory Score.fromJsonRaw(String json) => Score.fromJson(dc.jsonDecode(json));
   factory Score.fromJson(Map<String, dynamic> json) => Score(
         up: json["up"] as int,
         down: json["down"] as int,
@@ -865,6 +861,17 @@ class Score {
         "down": down,
         "total": total,
       };
+
+  Score copyWith(
+    int? up,
+    int? down,
+    int? total,
+  ) =>
+      Score(
+        up: up ?? this.up,
+        down: down ?? this.down,
+        total: total ?? this.total,
+      );
 }
 
 class PostTags {
@@ -1109,7 +1116,7 @@ class PostRelationships {
   final bool hasActiveChildren;
 
   /// A list of child post IDs that are linked to the post, if it has any.
-  final List<String> children;
+  final List<int> children;
 
   bool get hasParent => parentId != null;
 
@@ -1124,7 +1131,7 @@ class PostRelationships {
         parentId: json["parent_id"] as int?,
         hasChildren: json["has_children"] as bool,
         hasActiveChildren: json["has_active_children"] as bool,
-        children: (json["children"] as List).cast<String>(),
+        children: (json["children"] as List).cast<int>(),
       );
 }
 

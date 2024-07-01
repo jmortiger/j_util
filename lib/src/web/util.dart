@@ -989,3 +989,12 @@ class ApiEndpointInstance implements ApiEndpoint {
         uriModifier: uriModifier,
       );
 }
+
+Map<String, dynamic> prepareQueryParameters(Map<String, dynamic> queryParameters) => queryParameters..updateAll((k, v) {
+    dynamic recurse(val) => switch (val) {
+      String v1 => v1,
+      Iterable v1 => v1.map(recurse),
+      _ => val.toString(),
+    };
+    return recurse(v);
+  });

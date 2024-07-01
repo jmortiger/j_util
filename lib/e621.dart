@@ -3,3 +3,4 @@
 library;
 
 export 'src/e621/e621.dart';
+export 'src/e621/models.dart';
