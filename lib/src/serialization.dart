@@ -29,6 +29,33 @@ mixin Storable<T> {
     });
   }
 
+  static File? handleInitStorageSync(String filePath) {
+    try {
+      var f = File(filePath);
+      if (!f.existsSync()) {
+        f.createSync(recursive: true);
+      }
+      return f;
+    } catch (e) {
+      print("Storable.handleInitStorageSync: $e");
+      return null;
+    }
+  }
+
+  static Future<File?> handleInitStorageAsync(String filePath) {
+    try {
+      File f = File(filePath);
+      return f.exists().then<File?>((v) async => (!v) ? await f.create(recursive: true) : f).onError((e, s) {
+        print("Storable.handleInitStorageAsync: $e");
+        print("$s");
+        return null;
+      });
+    } catch (e) {
+      print("Storable.handleInitStorageAsync: $e");
+      return Future.sync(() => null);
+    }
+  }
+
   T loadSync({Encoding encoding = utf8}) {
     if (!file.isAssigned || !_exists.isAssigned || !_exists.$) {
       throw StateError("File not loaded/existent.");
