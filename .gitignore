@@ -29,3 +29,5 @@ doc/api/
 
 .vscode/
 .vscode/settings.json
+assets/devData.json
+test/dev_data.dart
