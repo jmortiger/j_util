@@ -14,11 +14,11 @@ class JEventArgs {
 }
 
 class JPureEvent {
-  JPureEvent([List<VoidDelegate>? subscribers])
-      : _subscribers = subscribers ?? List<VoidDelegate>.empty(growable: true);
-  const JPureEvent.makeConst(List<VoidDelegate> subscribers)
+  JPureEvent([Iterable<VoidDelegate>? subscribers])
+      : _subscribers = subscribers?.toSet() ?? <VoidDelegate>{};
+  const JPureEvent.makeConst(Set<VoidDelegate> subscribers)
       : _subscribers = subscribers;
-  final List<VoidDelegate> _subscribers;
+  final Set<VoidDelegate> _subscribers;
   JPureEvent operator +(VoidDelegate subscription) =>
       this.._subscribers.add(subscription);
   JPureEvent subscribe(VoidDelegate subscription) =>
@@ -39,12 +39,12 @@ class JPureEvent {
 }
 
 class JEvent<EventArgs extends JEventArgs> {
-  JEvent([List<Function(EventArgs)>? subscribers])
+  JEvent([Iterable<Function(EventArgs)>? subscribers])
       : _subscribers =
-            subscribers ?? List<Function(EventArgs)>.empty(growable: true);
-  const JEvent.makeConst(List<Function(EventArgs)> subscribers)
+            subscribers?.toSet() ?? <Function(EventArgs)>{};
+  const JEvent.makeConst(Set<Function(EventArgs)> subscribers)
       : _subscribers = subscribers;
-  final List<Function(EventArgs)> _subscribers;
+  final Set<Function(EventArgs)> _subscribers;
   JEvent operator +(Function(EventArgs) subscription) =>
       this.._subscribers.add(subscription);
   JEvent subscribe(Function(EventArgs) subscription) =>
@@ -73,12 +73,12 @@ class JOwnedEvent<Owner, EventArgs extends JEventArgs> {
   // JOwnedEvent(this.owner);
   // final Owner? owner;
   // JOwnedEvent({this.owner});
-  JOwnedEvent([List<OwnedEventDelegate>? subscribers])
+  JOwnedEvent([Iterable<OwnedEventDelegate>? subscribers])
       : _subscribers =
-            subscribers ?? List<OwnedEventDelegate>.empty(growable: true);
-  const JOwnedEvent.makeConst(List<OwnedEventDelegate> subscribers)
+            subscribers?.toSet() ?? <OwnedEventDelegate>{};
+  const JOwnedEvent.makeConst(Set<OwnedEventDelegate> subscribers)
       : _subscribers = subscribers;
-  final List<OwnedEventDelegate> _subscribers;
+  final Set<OwnedEventDelegate> _subscribers;
   JOwnedEvent<Owner, EventArgs> operator +(OwnedEventDelegate subscription) =>
       this.._subscribers.add(subscription);
   JOwnedEvent<Owner, EventArgs> subscribe(OwnedEventDelegate subscription) =>
