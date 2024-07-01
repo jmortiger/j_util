@@ -11,6 +11,8 @@ class ExpandableFab extends StatefulWidget {
     this.openIcon = const Icon(Icons.create),
     this.closeIcon = const Icon(Icons.close),
     this.disabledTooltip = "",
+    this.useDefaultHeroTag = true,
+    this.heroTag,
   }) : childrenBuilder = null;
   const ExpandableFab.builder({
     super.key,
@@ -20,6 +22,8 @@ class ExpandableFab extends StatefulWidget {
     this.openIcon = const Icon(Icons.create),
     this.closeIcon = const Icon(Icons.close),
     this.disabledTooltip = "",
+    this.useDefaultHeroTag = true,
+    this.heroTag,
   }) : children = null;
 
   final Widget openIcon;
@@ -30,7 +34,9 @@ class ExpandableFab extends StatefulWidget {
   final List<Widget>? children;
   final List<Widget> Function(BuildContext context)? childrenBuilder;
   final String disabledTooltip;
-
+  final bool useDefaultHeroTag;
+  final Object? heroTag;
+  
   @override
   State<ExpandableFab> createState() => _ExpandableFabState();
 }
@@ -147,9 +153,15 @@ class _ExpandableFabState extends State<ExpandableFab>
           opacity: _open ? 0.0 : 1.0,
           curve: const Interval(0.25, 1.0, curve: Curves.easeInOut),
           duration: const Duration(milliseconds: 250),
-          child: FloatingActionButton(
+          child: widget.useDefaultHeroTag ? 
+          FloatingActionButton(
             onPressed: enabled ? _toggle : null,
             child: widget.openIcon,
+          ) :
+          FloatingActionButton(
+            onPressed: enabled ? _toggle : null,
+            child: widget.openIcon,
+            heroTag: widget.heroTag,
           ),
         ),
       ),
