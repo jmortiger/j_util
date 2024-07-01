@@ -62,20 +62,6 @@ abstract interface class IComparable<T extends Comparable<T>>
       a.compareTo(b, coarseness: double.nan);
 }
 
-class Test extends IComparable<Test> {
-  final int priorityTrue;
-  int get priority => priorityTrue - priorityTrue % coarseness;
-
-  Test({required this.priorityTrue});
-  @override
-  int get coarseness => 5;
-
-  @override
-  int compareTo(Test other, {num coarseness = double.nan}) {
-    return priority - other.priority;
-  }
-}
-
 class CustomPriorityQueue<T> {
   late final List<T> queue; // = [];
   // final Late<List<T>> _queueToList = Late();
@@ -84,8 +70,8 @@ class CustomPriorityQueue<T> {
   //     : (_queueToList.item = queue.fold(
   //         <T>[], (previousValue, element) => previousValue..addAll(element)));
 
-  CustomPriorityQueue(List<T> collection, Comparator<T> comparator) {
-    queue = collection.sublist(0)..sort(comparator);
+  CustomPriorityQueue(List<T> collection, Comparator<T> comparator, [bool mutateProvided = false,]) {
+    queue = (mutateProvided ? collection : collection.sublist(0))..sort(comparator);
     // // queue.add([collection.first]);
     // for (var element in collection) {
     //   if (element == queue[0][0]) continue;
@@ -156,8 +142,8 @@ class PriorityQueue<T extends Comparable<T>> {
   //     : (_queueToList.item = queue.fold(
   //         <T>[], (previousValue, element) => previousValue..addAll(element)));
 
-  PriorityQueue(List<T> collection) {
-    queue = collection.sublist(0)..sort();
+  PriorityQueue(List<T> collection, [bool mutateProvided = false]) {
+    queue = (mutateProvided ? collection : collection.sublist(0))..sort();
     // // queue.add([collection.first]);
     // for (var element in collection) {
     //   if (element == queue[0]) continue;
