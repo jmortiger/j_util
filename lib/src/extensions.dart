@@ -297,7 +297,7 @@ extension DurationExtensions on Duration {
 
 extension DateTimeExtensions on DateTime {
   // TODO: Implement formatting
-  // String toISO8601Substring({
+  // String toIso8601Substring({
   //   bool includeYear = false,
   //   bool includeMonth = false,
   //   bool includeDay = false,
@@ -314,7 +314,9 @@ extension DateTimeExtensions on DateTime {
   //   if (!includeYear) start = 5;
 
   // }
-  String toISO8601DateString() => toIso8601String().substring(0, 10);
+  @Deprecated("Use toIso8601DateString instead")
+  String toISO8601DateString() => toIso8601DateString();
+  String toIso8601DateString() => toIso8601String().substring(0, 10);
 
   ///
   ///
