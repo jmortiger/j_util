@@ -97,6 +97,7 @@ extension ConversionOnFut on Future<http.StreamedResponse> {
           request: v.request,
         );
       });
+
   /// {@macro StreamConvert}
   Future<http.BaseResponse> toBaseResponse() => this.then((v) async {
         var t =
@@ -141,6 +142,10 @@ class StatusCode {
   bool get isClientError => statusCode >= 400 && statusCode < 500;
   bool get isServerError => statusCode >= 500 /*  && statusCode < 300 */;
   bool get isError => isClientError || isServerError;
+  @override
+  String toString() {
+    return "$statusCode";
+  }
 }
 
 abstract interface class IQueryParameter<T> {
@@ -154,7 +159,8 @@ abstract interface class IQueryParameter<T> {
 //   static String getQueryValueString(IEnumQueryParameter i) => i.name;
 //   static String getQuery(IEnumQueryParameter i) => "${i.queryName}=${i.queryValueString}";
 // }
-mixin EnumQueryParameter<T extends EnumQueryParameter<T>> on Enum implements IQueryParameter<T> {
+mixin EnumQueryParameter<T extends EnumQueryParameter<T>> on Enum
+    implements IQueryParameter<T> {
   @override
   String get queryValueString => name;
   @override

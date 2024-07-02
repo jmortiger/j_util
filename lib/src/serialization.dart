@@ -19,14 +19,14 @@ mixin Storable<T> {
     }
   }
 
-  void initStorageAsync(String filePath) {
+  Future<void> initStorageAsync(String filePath) async {
     file.$ = File(filePath);
-    file.$.exists().then((v) {
-      _exists.$ = v;
-      if (!v) {
-        file.$.create(recursive: true).then((v2) => _exists.$ = true);
-      }
-    });
+    var v = (await file.$.exists());
+    _exists.$ = v;
+    if (!v) {
+      await file.$.create(recursive: true);
+      _exists.$ = true;
+    }
   }
 
   static File? handleInitStorageSync(String filePath) {
@@ -45,7 +45,10 @@ mixin Storable<T> {
   static Future<File?> handleInitStorageAsync(String filePath) {
     try {
       File f = File(filePath);
-      return f.exists().then<File?>((v) async => (!v) ? await f.create(recursive: true) : f).onError((e, s) {
+      return f
+          .exists()
+          .then<File?>((v) async => (!v) ? await f.create(recursive: true) : f)
+          .onError((e, s) {
         print("Storable.handleInitStorageAsync: $e");
         print("$s");
         return null;

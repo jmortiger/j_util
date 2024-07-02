@@ -148,6 +148,7 @@ class Api {
   static const idealRateLimit = Duration(seconds: 3);
   // #endregion Rate Limit
   static const maxPostsPerSearch = 320;
+  static const maxTagsPerSearch = 40;
 
   /// Use this to automatically enforce rate limit.
   static final http.Client client = http.Client();
@@ -296,6 +297,7 @@ class Api {
           },
           method: "POST",
           credentials: credentials); */
+  /// {@template SearchPosts}
   /// [List](https://e621.net/wiki_pages/2425#posts_list)
   ///
   /// The base URL is /posts.json called with GET.
@@ -308,8 +310,8 @@ class Api {
   /// * limit How many posts you want to retrieve. There is a hard limit of 320 posts per request. Defaults to the value set in user preferences.
   /// * tags The tag search query. Any tag combination that works on the website will work here.
   /// * page The page that will be returned. Can also be used with a or b + post_id to get the posts after or before the specified post ID. For example a13 gets every post after post_id 13 up to the limit. This overrides any ordering meta-tag, order:id_desc is always used instead.
-  /// {@template PostListing}
   /// This returns a JSON array, for each post it returns:
+  /// {@template PostListing}
   ///
   /// * id The ID number of the post.
   /// * created_at The time the post was created in the format of YYYY-MM-DDTHH:MM:SS.MS+00:00.
@@ -381,6 +383,17 @@ class Api {
   ///     * is_flagged
   ///     * is_rating_locked
   /// {@endtemplate}
+  /// 
+  /// You cannot search for more than 40 tags at a time. This yields:
+  /// ```
+  /// HTTP 422
+  /// {
+  ///   "success": false,
+  ///   "message": "You cannot search for more than 40 tags at a time",
+  ///   "code": null
+  /// }
+  /// ```
+  /// {@endtemplate}
   static http.Request initSearchPostsRequest({
     int? limit,
     String? tags,
@@ -396,12 +409,40 @@ class Api {
           },
           method: "GET",
           credentials: credentials);
+  /// Same as [initSearchPostsRequest], but checks the [tags] length to ensure it doesn't exceed the tag limit in [Api.maxTagsPerSearch].
+  /// 
+  /// {@macro SearchPosts}
+  /// 
+  /// Throws an [ArgumentError] if you exceed the tag limit
+  static http.Request initSearchPostsRequestChecked({
+    int? limit,
+    List<String>? tags,
+    String? page,
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsOptional(
+          path: "/posts.json",
+          queryParameters: {
+            if (limit != null) "limit": limit,
+            if (tags != null) "tags": tags.length <= maxTagsPerSearch ? tags.fold("", (acc, e) => "$acc$e ",) : (throw ArgumentError.value(tags, "tags", "You cannot search for more than 40 tags at a time")),
+            if (page != null) "page": page,
+          },
+          method: "GET",
+          credentials: credentials);
 
   /// [List](https://e621.net/wiki_pages/2425#posts_list)
   ///
   /// The base URL is /posts/<Post_ID>.json called with GET.
-  ///
+  /// 
+  /// This returns a JSON object with a single "post" property, containing an object with the following:
   /// {@macro PostListing}
+  /// 
+  /// If nonexistent, returns:
+  /// ```
+  /// HTTP 404
+  /// 
+  /// {"success":false,"reason":"not found"}
+  /// ```
   static http.Request initSearchPostRequest(
     int postId, {
     BaseCredentials? credentials,
