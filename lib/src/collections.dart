@@ -1323,3 +1323,37 @@ class SetNotifier<T> extends ChangeNotifier with SetMixin<T> {
     return _backing.toSet();
   }
 }
+
+class ListNotifier<T> extends ChangeNotifier with ListMixin<T> {
+  final List<T> _backing;
+
+  // ListNotifier.empty({bool growable = false}) : this.empty1(growable);
+  ListNotifier.empty([bool growable = false])
+      : _backing = List.empty(growable: growable);
+  ListNotifier.filled(int length, T fill, [bool growable = false])
+      : _backing = List.filled(length, fill, growable: growable);
+  ListNotifier.from(Iterable<T> elements, [bool growable = true])
+      : _backing = List.from(elements, growable: growable);
+  ListNotifier.generate(int length, T Function(int) generator,
+      [bool growable = true])
+      : _backing = List.generate(length, generator, growable: growable);
+  ListNotifier.of(Iterable<T> elements, [bool growable = true])
+      : _backing = List.of(elements, growable: growable);
+
+  @override
+  int get length => _backing.length;
+  @override
+  set length(int v) {
+    _backing.length = v;
+    notifyListeners();
+  }
+
+  @override
+  T operator [](int index) => _backing[index];
+
+  @override
+  void operator []=(int index, T value) {
+    _backing[index] = value;
+    notifyListeners();
+  }
+}
