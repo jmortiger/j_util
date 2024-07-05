@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -8,7 +9,7 @@ mixin Storable<T> {
   final file = LateFinal<File>();
   final _exists = LateInstance<bool>();
   void initStorage(String filePath) => file.$ = File(filePath);
-  T get instance => this as T;
+  T get _instance => this as T;
 
   void initStorageSync(String filePath) {
     file.$ = File(filePath);
@@ -19,8 +20,8 @@ mixin Storable<T> {
     }
   }
 
-  Future<void> initStorageAsync(String filePath) async {
-    file.$ = File(filePath);
+  Future<void> initStorageAsync(FutureOr<String> filePath) async {
+    file.$ = File(await filePath);
     var v = (await file.$.exists());
     _exists.$ = v;
     if (!v) {
@@ -105,7 +106,7 @@ mixin Storable<T> {
       throw StateError("File not loaded/existent.");
     }
     file.$.writeAsStringSync(
-      jsonEncode((instance as dynamic).toJson()),
+      jsonEncode((_instance as dynamic).toJson()),
       encoding: encoding,
       flush: flush,
       mode: mode,
@@ -151,7 +152,7 @@ mixin Storable<T> {
       throw StateError("File not loaded/existent.");
     }
     return file.$.writeAsString(
-      jsonEncode((instance as dynamic).toJson()),
+      jsonEncode((_instance as dynamic).toJson()),
       encoding: encoding,
       flush: flush,
       mode: mode,
@@ -205,6 +206,30 @@ mixin Storable<T> {
         return file;
       }
     });
+  }
+
+  static File? tryGetStorageSync(String filePath) {
+    try {
+      return getStorageSync(filePath);
+    } catch (e, s) {
+      print(e);
+      print(s);
+      return null;
+    }
+  }
+
+  static Future<File?> tryGetStorageAsync(String filePath) {
+    try {
+      return getStorageAsync(filePath).then<File?>((v) => v).catchError((e,s) {
+      print(e);
+      print(s);
+      return null;
+      });
+    } catch (e, s) {
+      print(e);
+      print(s);
+      return Future.sync(()=>null);
+    }
   }
 
   static T loadToInstanceSync<T>(String filePath, {Encoding encoding = utf8}) {

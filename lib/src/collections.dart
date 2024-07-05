@@ -1327,6 +1327,7 @@ class SetNotifier<T> extends ChangeNotifier with SetMixin<T> {
 class ListNotifier<T> extends ChangeNotifier with ListMixin<T> {
   final List<T> _backing;
 
+  ListNotifier() : _backing = <T>[];
   // ListNotifier.empty({bool growable = false}) : this.empty1(growable);
   ListNotifier.empty([bool growable = false])
       : _backing = List.empty(growable: growable);
@@ -1356,4 +1357,8 @@ class ListNotifier<T> extends ChangeNotifier with ListMixin<T> {
     _backing[index] = value;
     notifyListeners();
   }
+}
+
+extension ListToNotifier<T> on List<T> {
+  ListNotifier<T> toNotifier() => ListNotifier.of(this);
 }

@@ -426,7 +426,7 @@ extension PrettyPrintCollection on Iterable {
 }
 
 extension RegExpExt on RegExp {
-  static const whitespaceCharacters = r'\u2028\n\r\u000B\f\u2029\u0085 ';
+  static const whitespaceCharacters = r'\u2028\n\r\u000B\f\u2029\u0085 	';
   static const whitespacePattern = '[$whitespaceCharacters]';
   static final whitespace = RegExp(whitespacePattern);
   static final removeZerosFromTime = RegExp(
