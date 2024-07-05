@@ -128,24 +128,55 @@ class Api {
 
   // #region Rate Limit
   /// The rate limit in seconds per request.
-  /// 
+  ///
   /// Duration(seconds: 1);
   static const rateLimit = Duration(seconds: 1);
 
   /// The hard rate limit in seconds per request.
-  /// 
+  ///
   /// Duration(seconds: 1);
   static const hardRateLimit = Duration(seconds: 1);
 
   /// The soft rate limit in seconds per request.
-  /// 
+  ///
   /// Duration(seconds: 2);
   static const softRateLimit = Duration(seconds: 2);
 
   /// The ideal rate limit in seconds per request.
-  /// 
+  ///
   /// Duration(seconds: 3);
   static const idealRateLimit = Duration(seconds: 3);
+  static bool forceHardLimit = false;
+  static bool useIdealLimit = true;
+  static Duration get currentRateLimit => forceHardLimit
+      ? hardRateLimit
+      : useIdealLimit
+          ? idealRateLimit
+          : softRateLimit;
+  static DateTime timeOfLastRequest =
+      DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+
+  /// Won't blow the rate limit
+  static Future<http.StreamedResponse> sendRequestStreamed(
+    http.Request request,
+  ) async {
+    doTheThing() {
+      timeOfLastRequest = DateTime.timestamp();
+      return client.send(request);
+    }
+
+    var t = DateTime.timestamp().difference(timeOfLastRequest);
+    return (t < currentRateLimit)
+        ? Future.delayed(currentRateLimit - t, doTheThing)
+        : doTheThing();
+  }
+
+  /// Won't blow the rate limit
+  static Future<http.Response> sendRequest(
+    http.Request request,
+  ) async =>
+      sendRequestStreamed(request).toResponse();
+
   // #endregion Rate Limit
   static const maxPostsPerSearch = 320;
   static const maxTagsPerSearch = 40;
@@ -383,7 +414,7 @@ class Api {
   ///     * is_flagged
   ///     * is_rating_locked
   /// {@endtemplate}
-  /// 
+  ///
   /// You cannot search for more than 40 tags at a time. This yields:
   /// ```
   /// HTTP 422
@@ -409,10 +440,11 @@ class Api {
           },
           method: "GET",
           credentials: credentials);
+
   /// Same as [initSearchPostsRequest], but checks the [tags] length to ensure it doesn't exceed the tag limit in [Api.maxTagsPerSearch].
-  /// 
+  ///
   /// {@macro SearchPosts}
-  /// 
+  ///
   /// Throws an [ArgumentError] if you exceed the tag limit
   static http.Request initSearchPostsRequestChecked({
     int? limit,
@@ -424,7 +456,14 @@ class Api {
           path: "/posts.json",
           queryParameters: {
             if (limit != null) "limit": limit,
-            if (tags != null) "tags": tags.length <= maxTagsPerSearch ? tags.fold("", (acc, e) => "$acc$e ",) : (throw ArgumentError.value(tags, "tags", "You cannot search for more than 40 tags at a time")),
+            if (tags != null)
+              "tags": tags.length <= maxTagsPerSearch
+                  ? tags.fold(
+                      "",
+                      (acc, e) => "$acc$e ",
+                    )
+                  : (throw ArgumentError.value(tags, "tags",
+                      "You cannot search for more than 40 tags at a time")),
             if (page != null) "page": page,
           },
           method: "GET",
@@ -433,14 +472,14 @@ class Api {
   /// [List](https://e621.net/wiki_pages/2425#posts_list)
   ///
   /// The base URL is /posts/<Post_ID>.json called with GET.
-  /// 
+  ///
   /// This returns a JSON object with a single "post" property, containing an object with the following:
   /// {@macro PostListing}
-  /// 
+  ///
   /// If nonexistent, returns:
   /// ```
   /// HTTP 404
-  /// 
+  ///
   /// {"success":false,"reason":"not found"}
   /// ```
   static http.Request initSearchPostRequest(
