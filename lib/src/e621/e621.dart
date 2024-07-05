@@ -1095,15 +1095,15 @@ class Api {
       _baseInitRequestCredentialsOptional(
           path: "/users.json",
           queryParameters: {
-            if (searchNameMatches != null) "": searchNameMatches,
-            if (searchAboutMe != null) "": searchAboutMe,
-            if (searchAvatarId != null) "": searchAvatarId,
-            if (searchLevel != null) "": searchLevel,
-            if (searchMinLevel != null) "": searchMinLevel,
-            if (searchMaxLevel != null) "": searchMaxLevel,
-            if (searchCanUploadFree != null) "": searchCanUploadFree,
-            if (searchCanApprovePosts != null) "": searchCanApprovePosts,
-            if (searchOrder != null) "": searchOrder,
+            if (searchNameMatches != null) "search[name_matches]": searchNameMatches,
+            if (searchAboutMe != null) "search[about_me]": searchAboutMe,
+            if (searchAvatarId != null) "search[avatar_id]": searchAvatarId,
+            if (searchLevel != null) "search[level]": searchLevel,
+            if (searchMinLevel != null) "search[min_level]": searchMinLevel,
+            if (searchMaxLevel != null) "search[max_level]": searchMaxLevel,
+            if (searchCanUploadFree != null) "search[can_upload_free]": searchCanUploadFree,
+            if (searchCanApprovePosts != null) "search[can_approve_posts]": searchCanApprovePosts,
+            if (searchOrder != null) "search[order]": searchOrder,
             if (limit != null) "limit": _validateLimit(limit),
             if (page != null) "page": page,
           },
@@ -1187,11 +1187,11 @@ class Api {
         method: "PATCH",
         credentials: credentials,
         queryParameters: {
-          if (postSetName != null) "": postSetName,
-          if (postSetShortname != null) "": postSetShortname,
-          if (postSetDescription != null) "": postSetDescription,
-          if (postSetIsPublic != null) "": postSetIsPublic,
-          if (postSetTransferOnDelete != null) "": postSetTransferOnDelete,
+          if (postSetName != null) "post_set[name]": postSetName,
+          if (postSetShortname != null) "post_set[shortname]": postSetShortname,
+          if (postSetDescription != null) "post_set[description]": postSetDescription,
+          if (postSetIsPublic != null) "post_set[is_public]": postSetIsPublic,
+          if (postSetTransferOnDelete != null) "post_set[transfer_on_delete]": postSetTransferOnDelete,
         },
       );
 
@@ -1214,11 +1214,11 @@ class Api {
         method: "POST",
         credentials: credentials,
         queryParameters: {
-          if (postSetName != null) "": postSetName,
-          if (postSetShortname != null) "": postSetShortname,
-          if (postSetDescription != null) "": postSetDescription,
-          if (postSetIsPublic != null) "": postSetIsPublic,
-          if (postSetTransferOnDelete != null) "": postSetTransferOnDelete,
+          if (postSetName != null) "post_set[name]": postSetName,
+          if (postSetShortname != null) "post_set[shortname]": postSetShortname,
+          if (postSetDescription != null) "post_set[description]": postSetDescription,
+          if (postSetIsPublic != null) "post_set[is_public]": postSetIsPublic,
+          if (postSetTransferOnDelete != null) "post_set[transfer_on_delete]": postSetTransferOnDelete,
         },
       );
 

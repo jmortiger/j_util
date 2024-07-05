@@ -1179,6 +1179,15 @@ class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
       }..addAll(super.toJson());
 }
 
+Type findUserModelType(Map<String, dynamic> json) =>
+    json["wiki_page_version_count"] != null
+        ? json["api_burst_limit"] != null
+            ? UserLoggedInDetail
+            : UserDetailed
+        : json["api_burst_limit"] != null
+            ? UserLoggedIn
+            : User;
+
 /// https://e621.net/post_sets.json?35356
 class PostSet {
   final int id;
