@@ -6,6 +6,9 @@ import 'package:j_util/src/types.dart';
 
 /// TODO: Add local_storage support for web testing.
 mixin Storable<T> {
+  static Function storablePrint = print;
+  static Function get _storablePrint => beSilent ? print : () {};
+  static bool beSilent = false;
   final file = LateFinal<File>();
   final _exists = LateInstance<bool>();
   void initStorage(String filePath) => file.$ = File(filePath);
@@ -38,7 +41,7 @@ mixin Storable<T> {
       }
       return f;
     } catch (e) {
-      print("Storable.handleInitStorageSync: $e");
+      _storablePrint("Storable.handleInitStorageSync: $e");
       return null;
     }
   }
@@ -50,12 +53,12 @@ mixin Storable<T> {
           .exists()
           .then<File?>((v) async => (!v) ? await f.create(recursive: true) : f)
           .onError((e, s) {
-        print("Storable.handleInitStorageAsync: $e");
-        print("$s");
+        _storablePrint("Storable.handleInitStorageAsync: $e");
+        _storablePrint("$s");
         return null;
       });
     } catch (e) {
-      print("Storable.handleInitStorageAsync: $e");
+      _storablePrint("Storable.handleInitStorageAsync: $e");
       return Future.sync(() => null);
     }
   }
@@ -89,7 +92,7 @@ mixin Storable<T> {
   Future<T?> tryLoadAsync({Encoding encoding = utf8}) {
     try {
       return (loadAsync(encoding: encoding) as Future<T?>).onError((e, s) {
-        print(e);
+        _storablePrint(e);
         return null;
       });
     } catch (e) {
@@ -127,7 +130,7 @@ mixin Storable<T> {
       );
       return true;
     } catch (e) {
-      print(e);
+      _storablePrint(e);
       return false;
     }
   }
@@ -171,12 +174,12 @@ mixin Storable<T> {
         flush: flush,
         mode: mode,
       ).then((_) => true))).onError((e, s) {
-        print(e);
-        print(s);
+        _storablePrint(e);
+        _storablePrint(s);
         return false;
       }));
     } catch (e) {
-      print(e);
+      _storablePrint(e);
       return Future.sync(() => false);
     }
   }
@@ -212,23 +215,23 @@ mixin Storable<T> {
     try {
       return getStorageSync(filePath);
     } catch (e, s) {
-      print(e);
-      print(s);
+      _storablePrint(e);
+      _storablePrint(s);
       return null;
     }
   }
 
   static Future<File?> tryGetStorageAsync(String filePath) {
     try {
-      return getStorageAsync(filePath).then<File?>((v) => v).catchError((e,s) {
-      print(e);
-      print(s);
-      return null;
+      return getStorageAsync(filePath).then<File?>((v) => v).catchError((e, s) {
+        _storablePrint(e);
+        _storablePrint(s);
+        return null;
       });
     } catch (e, s) {
-      print(e);
-      print(s);
-      return Future.sync(()=>null);
+      _storablePrint(e);
+      _storablePrint(s);
+      return Future.sync(() => null);
     }
   }
 
@@ -265,16 +268,16 @@ mixin Storable<T> {
           .then((file) => file.readAsString(encoding: encoding).then((v) {
                 return ((T as dynamic).fromJson(jsonDecode(v))) as T?;
               }))).onError((e, s) {
-        print("tryLoadToInstanceAsync: $e");
-        print(getStorageSync(filePath).readAsStringSync());
+        _storablePrint("tryLoadToInstanceAsync: $e");
+        _storablePrint(getStorageSync(filePath).readAsStringSync());
         return null;
       });
     } catch (e) {
-      print("tryLoadToInstanceAsync: $e");
+      _storablePrint("tryLoadToInstanceAsync: $e");
       try {
-        print(getStorageSync(filePath).readAsStringSync());
+        _storablePrint(getStorageSync(filePath).readAsStringSync());
       } catch (e) {
-        print("can't print current value");
+        _storablePrint("can't print current value");
         return Future.sync(() => null);
       }
       return Future.sync(() => null);
@@ -293,16 +296,16 @@ mixin Storable<T> {
           return ((T as dynamic).fromJson(jsonDecode(v))) as T?;
         }) */
           .then((v) => v ?? null))).onError((e, s) {
-        print("tryLoadStringAsync: $e");
-        print(getStorageSync(filePath).readAsStringSync());
+        _storablePrint("tryLoadStringAsync: $e");
+        _storablePrint(getStorageSync(filePath).readAsStringSync());
         return null;
       });
     } catch (e) {
-      print("tryLoadStringAsync: $e");
+      _storablePrint("tryLoadStringAsync: $e");
       try {
-        print(getStorageSync(filePath).readAsStringSync());
+        _storablePrint(getStorageSync(filePath).readAsStringSync());
       } catch (e) {
-        print("can't print current value");
+        _storablePrint("can't print current value");
         return Future.sync(() => null);
       }
       return Future.sync(() => null);
@@ -317,11 +320,11 @@ mixin Storable<T> {
       return Storable.getStorageSync(filePath)
           .readAsStringSync(encoding: encoding);
     } catch (e) {
-      print("tryLoadStringSync: $e");
+      _storablePrint("tryLoadStringSync: $e");
       try {
-        print(getStorageSync(filePath).readAsStringSync());
+        _storablePrint(getStorageSync(filePath).readAsStringSync());
       } catch (e) {
-        print("can't print current value");
+        _storablePrint("can't print current value");
         return null;
       }
       return null;
