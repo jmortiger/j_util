@@ -280,7 +280,10 @@ class User {
         avatarId: avatarId == -1 ? this.avatarId : avatarId,
       );
 
-  factory User.fromRawJson(String str) => User.fromJson(dc.json.decode(str));
+  factory User.fromRawJson(String str) {
+    var  t = dc.json.decode(str);
+    return (t is List) ? User.fromJson(t[0]) : User.fromJson(t);
+  }
 
   String toRawJson() => dc.json.encode(toJson());
 
@@ -746,8 +749,10 @@ class UserLoggedIn extends User {
         hasMail: hasMail ?? this.hasMail,
       );
 
-  factory UserLoggedIn.fromRawJson(String str) =>
-      UserLoggedIn.fromJson(dc.json.decode(str));
+  factory UserLoggedIn.fromRawJson(String str) {
+    var  t = dc.json.decode(str);
+    return (t is List) ? UserLoggedIn.fromJson(t[0]) : UserLoggedIn.fromJson(t);
+  }// => UserLoggedIn.fromJson(dc.json.decode(str));
 
   @override
   String toRawJson() => dc.json.encode(toJson());

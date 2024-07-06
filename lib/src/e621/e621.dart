@@ -1318,6 +1318,42 @@ class Api {
         credentials: credentials,
         method: "GET",
       );
+  /// https://e621.net/wiki_pages/2425#pools_listing
+  ///
+  /// The base URL is `/pools/$poolId.json` called with `GET`.
+  ///
+  /// * `search[name_matches]` Search pool names.
+  /// * `search[id]` Search for a pool ID, you can search for multiple IDs at once, separated by commas.
+  /// * `search[description_matches]` Search pool descriptions.
+  /// * `search[creator_name]` Search for pools based on creator name.
+  /// * `search[creator_id]` Search for pools based on creator ID.
+  /// * `search[is_active]` If the pool is active or hidden. (True/False)
+  /// * `search[category]` Can either be “series” or “collection”.
+  /// * `search[order]` The order that pools should be returned, can be any of: name, created_at, updated_at, post_count. If not specified it orders by updated_at
+  /// * `limit` The limit of how many pools should be retrieved.
+  /// This returns a JSON object:
+  /// {@template poolListing}
+  /// * `id` The ID of the pool.
+  /// * `name` The name of the pool.
+  /// * `created_at` The time the pool was created in the format of `YYYY-MM-DDTHH:MM:SS.MS+00:00`.
+  /// * `updated_at` The time the pool was updated in the format of `YYYY-MM-DDTHH:MM:SS.MS+00:00`.
+  /// * `creator_id` the ID of the user that created the pool.
+  /// * `description` The description of the pool.
+  /// * `is_active` If the pool is active and still getting posts added. (True/False)
+  /// * `category` Can be “series” or “collection”.
+  /// * `post_ids` An array group of posts in the pool.
+  /// * `creator_name` The name of the user that created the pool.
+  /// * `post_count` the amount of posts in the pool.
+  /// {@endtemplate}
+  static http.Request initGetPoolRequest(
+    int poolId, {
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsOptional(
+        path: "/pools/$poolId.json",
+        credentials: credentials,
+        method: "GET",
+      );
 
   /// https://e621.net/wiki_pages/2425#pools_update
   ///
