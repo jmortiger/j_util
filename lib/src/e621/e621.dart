@@ -592,6 +592,39 @@ class Api {
           },
           method: "POST",
           credentials: credentials);
+
+  /// [Vote](https://e621.net/wiki_pages/2425#posts_vote)
+  ///
+  /// The base URL is `/posts/<Post_ID>/votes.json` called with `POST`.
+  ///
+  /// * `score` Set to 1 to vote up and -1 to vote down. Repeat the request to remove the vote.
+  /// * `no_unvote` Set to true to have this score replace the old score. Repeat votes will not remove the vote.
+  /// Response:
+  /// Success:
+  /// HTTP 200
+  ///
+  /// {
+  ///    "score":<total>,
+  ///    "up":<up>,
+  ///    "down":<down>,
+  ///    "our_score":x
+  /// }
+  /// Where our_score is 1, 0, -1 depending on the action.
+  /// Failure:
+  /// HTTP 422
+  ///
+  /// {
+  ///     "success": false,
+  ///     "message": "An unexpected error occurred.",
+  ///     "code": null
+  /// }
+  static http.Request initPostCastVoteRequest({
+    required int postId,
+    required bool voteUp,
+    bool? noUnvote,
+    BaseCredentials? credentials,
+  }) =>
+      initVotePostRequest(postId: postId, score: voteUp ? 1 : -1);
   // #endregion Posts
   // #region Tags
   /// (Listing)[https://e621.net/wiki_pages/2425#tags_listing]
@@ -1095,14 +1128,17 @@ class Api {
       _baseInitRequestCredentialsOptional(
           path: "/users.json",
           queryParameters: {
-            if (searchNameMatches != null) "search[name_matches]": searchNameMatches,
+            if (searchNameMatches != null)
+              "search[name_matches]": searchNameMatches,
             if (searchAboutMe != null) "search[about_me]": searchAboutMe,
             if (searchAvatarId != null) "search[avatar_id]": searchAvatarId,
             if (searchLevel != null) "search[level]": searchLevel,
             if (searchMinLevel != null) "search[min_level]": searchMinLevel,
             if (searchMaxLevel != null) "search[max_level]": searchMaxLevel,
-            if (searchCanUploadFree != null) "search[can_upload_free]": searchCanUploadFree,
-            if (searchCanApprovePosts != null) "search[can_approve_posts]": searchCanApprovePosts,
+            if (searchCanUploadFree != null)
+              "search[can_upload_free]": searchCanUploadFree,
+            if (searchCanApprovePosts != null)
+              "search[can_approve_posts]": searchCanApprovePosts,
             if (searchOrder != null) "search[order]": searchOrder,
             if (limit != null) "limit": _validateLimit(limit),
             if (page != null) "page": page,
@@ -1189,9 +1225,11 @@ class Api {
         queryParameters: {
           if (postSetName != null) "post_set[name]": postSetName,
           if (postSetShortname != null) "post_set[shortname]": postSetShortname,
-          if (postSetDescription != null) "post_set[description]": postSetDescription,
+          if (postSetDescription != null)
+            "post_set[description]": postSetDescription,
           if (postSetIsPublic != null) "post_set[is_public]": postSetIsPublic,
-          if (postSetTransferOnDelete != null) "post_set[transfer_on_delete]": postSetTransferOnDelete,
+          if (postSetTransferOnDelete != null)
+            "post_set[transfer_on_delete]": postSetTransferOnDelete,
         },
       );
 
@@ -1216,9 +1254,11 @@ class Api {
         queryParameters: {
           if (postSetName != null) "post_set[name]": postSetName,
           if (postSetShortname != null) "post_set[shortname]": postSetShortname,
-          if (postSetDescription != null) "post_set[description]": postSetDescription,
+          if (postSetDescription != null)
+            "post_set[description]": postSetDescription,
           if (postSetIsPublic != null) "post_set[is_public]": postSetIsPublic,
-          if (postSetTransferOnDelete != null) "post_set[transfer_on_delete]": postSetTransferOnDelete,
+          if (postSetTransferOnDelete != null)
+            "post_set[transfer_on_delete]": postSetTransferOnDelete,
         },
       );
 
@@ -1318,6 +1358,7 @@ class Api {
         credentials: credentials,
         method: "GET",
       );
+
   /// https://e621.net/wiki_pages/2425#pools_listing
   ///
   /// The base URL is `/pools/$poolId.json` called with `GET`.
