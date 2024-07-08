@@ -101,6 +101,7 @@ mixin Storable<T> {
   }
 
   void writeSync({
+    T? contents,
     FileMode mode = FileMode.write,
     Encoding encoding = utf8,
     bool flush = false,
@@ -109,21 +110,22 @@ mixin Storable<T> {
       throw StateError("File not loaded/existent.");
     }
     file.$.writeAsStringSync(
-      jsonEncode((_instance as dynamic).toJson()),
+      jsonEncode(((contents ??= _instance) as dynamic).toJson()),
       encoding: encoding,
       flush: flush,
       mode: mode,
     );
   }
 
-  bool tryWriteSync(
-    T contents, {
+  bool tryWriteSync({
+    T? contents,
     FileMode mode = FileMode.write,
     Encoding encoding = utf8,
     bool flush = false,
   }) {
     try {
       writeSync(
+        contents: (contents ??= _instance),
         encoding: encoding,
         flush: flush,
         mode: mode,
@@ -147,6 +149,7 @@ mixin Storable<T> {
   /// This method does not transform newline characters ("\n") to the platform conventional line ending (e.g. "\r\n" on Windows). Use [Platform.lineTerminator] to separate lines in [contents] if platform conventional line endings are needed.
   /// {@endtemplate}
   Future<void> writeAsync({
+    T? contents,
     FileMode mode = FileMode.write,
     Encoding encoding = utf8,
     bool flush = false,
@@ -155,7 +158,7 @@ mixin Storable<T> {
       throw StateError("File not loaded/existent.");
     }
     return file.$.writeAsString(
-      jsonEncode((_instance as dynamic).toJson()),
+      jsonEncode(((contents ??= _instance) as dynamic).toJson()),
       encoding: encoding,
       flush: flush,
       mode: mode,
@@ -164,15 +167,83 @@ mixin Storable<T> {
 
   /// {@macro WriteAsStringAdapted}
   Future<bool> tryWriteAsync({
+    T? contents,
     FileMode mode = FileMode.write,
     Encoding encoding = utf8,
     bool flush = false,
   }) {
     try {
       return (((writeAsync(
+        contents: contents ?? _instance,
         encoding: encoding,
         flush: flush,
         mode: mode,
+      ).then((_) => true))).onError((e, s) {
+        _storablePrint(e);
+        _storablePrint(s);
+        return false;
+      }));
+    } catch (e) {
+      _storablePrint(e);
+      return Future.sync(() => false);
+    }
+  }
+
+  void clearSync({
+    bool flush = false,
+  }) {
+    if (!file.isAssigned || !_exists.isAssigned || !_exists.$) {
+      throw StateError("File not loaded/existent.");
+    }
+    file.$.writeAsStringSync(
+      "",
+      flush: flush,
+      mode: FileMode.write,
+    );
+  }
+
+  bool tryClearSync({
+    bool flush = false,
+  }) {
+    try {
+      clearSync(flush: flush);
+      return true;
+    } catch (e) {
+      _storablePrint(e);
+      return false;
+    }
+  }
+
+  /// {@template ClearAsStringAdapted}
+  /// Clears this [file].
+  ///
+  /// Opens [file], writes an empty string, and closes the file. Returns a [Future] that completes once the entire operation has completed.
+  ///
+  /// By default [writeAsString] creates the file for writing and truncates the file if it already exists. In order to append the bytes to an existing file, pass [FileMode.append] as the optional mode parameter.
+  ///
+  /// If the argument [flush] is set to true, the data written will be flushed to the file system before the returned future completes.
+  ///
+  /// This method does not transform newline characters ("\n") to the platform conventional line ending (e.g. "\r\n" on Windows). Use [Platform.lineTerminator] to separate lines in [contents] if platform conventional line endings are needed.
+  /// {@endtemplate}
+  Future<void> clearAsync({
+    bool flush = false,
+  }) {
+    if (!file.isAssigned || !_exists.isAssigned || !_exists.$) {
+      throw StateError("File not loaded/existent.");
+    }
+    return file.$.writeAsString(
+      "",
+      flush: flush,
+    );
+  }
+
+  /// {@macro ClearAsStringAdapted}
+  Future<bool> tryClearAsync({
+    bool flush = false,
+  }) {
+    try {
+      return (((clearAsync(
+        flush: flush,
       ).then((_) => true))).onError((e, s) {
         _storablePrint(e);
         _storablePrint(s);
