@@ -7,7 +7,7 @@ import 'package:j_util/src/types.dart';
 /// TODO: Add local_storage support for web testing.
 mixin Storable<T> {
   static Function storablePrint = print;
-  static Function get _storablePrint => beSilent ? print : () {};
+  static Function get _storablePrint => !beSilent ? print : ([dynamic v]) {};
   static bool beSilent = false;
   final file = LateFinal<File>();
   final _exists = LateInstance<bool>();

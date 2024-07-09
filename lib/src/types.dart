@@ -119,13 +119,13 @@ enum Platform {
   static bool get isWindows => _platform == Platform.windows;
   static bool get isWeb => _platform == Platform.web;
   static bool get isDesktop => switch (_platform) {
-    android || fuchsia || iOS => false,
-    linux || macOS || windows || web => true,
-  };
+        android || fuchsia || iOS => false,
+        linux || macOS || windows || web => true,
+      };
   static bool get isDesktopNative => switch (_platform) {
-    android || fuchsia || iOS || web => false,
-    linux || macOS || windows => true,
-  };
+        android || fuchsia || iOS || web => false,
+        linux || macOS || windows => true,
+      };
 }
 
 /// Handles safely accessing and initializing an asynchronously created asset
@@ -148,6 +148,7 @@ class LazyInitializer<T> {
 
   /// Accesses the true item.
   /// {@macro lateError}
+  @Deprecated(r"Use $")
   T get item => _item;
 
   /// Accesses the true item.
@@ -157,7 +158,13 @@ class LazyInitializer<T> {
   /// Synchronously accesses and returns the item, immediately
   /// asynchronously setting the item with [initializer] and
   /// returning [defaultValue] if that fails.
-  T? get itemSafe {
+  @Deprecated(r"Use $Safe")
+  T? get itemSafe => $Safe;
+
+  /// Synchronously accesses and returns the item, immediately
+  /// asynchronously setting the item with [initializer] and
+  /// returning [defaultValue] if that fails.
+  T? get $Safe {
     return _isAssigned
         ? _item
         : (() {
@@ -215,6 +222,7 @@ class LateFinal<T> {
 
   /// Accesses the true item.
   /// {@macro lateError}
+  @Deprecated(r"Use $")
   T get item => _item;
 
   /// Accesses the true item.
@@ -223,22 +231,31 @@ class LateFinal<T> {
 
   /// Sets the true item. Safely assigns the item once,
   /// gracefully fails afterwards.
-  set item(T value) {
+  @Deprecated(r"Use $")
+  set item(T value) => $ = value;
+
+  /// Sets the true item. Safely assigns the item once,
+  /// gracefully fails afterwards.
+  set $(T value) {
     if (!_isAssigned) {
       _item = value;
       _isAssigned = true;
     } else {} // TODO: Warn
   }
 
-  /// Sets the true item. Safely assigns the item once,
-  /// gracefully fails afterwards.
-  set $(T value) => item = value;
-
+  @Deprecated(r"Use $Safe")
   T? get itemSafe => _isAssigned ? _item : null;
 
   /// If the given value is null or [item] has been assigned, will not set value,
   /// even if [T] is a nullable type.
+  @Deprecated(r"Use $Safe")
   set itemSafe(T? valOrNull) => (valOrNull != null) ? (item = valOrNull) : null;
+
+  T? get $Safe => _isAssigned ? _item : null;
+
+  /// If the given value is null or [item] has been assigned, will not set value,
+  /// even if [T] is a nullable type.
+  set $Safe(T? valOrNull) => (valOrNull != null) ? (item = valOrNull) : null;
 
   T operator +(T value) {
     item = value;
@@ -264,6 +281,7 @@ class LateInstance<T> {
 
   /// Accesses the true item.
   /// {@macro lateError}
+  @Deprecated(r"Use $")
   T get item => _item;
 
   /// Accesses the true item.
@@ -272,6 +290,7 @@ class LateInstance<T> {
 
   /// Sets the true item. Safely assigns the item
   /// and sets the [isAssigned] flag.
+  @Deprecated(r"Use $Safe")
   set item(T value) {
     _item = value;
     _isAssigned = true;
@@ -281,12 +300,20 @@ class LateInstance<T> {
   /// and sets the [isAssigned] flag.
   set $(T value) => item = value;
 
-  T? get itemSafe => _isAssigned ? _item : null;
+  @Deprecated(r"Use $Safe")
+  T? get itemSafe => $Safe;
 
   /// If the given value is null, will not set value,
   /// even if [T] is a nullable type.
+  @Deprecated(r"Use $Safe")
   set itemSafe(T? valOrNull) =>
       (valOrNull != null) ? (_item = valOrNull) : null;
+
+  T? get $Safe => _isAssigned ? _item : null;
+
+  /// If the given value is null, will not set value,
+  /// even if [T] is a nullable type.
+  set $Safe(T? valOrNull) => (valOrNull != null) ? (_item = valOrNull) : null;
 
   T operator +(T value) {
     item = value;
