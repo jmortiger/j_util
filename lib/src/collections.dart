@@ -1357,6 +1357,12 @@ class ListNotifier<T> extends ChangeNotifier with ListMixin<T> {
     _backing[index] = value;
     notifyListeners();
   }
+
+  /// Default requires nullable type
+  @override
+  void add(T element) {
+    _backing.add(element);
+  }
 }
 
 extension ListToNotifier<T> on List<T> {
