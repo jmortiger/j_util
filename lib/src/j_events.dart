@@ -3,7 +3,8 @@ const event = Event();
 
 /// TODO: Expand w/ analyzer or codegen for intellisense
 class Event {
-  const Event();
+  final String name;
+  const Event({this.name = ""});
 }
 
 typedef VoidDelegate = void Function();
@@ -40,8 +41,7 @@ class JPureEvent {
 
 class JEvent<EventArgs extends JEventArgs> {
   JEvent([Iterable<Function(EventArgs)>? subscribers])
-      : _subscribers =
-            subscribers?.toSet() ?? <Function(EventArgs)>{};
+      : _subscribers = subscribers?.toSet() ?? <Function(EventArgs)>{};
   const JEvent.makeConst(Set<Function(EventArgs)> subscribers)
       : _subscribers = subscribers;
   final Set<Function(EventArgs)> _subscribers;
@@ -74,8 +74,7 @@ class JOwnedEvent<Owner, EventArgs extends JEventArgs> {
   // final Owner? owner;
   // JOwnedEvent({this.owner});
   JOwnedEvent([Iterable<OwnedEventDelegate>? subscribers])
-      : _subscribers =
-            subscribers?.toSet() ?? <OwnedEventDelegate>{};
+      : _subscribers = subscribers?.toSet() ?? <OwnedEventDelegate>{};
   const JOwnedEvent.makeConst(Set<OwnedEventDelegate> subscribers)
       : _subscribers = subscribers;
   final Set<OwnedEventDelegate> _subscribers;

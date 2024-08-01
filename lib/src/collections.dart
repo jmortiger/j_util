@@ -1368,3 +1368,152 @@ class ListNotifier<T> extends ChangeNotifier with ListMixin<T> {
 extension ListToNotifier<T> on List<T> {
   ListNotifier<T> toNotifier() => ListNotifier.of(this);
 }
+
+typedef MyPrecondition<T> = bool Function(MyLazyList<T>);
+typedef MyPreAdvance<T> = bool Function(int index, MyLazyList<T> lazyList);
+typedef MyPostAdvance<T> = bool Function(
+    T element, int index, MyLazyList<T> lazyList);
+
+class MyLazyList<T> with ListMixin<T> {
+  MyLazyList({
+    required Iterable<T> lazyCollection,
+    /* required Iterator<T> iterator, */
+    this.projectedLength,
+  })  : _lazyCollection = lazyCollection,
+        _iterator = lazyCollection.iterator,
+        _list = <T>[];
+
+  /// The [iterator] must be at the last element of [preDoneElements].
+  MyLazyList.partiallyDone({
+    required Iterable<T> lazyCollection,
+    required Iterator<T> iterator,
+    required List<T> preDoneElements,
+    this.projectedLength,
+  })  : _lazyCollection = lazyCollection,
+        _iterator = iterator,
+        _list = preDoneElements; // ?? <T>[];
+
+  @override
+  bool get isLazy => !isComplete;
+  final Iterable<T> _lazyCollection;
+  /* final  */ Iterator<T> _iterator;
+  final List<T> _list;
+  final int? projectedLength;
+  bool _isComplete = false;
+  bool get isComplete => _isComplete;
+  int get count => _list.length;
+  @override
+  T get first => _list.firstOrNull ?? _advanceTo(0, false)!;
+
+  @override
+  set first(T value) {
+    _advanceTo(0);
+    _list.first = value;
+  }
+
+  /// {@macro will}
+  ///
+  /// The last element.
+  ///
+  /// Throws a [StateError] if this is empty. Otherwise may iterate through the elements and returns the last one seen. Some iterables may have more efficient ways to find the last element (for example a list can directly access the last element, without iterating through the previous ones).
+  ///
+  /// {@macro copy}
+  @override
+  T get last => _isComplete ? _list.last : complete();
+
+  /// {@macro will}
+  @override
+  set last(T value) {
+    if (!_isComplete) complete();
+    _list.last = value;
+  }
+
+  /// {@macro will}
+  T complete() {
+    if (_isComplete) return _list.last;
+    _advanceUntil(conditionPreAdvance: null);
+    return _list.last;
+  }
+
+  /// {@macro may}
+  T? _advanceTo(int index, [bool failGracefully = false]) {
+    if (count <= index) {
+      _advanceUntil(
+        conditionPreAdvance: (i, _) => i <= index,
+        // precondition: (l) => l.count <= index,
+      );
+    }
+    return !failGracefully || count > index ? _list[index] : null;
+  }
+
+  /// {@macro may}
+  /* T */ void _advanceUntil({
+    required MyPreAdvance<T>? conditionPreAdvance,
+    MyPostAdvance<T>? conditionPostAdvance,
+    // MyPrecondition<T>? precondition,
+  }) {
+    if (/* precondition?.call(this) ?? true &&  */ !_isComplete) {
+      for (var i = _list.length;
+          (conditionPreAdvance?.call(i, this) ?? true) &&
+              !(_isComplete = !_iterator.moveNext());
+          i++) {
+        _list.add(_iterator.current);
+        if (!(conditionPostAdvance?.call(_iterator.current, i, this) ?? true)) {
+          break;
+        }
+      }
+    }
+  }
+
+  /// The number of objects in this list.
+  ///
+  /// The valid indices for a list are `0` through `length - 1`.
+  ///
+  /// ```
+  /// final numbers = <int>[1, 2, 3];
+  /// print(numbers.length); // 3
+  /// ```
+  /// {@macro copy}
+  ///
+  /// {@macro will}
+  /// This will essentially cause
+  /// a decomposition to a normal [List]
+  @override
+  int get length => _isComplete
+      ? _list.length
+      : (() {
+          complete();
+          return _list.length;
+        })();
+  void _enforceCompletion() => (!_isComplete) ? complete() : "";
+
+  /// {@macro will}
+  @override
+  set length(int newLength) {
+    _enforceCompletion();
+    _list.length = newLength;
+  }
+
+  /// The object at the given [index] in the list.
+  ///
+  /// The [index] must be a valid index of this list, which means that index must be non-negative and less than [length].
+  ///
+  /// {@macro copy}
+  ///
+  /// {@macro may}
+  @override
+  T operator [](int index) => _advanceTo(index)!;
+
+  /// Sets the value at the given [index] in the list to [value].
+  ///
+  /// The [index] must be a valid index of this list, which means that index must be non-negative and less than [length].
+  ///
+  /// {@macro copy}
+  ///
+  /// {@macro may}
+  @override
+  void operator []=(int index, T value) {
+    _advanceTo(index);
+    _list[index] = value;
+  }
+}

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:j_util/j_util.dart' as util;
 import 'package:j_util/src/extensions.dart';
 import 'package:j_util/platform_finder.dart' as pf;
@@ -298,6 +300,7 @@ class LateInstance<T> {
 
   /// Sets the true item. Safely assigns the item
   /// and sets the [isAssigned] flag.
+  /// TODO: inline implementation
   set $(T value) => item = value;
 
   @Deprecated(r"Use $Safe")
@@ -439,4 +442,162 @@ mixin UniqueIdGenerator<T> {
     if (depth >= 100) throw StateError("Failed to find new id");
     return _getNewId(++depth, _generateNewProposedId(proposedId));
   }
+}
+
+/// Wraps a [FutureOr] and cleanly handles error logging and type resolution.
+class ValueAsync<V> { 
+  final FutureOr<V> value;
+  final _value = LateInstance<V>();
+  ({Object error, StackTrace? stackTrace})? _errorData;
+  ({Object error, StackTrace? stackTrace})? get errorData => _errorData;
+  clearErrorData() => _errorData = null;
+  // Object? _error;
+  // StackTrace? _stackTrace;
+  // Object? _error;
+  // StackTrace? _stackTrace;
+  // set errorData(({Object error, StackTrace? stackTrace}) d) => (
+  //       error: _error,
+  //       stackTrace: _stackTrace,
+  //     );
+  // ({Object error, StackTrace? stackTrace}) get errorData => (
+  //       error: _error,
+  //       stackTrace: _stackTrace,
+  //     );
+  bool get isValue => value is V;
+  bool get isFuture => value is Future<V>;
+  bool get isComplete => _value.isAssigned;
+  Future<V>? get futureSafe => value as Future<V>?;
+  Future<V> get future => value as Future<V>;
+  V? get $Safe => _value.$Safe;
+  V get $ => _value.$;
+  set $(V v) => _value.$ = v;
+
+  /// If [trySilenceErrors] is true, will try to suppress errors
+  /// in default error catcher. Otherwise, rethrows.
+  ValueAsync({
+    void Function(V value)? then,
+    required this.value,
+    FutureOr<V> Function(Object? error, StackTrace s)? onError,
+    Function? catchError,
+    bool trySilenceErrors = false,
+  }) {
+    if (isFuture) {
+      final future = this.future;
+      if (onError != null) future.onError(onError);
+      future.catchError(catchError ?? makeDefaultCatchError(trySilenceErrors));
+      future.then((v) => _value.$ = v);
+    } else {
+      _initIsNotFuture();
+    }
+  }
+  ValueAsync.resolveError({
+    void Function(V value)? then,
+    required this.value,
+    FutureOr<V> Function(Object? error, StackTrace s)? onError,
+    Function? catchError,
+  }) {
+    if (isFuture) {
+      final future = this.future;
+      if (catchError != null) {
+        future.catchError(catchError);
+      } else if (onError == null) {
+        throw ArgumentError.value(
+          "Either onError or catchError must be defined.",
+        );
+      }
+      if (onError != null) future.onError(onError);
+      future.then((v) => _value.$ = v);
+    } else {
+      _initIsNotFuture();
+    }
+  }
+  ValueAsync.onError({
+    void Function(V value)? then,
+    required this.value,
+    required FutureOr<V> Function(Object? error, StackTrace s) onError,
+    // Function? catchError,
+    // bool trySilenceErrors = false,
+  }) {
+    if (isFuture) {
+      final future = this.future;
+      future.onError(onError);
+      // future.catchError(catchError ?? makeDefaultCatchError(trySilenceErrors));
+      future.then((v) => _value.$ = v);
+    } else {
+      _initIsNotFuture();
+    }
+  }
+
+  /// If [cacheErrors] is true, then the errors will be stored
+  /// in [ValueAsync.errorData] before executing [catchError].
+  ValueAsync.catchError({
+    void Function(V value)? then,
+    required this.value,
+    required Function catchError,
+    FutureOr<V> Function(Object? error, StackTrace s)? onError,
+    bool cacheErrors = true,
+  }) {
+    if (isFuture) {
+      final future = this.future;
+      if (onError != null) future.onError(onError);
+      future.catchError(!cacheErrors
+          ? catchError
+          : (e, s) {
+              // _error = e;
+              // _stackTrace = s;
+              _errorData = (error: e, stackTrace: s);
+              return catchError(e, s);
+            });
+      future.then((v) => _value.$ = v);
+    } else {
+      _initIsNotFuture();
+    }
+  }
+  void _initIsNotFuture() {
+    if (isValue) {
+      _value.$ = value as V;
+    }
+  }
+
+  /// If [trySilenceErrors] is true, will try to suppress errors
+  /// in default error catcher. Otherwise, rethrows.
+  Function makeDefaultCatchError([bool trySilenceErrors = false]) => (e, s) {
+        // _error = e;
+        // _stackTrace = s;
+        _errorData = (error: e, stackTrace: s);
+        return trySilenceErrors ? e : Error.throwWithStackTrace(e, s);
+      };
+}
+mixin ValueAsyncMixin<V> implements ValueAsync<V> {
+  final _inst = LateFinal<ValueAsync<V>>();
+  ValueAsync<V> get inst => _inst.$;
+  @override
+  bool get isValue => inst.isValue;
+  @override
+  bool get isFuture => inst.isFuture;
+  @override
+  bool get isComplete => inst.isComplete;
+  @override
+  Future<V>? get futureSafe => inst.futureSafe;
+  @override
+  Future<V> get future => inst.future;
+  @override
+  V? get $Safe => inst.$Safe;
+  @override
+  V get $ => inst.$;
+  @override
+  set $(V v) => inst.$;
+
+  @override
+  clearErrorData() => inst.clearErrorData();
+
+  @override
+  ({Object error, StackTrace? stackTrace})? get errorData => inst.errorData;
+
+  @override
+  Function makeDefaultCatchError([bool trySilenceErrors = false]) =>
+      inst.makeDefaultCatchError(trySilenceErrors);
+
+  @override
+  FutureOr<V> get value => inst.value;
 }

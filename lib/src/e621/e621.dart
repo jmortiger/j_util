@@ -255,6 +255,16 @@ class Api {
   }) =>
       (limit > lowerBound && limit <= upperBound) ? limit : defaultValue;
 
+  /// Works for postId; presumably works for all id types (user, set, pool, note).
+  static String? getPageString(
+          {String? pageModifier, //pageModifier.contains(RegExp(r'a|b'))
+          int? id,
+          int? pageNumber}) =>
+      (id != null && (pageModifier == 'a' || pageModifier == 'b'))
+          ? "$pageModifier$id"
+          : pageNumber != null
+              ? "$pageNumber"
+              : null;
   // #endregion Helpers
 
   static http.Request initDbExportRequest({
@@ -338,89 +348,89 @@ class Api {
   ///
   /// Note: Using page=<number> without a or b before the number just searches through pages. Posts will shift between pages if posts are deleted or created to the site between requests and page numbers greater than 750 will return an error.
   ///
-  /// * limit How many posts you want to retrieve. There is a hard limit of 320 posts per request. Defaults to the value set in user preferences.
-  /// * tags The tag search query. Any tag combination that works on the website will work here.
-  /// * page The page that will be returned. Can also be used with a or b + post_id to get the posts after or before the specified post ID. For example a13 gets every post after post_id 13 up to the limit. This overrides any ordering meta-tag, order:id_desc is always used instead.
+  /// * `limit` How many posts you want to retrieve. There is a hard limit of 320 posts per request. Defaults to the value set in user preferences.
+  /// * `tags` The tag search query. Any tag combination that works on the website will work here.
+  /// * `page` The page that will be returned. Can also be used with a or b + post_id to get the posts after or before the specified post ID. For example a13 gets every post after post_id 13 up to the limit. This overrides any ordering meta-tag, order:id_desc is always used instead.
   /// This returns a JSON array, for each post it returns:
   /// {@template PostListing}
   ///
-  /// * id The ID number of the post.
-  /// * created_at The time the post was created in the format of YYYY-MM-DDTHH:MM:SS.MS+00:00.
-  /// * updated_at The time the post was last updated in the format of YYYY-MM-DDTHH:MM:SS.MS+00:00.
-  /// * file (array group)
-  /// * width The width of the post.
-  /// * height The height of the post.
-  /// * ext The file’s extension.
-  /// * size The size of the file in bytes.
-  /// * md5 The md5 of the file.
-  /// * url The URL where the file is hosted on E6
-  /// * preview (array group)
-  /// * width The width of the post preview.
-  /// * height The height of the post preview.
-  /// * url The URL where the preview file is hosted on E6
-  /// * sample (array group)
-  /// * has If the post has a sample/thumbnail or not. (True/False)
-  /// * width The width of the post sample.
-  /// * height The height of the post sample.
-  /// * url The URL where the sample file is hosted on E6.
-  /// * score (array group)
-  /// * up The number of times voted up.
-  /// * down A negative number representing the number of times voted down.
-  /// * total The total score (up + down).
-  /// * tags (array group)
-  /// * general A JSON array of all the general tags on the post.
-  /// * species A JSON array of all the species tags on the post.
-  /// * character A JSON array of all the character tags on the post.
-  /// * artist A JSON array of all the artist tags on the post.
-  /// * invalid A JSON array of all the invalid tags on the post.
-  /// * lore A JSON array of all the lore tags on the post.
-  /// * meta A JSON array of all the meta tags on the post.
-  /// * locked_tags A JSON array of tags that are locked on the post.
-  /// * change_seq An ID that increases for every post alteration on E6 (explained below)
-  /// * flags (array group)
-  /// * pending If the post is pending approval. (True/False)
-  /// * flagged If the post is flagged for deletion. (True/False)
-  /// * note_locked If the post has it’s notes locked. (True/False)
-  /// * status_locked If the post’s status has been locked. (True/False)
-  /// * rating_locked If the post’s rating has been locked. (True/False)
-  /// * deleted If the post has been deleted. (True/False)
-  /// * rating The post’s rating. Either s, q or e.
-  /// * fav_count How many people have favorited the post.
-  /// * sources The source field of the post.
-  /// * pools An array of Pool IDs that the post is a part of.
-  /// * relationships (array group)
-  /// * parent_id The ID of the post’s parent, if it has one.
-  /// * has_children If the post has child posts (True/False)
-  /// * has_active_children
-  /// * children A list of child post IDs that are linked to the post, if it has any.
-  /// * approver_id The ID of the user that approved the post, if available.
-  /// * uploader_id The ID of the user that uploaded the post.
-  /// * description The post’s description.
-  /// * comment_count The count of comments on the post.
-  /// * is_favorited If provided auth credentials, will return if the authenticated user has favorited the post or not.
-  /// * change_seq is a number that is increased every time a post is changed on the site. It gets updated whenever a post has any of these values change:
-  ///     * tag_string
-  ///     * source
-  ///     * description
-  ///     * rating
-  ///     * md5
-  ///     * parent_id
-  ///     * approver_id
-  ///     * is_deleted
-  ///     * is_pending
-  ///     * is_flagged
-  ///     * is_rating_locked
-  ///     * is_pending
-  ///     * is_flagged
-  ///     * is_rating_locked
+  /// * `id` The ID number of the post.
+  /// * `created_at` The time the post was created in the format of YYYY-MM-DDTHH:MM:SS.MS+00:00.
+  /// * `updated_at` The time the post was last updated in the format of YYYY-MM-DDTHH:MM:SS.MS+00:00.
+  /// * `file` (array group)
+  /// * `width` The width of the post.
+  /// * `height` The height of the post.
+  /// * `ext` The file’s extension.
+  /// * `size` The size of the file in bytes.
+  /// * `md5` The md5 of the file.
+  /// * `url` The URL where the file is hosted on E6
+  /// * `preview` (array group)
+  /// * `width` The width of the post preview.
+  /// * `height` The height of the post preview.
+  /// * `url` The URL where the preview file is hosted on E6
+  /// * `sample` (array group)
+  /// * `has` If the post has a sample/thumbnail or not. (True/False)
+  /// * `width` The width of the post sample.
+  /// * `height` The height of the post sample.
+  /// * `url` The URL where the sample file is hosted on E6.
+  /// * `score` (array group)
+  /// * `up` The number of times voted up.
+  /// * `down` A negative number representing the number of times voted down.
+  /// * `total` The total score (up + down).
+  /// * `tags` (array group)
+  /// * `general` A JSON array of all the general tags on the post.
+  /// * `species` A JSON array of all the species tags on the post.
+  /// * `character` A JSON array of all the character tags on the post.
+  /// * `artist` A JSON array of all the artist tags on the post.
+  /// * `invalid` A JSON array of all the invalid tags on the post.
+  /// * `lore` A JSON array of all the lore tags on the post.
+  /// * `meta` A JSON array of all the meta tags on the post.
+  /// * `locked_tags` A JSON array of tags that are locked on the post.
+  /// * `change_seq` An ID that increases for every post alteration on E6 (explained below)
+  /// * `flags` (array group)
+  /// * `pending` If the post is pending approval. (True/False)
+  /// * `flagged` If the post is flagged for deletion. (True/False)
+  /// * `note_locked` If the post has it’s notes locked. (True/False)
+  /// * `status_locked` If the post’s status has been locked. (True/False)
+  /// * `rating_locked` If the post’s rating has been locked. (True/False)
+  /// * `deleted` If the post has been deleted. (True/False)
+  /// * `rating` The post’s rating. Either s, q or e.
+  /// * `fav_count` How many people have favorited the post.
+  /// * `sources` The source field of the post.
+  /// * `pools` An array of Pool IDs that the post is a part of.
+  /// * `relationships` (array group)
+  /// * `parent_id` The ID of the post’s parent, if it has one.
+  /// * `has_children` If the post has child posts (True/False)
+  /// * `has_active_children`
+  /// * `children` A list of child post IDs that are linked to the post, if it has any.
+  /// * `approver_id` The ID of the user that approved the post, if available.
+  /// * `uploader_id` The ID of the user that uploaded the post.
+  /// * `description` The post’s description.
+  /// * `comment_count` The count of comments on the post.
+  /// * `is_favorited` If provided auth credentials, will return if the authenticated user has favorited the post or not.
+  /// * `change_seq` is a number that is increased every time a post is changed on the site. It gets updated whenever a post has any of these values change:
+  ///     * `tag_string`
+  ///     * `source`
+  ///     * `description`
+  ///     * `rating`
+  ///     * `md5`
+  ///     * `parent_id`
+  ///     * `approver_id`
+  ///     * `is_deleted`
+  ///     * `is_pending`
+  ///     * `is_flagged`
+  ///     * `is_rating_locked`
+  ///     * `is_pending`
+  ///     * `is_flagged`
+  ///     * `is_rating_locked`
   /// {@endtemplate}
   ///
-  /// You cannot search for more than 40 tags at a time. This yields:
+  /// You cannot search for more than [UserLoggedIn.tagQueryLimit] tags at a time. This yields:
   /// ```
   /// HTTP 422
   /// {
   ///   "success": false,
-  ///   "message": "You cannot search for more than 40 tags at a time",
+  ///   "message": "You cannot search for more than ## tags at a time",
   ///   "code": null
   /// }
   /// ```

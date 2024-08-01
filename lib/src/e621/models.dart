@@ -281,7 +281,7 @@ class User {
       );
 
   factory User.fromRawJson(String str) {
-    var  t = dc.json.decode(str);
+    var t = dc.json.decode(str);
     return (t is List) ? User.fromJson(t[0]) : User.fromJson(t);
   }
 
@@ -580,7 +580,10 @@ class UserLoggedIn extends User {
   final int apiBurstLimit;
   final int remainingApiLimit;
   final int statementTimeout;
+  /// Defaults to 80000.
   final int favoriteLimit;
+
+  /// Defaults to 40.
   final int tagQueryLimit;
   final bool hasMail;
 
@@ -750,9 +753,9 @@ class UserLoggedIn extends User {
       );
 
   factory UserLoggedIn.fromRawJson(String str) {
-    var  t = dc.json.decode(str);
+    var t = dc.json.decode(str);
     return (t is List) ? UserLoggedIn.fromJson(t[0]) : UserLoggedIn.fromJson(t);
-  }// => UserLoggedIn.fromJson(dc.json.decode(str));
+  } // => UserLoggedIn.fromJson(dc.json.decode(str));
 
   @override
   String toRawJson() => dc.json.encode(toJson());
@@ -1588,11 +1591,11 @@ class Score {
         "total": total,
       };
 
-  Score copyWith(
+  Score copyWith({
     int? up,
     int? down,
     int? total,
-  ) =>
+  }) =>
       Score(
         up: up ?? this.up,
         down: down ?? this.down,
@@ -1846,7 +1849,7 @@ class PostRelationships {
 
   bool get hasParent => parentId != null;
 
-  PostRelationships({
+  const PostRelationships({
     required this.parentId,
     required this.hasChildren,
     required this.hasActiveChildren,
