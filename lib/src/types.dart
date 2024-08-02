@@ -445,7 +445,7 @@ mixin UniqueIdGenerator<T> {
 }
 
 /// Wraps a [FutureOr] and cleanly handles error logging and type resolution.
-class ValueAsync<V> { 
+class ValueAsync<V> {
   final FutureOr<V> value;
   final _value = LateInstance<V>();
   ({Object error, StackTrace? stackTrace})? _errorData;
@@ -567,7 +567,90 @@ class ValueAsync<V> {
         _errorData = (error: e, stackTrace: s);
         return trySilenceErrors ? e : Error.throwWithStackTrace(e, s);
       };
+
+  /// If [trySilenceErrors] is true, will try to suppress errors
+  /// in default error catcher. Otherwise, rethrows.
+  static Future<V> resolve<V, T>({
+    T Function(V value)? then,
+    required FutureOr<V> value,
+    FutureOr<V> Function(Object? error, StackTrace s)? onError,
+    Function? catchError,
+    bool trySilenceErrors = false,
+  }) async {
+    if (value is Future<V>) {
+      if (onError != null) value.onError(onError);
+      value.catchError(catchError ??
+          (e, s) {
+            return trySilenceErrors ? e : Error.throwWithStackTrace(e, s);
+          });
+      return value..then((v) => then?.call(v));
+    } else {
+      then?.call(value);
+      return value;
+    }
+  }
+
+  static Future<V> resolveResolveError<V, T>({
+    T Function(V value)? then,
+    required FutureOr<V> value,
+    FutureOr<V> Function(Object? error, StackTrace s)? onError,
+    Function? catchError,
+  }) async {
+    if (value is Future<V>) {
+      if (catchError != null) {
+        value.catchError(catchError);
+      } else if (onError == null) {
+        throw ArgumentError.value(
+          "Either onError or catchError must be defined.",
+        );
+      }
+      if (onError != null) value.onError(onError);
+      return value..then((v) => then?.call(v));
+    } else {
+      then?.call(value);
+      return value;
+    }
+  }
+
+  static Future<V> resolveOnError<V, T>({
+    T Function(V value)? then,
+    required FutureOr<V> value,
+    required FutureOr<V> Function(Object? error, StackTrace s) onError,
+    // Function? catchError,
+    // bool trySilenceErrors = false,
+  }) async {
+    if (value is Future<V>) {
+      value.onError(onError);
+      // future.catchError(catchError ?? makeDefaultCatchError(trySilenceErrors));
+      return value..then((v) => then?.call(v));
+    } else {
+      then?.call(value);
+      return value;
+    }
+  }
+
+  /// If [cacheErrors] is true, then the errors will be stored
+  /// in [ValueAsync.errorData] before executing [catchError].
+  static Future<V> resolveCatchError<V, T>({
+    T Function(V value)? then,
+    required FutureOr<V> value,
+    required Function catchError,
+    FutureOr<V> Function(Object? error, StackTrace s)? onError,
+    bool cacheErrors = true,
+  }) async {
+    if (value is Future<V>) {
+      if (onError != null) value.onError(onError);
+      value.catchError(!cacheErrors
+          ? catchError
+          : (e, s) => catchError(e, s));
+      return value..then((v) => then?.call(v));
+    } else {
+      then?.call(value);
+      return value;
+    }
+  }
 }
+
 mixin ValueAsyncMixin<V> implements ValueAsync<V> {
   final _inst = LateFinal<ValueAsync<V>>();
   ValueAsync<V> get inst => _inst.$;
