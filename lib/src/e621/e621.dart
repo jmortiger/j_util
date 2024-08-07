@@ -265,6 +265,19 @@ class Api {
           : pageNumber != null
               ? "$pageNumber"
               : null;
+  
+  static String? generateDiff(List<String> oldValues, List<String> newValues) {
+    
+    final origTags = oldValues.toSet();
+    final editedTagSet = newValues.toSet();
+    final newTags = editedTagSet.difference(origTags).fold("", _folder);
+    final removedTags =
+        origTags.difference(editedTagSet).fold("", _minusFolder);
+    final combined = _folder(newTags, removedTags);
+    return combined.isEmpty ? null : combined;
+  }
+  static String _folder(acc, e) => "$acc${acc.isEmpty ? "" : " "}$e";
+  static String _minusFolder(acc, e) => "$acc${acc.isEmpty ? "" : " "}-$e";
   // #endregion Helpers
 
   static http.Request initDbExportRequest({
@@ -519,34 +532,51 @@ class Api {
   /// * `post[is_rating_locked]` Set to true to prevent others from changing the rating.
   /// * `post[is_note_locked]` Set to true to prevent others from adding notes.
   /// * `post[edit_reason]` The reason for the submitted changes. Inline DText allowed.
+  /// TODO: Handle default values, as null is acceptable for some.
   static http.Request initUpdatePostRequest({
     required int postId,
     String? postTagStringDiff,
     String? postSourceDiff,
-    String? postParentId,
-    String? postOldParentId,
+    int? postParentId,
+    int? postOldParentId,
     String? postDescription,
     String? postOldDescription,
     String? postRating,
     String? postOldRating,
-    String? postIsRatingLocked,
-    String? postIsNoteLocked,
+    bool? postIsRatingLocked,
+    bool? postIsNoteLocked,
     String? postEditReason,
     BaseCredentials? credentials,
   }) =>
       _baseInitRequestCredentialsRequired(
           path: "/posts/$postId.json",
           queryParameters: {
-            if (postTagStringDiff != null)
+            if (postTagStringDiff?.isNotEmpty ?? false)
               "post[tag_string_diff]": postTagStringDiff,
-            if (postSourceDiff != null) "post[source_diff]": postSourceDiff,
-            if (postParentId != null) "post[parent_id]": postParentId,
-            if (postOldParentId != null) "post[old_parent_id]": postOldParentId,
-            if (postDescription != null) "post[description]": postDescription,
-            if (postOldDescription != null)
+            // if (postTagStringDiff != null)
+            //   "post[tag_string_diff]": postTagStringDiff,
+            if (postSourceDiff?.isNotEmpty ?? false)
+              "post[source_diff]": postSourceDiff,
+            // if (postSourceDiff != null) "post[source_diff]": postSourceDiff,
+            if (postParentId != postOldParentId && (postParentId ?? -1) >= 0)
+              "post[parent_id]": postParentId,
+            if (postParentId != postOldParentId && (postOldParentId ?? -1) >= 0)
+              "post[old_parent_id]": postOldParentId,
+            // if ((postParentId ?? 1) >= 0) "post[parent_id]": postParentId,
+            // if ((postOldParentId ?? 1) >= 0) "post[old_parent_id]": postOldParentId,
+            if ((postDescription ?? "") != (postOldDescription ?? ""))
+              "post[description]": postDescription,
+            if ((postDescription ?? "") != (postOldDescription ?? ""))
               "post[old_description]": postOldDescription,
-            if (postRating != null) "post[rating]": postRating,
-            if (postOldRating != null) "post[old_rating]": postOldRating,
+            // if (postDescription != null) "post[description]": postDescription,
+            // if (postOldDescription != null)
+            //   "post[old_description]": postOldDescription,
+            if (postRating != null && postRating != postOldRating)
+              "post[rating]": postRating,
+            if (postOldRating != null && postRating != postOldRating)
+              "post[old_rating]": postOldRating,
+            // if (postRating != null) "post[rating]": postRating,
+            // if (postOldRating != null) "post[old_rating]": postOldRating,
             if (postIsRatingLocked != null)
               "post[is_rating_locked]": postIsRatingLocked,
             if (postIsNoteLocked != null)
@@ -555,6 +585,24 @@ class Api {
           },
           method: "PATCH",
           credentials: credentials);
+  static bool doesPostUpdateHaveChanges({
+    String? postTagStringDiff,
+    String? postSourceDiff,
+    int? postParentId,
+    int? postOldParentId,
+    String? postDescription,
+    String? postOldDescription,
+    String? postRating,
+    String? postOldRating,
+  }) =>
+      (postTagStringDiff?.isNotEmpty ?? false) &&
+      (postSourceDiff?.isNotEmpty ?? false) &&
+      (postParentId != postOldParentId && (postParentId ?? -1) >= 0) &&
+      (postParentId != postOldParentId && (postOldParentId ?? -1) >= 0) &&
+      ((postDescription ?? "") != (postOldDescription ?? "")) &&
+      ((postDescription ?? "") != (postOldDescription ?? "")) &&
+      (postRating != null && postRating != postOldRating) &&
+      (postOldRating != null && postRating != postOldRating);
 
   /// [Vote](https://e621.net/wiki_pages/2425#posts_vote)
   ///
@@ -1173,14 +1221,16 @@ class Api {
   /// * `search[creator_name]` Must be a username
   /// * `search[creator_id]` Must be a user id
   /// * `search[order]`
+  /// * `maintainer_id` A user with permissions to add and remove posts from the set; Must be a user id.
   /// * limit How many items you want to retrieve. There is a hard limit of 320 items per request. Defaults to 75.
   /// * page The page that will be returned. Can also be used with a or b + item_id to get the items after or before the specified item ID. For example a13 gets every item after item_id 13 up to the limit.
   static http.Request initSearchSetsRequest({
     String? searchName,
     String? searchShortname,
     String? searchCreatorName,
-    String? searchCreatorId,
+    int? searchCreatorId,
     SetOrder? searchOrder,
+    int? maintainerId,
     int? limit = 75,
     String? page,
     BaseCredentials? credentials,
@@ -1196,6 +1246,7 @@ class Api {
             "search[creator_name]": searchCreatorName,
           if (searchCreatorId != null) "search[creator_id]": searchCreatorId,
           if (searchOrder != null) "search[order]": searchOrder,
+          if (maintainerId != null) "maintainer_id": maintainerId,
           if (limit != null) "limit": _validateLimit(limit),
           if (page != null) "page": page,
         },
@@ -1274,7 +1325,7 @@ class Api {
 
   /// `/post_sets/$setId/add_posts.json` `POST`
   /// * `post_ids[]` space separated list (i think)
-  /// Success: 201
+  /// Success: 201 with the body of the chosen set.
   static http.Request initAddToSetRequest(
     int setId,
     List<int> postIds, {
@@ -1292,7 +1343,7 @@ class Api {
 
   /// `/post_sets/$setId/remove_posts.json` `POST`
   /// * `post_ids[]` space separated list (i think)
-  /// Success: 201
+  /// Success: 201 with the body of the chosen set.
   static http.Request initRemoveFromSetRequest(
     int setId,
     List<int> postIds, {

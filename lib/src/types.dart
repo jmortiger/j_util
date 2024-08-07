@@ -474,6 +474,7 @@ class ValueAsync<V> {
 
   /// If [trySilenceErrors] is true, will try to suppress errors
   /// in default error catcher. Otherwise, rethrows.
+  /// TODO: make value unnamed parameter
   ValueAsync({
     void Function(V value)? then,
     required this.value,

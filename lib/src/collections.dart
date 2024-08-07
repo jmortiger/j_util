@@ -23,9 +23,10 @@ class IterableInjector<From, To> extends Iterable<To> {
   final Iterable<From> _baseIterable;
   final Mapper<From, To> _mapper;
 
-  IterableInjector(
-      {required Iterable<From> baseIterable, required Mapper<From, To> mapper})
-      : _baseIterable = baseIterable,
+  IterableInjector({
+    required Iterable<From> baseIterable,
+    required Mapper<From, To> mapper,
+  })  : _baseIterable = baseIterable,
         _mapper = mapper;
   @override
   Iterator<To> get iterator =>
