@@ -15,8 +15,9 @@ typedef Mapper<T, U> = U Function(T elem, int index, Iterable<T> list);
 typedef MapperSparse<T, U> = U Function(T elem, Iterable<T> list);
 
 extension StringFold on Iterable<String> {
-  String foldToString([String delimiter = ""]) =>
-      fold("", (acc, e) => "$acc$delimiter$e");
+  String foldToString([String delimiter = " "]) =>
+      fold("", (acc, e) => acc.isNotEmpty ? "$acc$delimiter$e" : e);
+      // fold("", (acc, e) => "$acc$delimiter$e");
 }
 
 class IterableInjector<From, To> extends Iterable<To> {

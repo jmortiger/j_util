@@ -143,6 +143,8 @@ class Api {
   static const softRateLimit = Duration(seconds: 2);
 
   /// The ideal rate limit in seconds per request.
+  /// 
+  /// The ideal rate limit is a way to ensure that 
   ///
   /// Duration(seconds: 3);
   static const idealRateLimit = Duration(seconds: 3);
@@ -1300,9 +1302,17 @@ class Api {
   /// * `post_set[description]`
   /// * `post_set[is_public]` Private sets are only visible to you. Public sets are visible to anyone, but only you and users you assign as maintainers can edit the set. Only accounts three days or older can make public sets.
   /// * `post_set[transfer_on_delete]` If "Transfer on Delete" is enabled, when a post is deleted from the site, its parent (if any) will be added to this set in its place. Disable if you want posts to simply be removed from this set with no replacement.
+  /// 
+  /// Success: 201 
+  /// 
+  /// Returns the created set.
+  /// {@macro setListing}
+  /// 
+  /// Error: 
+  /// 422 {"errors":{"name":["must be between three and one hundred characters long"],"shortname":["must be between three and fifty characters long","must only contain numbers, lowercase letters, and underscores","must contain at least one lowercase letter or underscore"]}}
   static http.Request initCreateSetRequest({
-    String? postSetName,
-    String? postSetShortname,
+    required String postSetName,
+    required String postSetShortname,
     String? postSetDescription,
     bool? postSetIsPublic,
     bool? postSetTransferOnDelete,
@@ -1548,6 +1558,14 @@ class Api {
         credentials: credentials,
       );
   // #endregion Pools
+  // #region Post Versions
+  /// https://e621.net/post_versions?search%5Bupdater_name%5D=a&search%5Bpost_id%5D=1&search%5Breason%5D=a&search%5Bdescription%5D=a&search%5Bdescription_changed%5D=true&search%5Brating_changed%5D=any&search%5Brating%5D=s&search%5Bparent_id%5D=10&search%5Bparent_id_changed%5D=1&search%5Btags%5D=1&search%5Btags_added%5D=1&search%5Btags_removed%5D=1&search%5Blocked_tags%5D=1&search%5Blocked_tags_added%5D=1&search%5Blocked_tags_removed%5D=1&search%5Bsource_changed%5D=true&search%5Buploads%5D=excluded&commit=Search
+  ///
+  /// The base URL is `/post_versions.json` called with `GET`.
+  /// 
+  /// * `limit` The limit of how many items should be retrieved.
+  // TODO: this
+  // #endregion Post Versions
 }
 
 enum SetOrder with PrettyPrintEnum {
