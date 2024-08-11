@@ -580,6 +580,7 @@ class UserLoggedIn extends User {
   final int apiBurstLimit;
   final int remainingApiLimit;
   final int statementTimeout;
+
   /// Defaults to 80000.
   final int favoriteLimit;
 
@@ -1039,7 +1040,7 @@ class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
             negativeFeedbackCount ?? this.negativeFeedbackCount,
         uploadLimit: uploadLimit ?? this.uploadLimit,
         profileAbout: profileAbout ?? this.profileAbout,
-        profileArtInfo: profileArtinfo ?? this.profileArtInfo,
+        profileArtInfo: profileArtinfo ?? profileArtInfo,
         id: id ?? this.id,
         createdAt: createdAt ?? this.createdAt,
         name: name ?? this.name,
@@ -1096,6 +1097,91 @@ class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
         tagQueryLimit: tagQueryLimit ?? this.tagQueryLimit,
         hasMail: hasMail ?? this.hasMail,
       );
+  UserLoggedInDetail copyWithInstance(User? other) {
+    dynamic userDynamic = other;
+    return UserLoggedInDetail(
+      wikiPageVersionCount:
+          userDynamic?.wikiPageVersionCount ?? wikiPageVersionCount,
+      artistVersionCount:
+          userDynamic?.artistVersionCount ?? artistVersionCount,
+      poolVersionCount: userDynamic?.poolVersionCount ?? poolVersionCount,
+      forumPostCount: userDynamic?.forumPostCount ?? forumPostCount,
+      commentCount: userDynamic?.commentCount ?? commentCount,
+      flagCount: userDynamic?.flagCount ?? flagCount,
+      favoriteCount: userDynamic?.favoriteCount ?? favoriteCount,
+      positiveFeedbackCount:
+          userDynamic?.positiveFeedbackCount ?? positiveFeedbackCount,
+      neutralFeedbackCount:
+          userDynamic?.neutralFeedbackCount ?? neutralFeedbackCount,
+      negativeFeedbackCount:
+          userDynamic?.negativeFeedbackCount ?? negativeFeedbackCount,
+      uploadLimit: userDynamic?.uploadLimit ?? uploadLimit,
+      profileAbout: userDynamic?.profileAbout ?? profileAbout,
+      profileArtInfo: userDynamic?.profileArtinfo ?? profileArtInfo,
+      id: userDynamic?.id ?? id,
+      createdAt: userDynamic?.createdAt ?? createdAt,
+      name: userDynamic?.name ?? name,
+      level: userDynamic?.level ?? level,
+      baseUploadLimit: userDynamic?.baseUploadLimit ?? baseUploadLimit,
+      postUploadCount: userDynamic?.postUploadCount ?? postUploadCount,
+      postUpdateCount: userDynamic?.postUpdateCount ?? postUpdateCount,
+      noteUpdateCount: userDynamic?.noteUpdateCount ?? noteUpdateCount,
+      isBanned: userDynamic?.isBanned ?? isBanned,
+      canApprovePosts: userDynamic?.canApprovePosts ?? canApprovePosts,
+      canUploadFree: userDynamic?.canUploadFree ?? canUploadFree,
+      levelString: userDynamic?.levelString ?? levelString,
+      avatarId: userDynamic == null ? avatarId : userDynamic!.avatarId,
+      blacklistUsers: userDynamic?.blacklistUsers ?? blacklistUsers,
+      descriptionCollapsedInitially:
+          userDynamic?.descriptionCollapsedInitially ?? descriptionCollapsedInitially,
+      hideComments: userDynamic?.hideComments ?? hideComments,
+      showHiddenComments:
+          userDynamic?.showHiddenComments ?? showHiddenComments,
+      showPostStatistics:
+          userDynamic?.showPostStatistics ?? showPostStatistics,
+      receiveEmailNotifications:
+          userDynamic?.receiveEmailNotifications ?? receiveEmailNotifications,
+      enableKeyboardNavigation:
+          userDynamic?.enableKeyboardNavigation ?? enableKeyboardNavigation,
+      enablePrivacyMode:
+          userDynamic?.enablePrivacyMode ?? enablePrivacyMode,
+      styleUsernames: userDynamic?.styleUsernames ?? styleUsernames,
+      enableAutoComplete:
+          userDynamic?.enableAutoComplete ?? enableAutoComplete,
+      disableCroppedThumbnails:
+          userDynamic?.disableCroppedThumbnails ?? disableCroppedThumbnails,
+      enableSafeMode: userDynamic?.enableSafeMode ?? enableSafeMode,
+      disableResponsiveMode:
+          userDynamic?.disableResponsiveMode ?? disableResponsiveMode,
+      noFlagging: userDynamic?.noFlagging ?? noFlagging,
+      disableUserDmails:
+          userDynamic?.disableUserDmails ?? disableUserDmails,
+      enableCompactUploader:
+          userDynamic?.enableCompactUploader ?? enableCompactUploader,
+      replacementsBeta: userDynamic?.replacementsBeta ?? replacementsBeta,
+      updatedAt: userDynamic?.updatedAt ?? updatedAt,
+      email: userDynamic?.email ?? email,
+      lastLoggedInAt: userDynamic?.lastLoggedInAt ?? lastLoggedInAt,
+      lastForumReadAt: userDynamic?.lastForumReadAt ?? lastForumReadAt,
+      recentTags: userDynamic?.recentTags ?? recentTags,
+      commentThreshold: userDynamic?.commentThreshold ?? commentThreshold,
+      defaultImageSize: userDynamic?.defaultImageSize ?? defaultImageSize,
+      favoriteTags: userDynamic?.favoriteTags ?? favoriteTags,
+      blacklistedTags: userDynamic?.blacklistedTags ?? blacklistedTags,
+      timeZone: userDynamic?.timeZone ?? timeZone,
+      perPage: userDynamic?.perPage ?? perPage,
+      customStyle: userDynamic?.customStyle ?? customStyle,
+      apiRegenMultiplier:
+          userDynamic?.apiRegenMultiplier ?? apiRegenMultiplier,
+      apiBurstLimit: userDynamic?.apiBurstLimit ?? apiBurstLimit,
+      remainingApiLimit:
+          userDynamic?.remainingApiLimit ?? remainingApiLimit,
+      statementTimeout: userDynamic?.statementTimeout ?? statementTimeout,
+      favoriteLimit: userDynamic?.favoriteLimit ?? favoriteLimit,
+      tagQueryLimit: userDynamic?.tagQueryLimit ?? tagQueryLimit,
+      hasMail: userDynamic?.hasMail ?? hasMail,
+    );
+  }
 
   factory UserLoggedInDetail.fromRawJson(String str) =>
       UserLoggedInDetail.fromJson(dc.json.decode(str));

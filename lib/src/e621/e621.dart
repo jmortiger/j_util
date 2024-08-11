@@ -105,7 +105,7 @@ class E6Credentials extends BaseCredentials {
 class Api {
   // #region Tag parsing
   /// https://e621.net/help/tags
-  /// 1 tag w/ 0 posts w/ `%` (`%82%b5%82%cc%82%e8%82%a8%82%f1_short_hair`), 0 tags w/ `#`.
+  /// 1 tag and 0 posts w/ `%` (`%82%b5%82%cc%82%e8%82%a8%82%f1_short_hair`), 0 tags w/ `#`.
   static const disallowedInTagName = '%,#\\*';
   static const alphabetLowerAndUpper =
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -115,15 +115,21 @@ class Api {
   // #endregion Tag parsing
 
   // #region URI
-  static final baseUri = Uri.https(authority);
-  static const baseUrl = origin;
-  static const origin = "$scheme://$authority";
-  static const protocol = "$scheme:";
-  static const scheme = "https";
-  static const authority = "$hostName$port";
-  static const host = authority;
-  static const hostName = "e621.net";
-  static const port = "";
+  // static final baseUri = Uri.https(authority);
+  // static const baseUrl = origin;
+  // static const origin = "$scheme://$authority";
+  // static const protocol = "$scheme:";
+  // static const scheme = "https";
+  // static const authority = "$hostName$port";
+  // static const host = authority;
+  // static const hostName = "e621.net";
+  // static const port = "";
+  static bool useNsfw = true;
+  static const hostNameSfw = "e926.net";
+  static const hostNameNsfw = "e621.net";
+  static final baseUriSfw = Uri.https(hostNameSfw);
+  static final baseUriNsfw = Uri.https(hostNameNsfw);
+  static Uri get baseUri => useNsfw ? baseUriNsfw : baseUriSfw;
   // #endregion URI
 
   // #region Rate Limit
@@ -143,8 +149,8 @@ class Api {
   static const softRateLimit = Duration(seconds: 2);
 
   /// The ideal rate limit in seconds per request.
-  /// 
-  /// The ideal rate limit is a way to ensure that 
+  ///
+  /// The ideal rate limit is a way to ensure that
   ///
   /// Duration(seconds: 3);
   static const idealRateLimit = Duration(seconds: 3);
@@ -160,7 +166,7 @@ class Api {
 
   /// Won't blow the rate limit
   static Future<http.StreamedResponse> sendRequestStreamed(
-    http.Request request,
+    http.BaseRequest request,
   ) async {
     doTheThing() {
       timeOfLastRequest = DateTime.timestamp();
@@ -175,7 +181,7 @@ class Api {
 
   /// Won't blow the rate limit
   static Future<http.Response> sendRequest(
-    http.Request request,
+    http.BaseRequest request,
   ) async =>
       sendRequestStreamed(request).toResponse();
 
@@ -267,9 +273,8 @@ class Api {
           : pageNumber != null
               ? "$pageNumber"
               : null;
-  
+
   static String? generateDiff(List<String> oldValues, List<String> newValues) {
-    
     final origTags = oldValues.toSet();
     final editedTagSet = newValues.toSet();
     final newTags = editedTagSet.difference(origTags).fold("", _folder);
@@ -278,6 +283,7 @@ class Api {
     final combined = _folder(newTags, removedTags);
     return combined.isEmpty ? null : combined;
   }
+
   static String _folder(acc, e) => "$acc${acc.isEmpty ? "" : " "}$e";
   static String _minusFolder(acc, e) => "$acc${acc.isEmpty ? "" : " "}-$e";
   // #endregion Helpers
@@ -1302,13 +1308,13 @@ class Api {
   /// * `post_set[description]`
   /// * `post_set[is_public]` Private sets are only visible to you. Public sets are visible to anyone, but only you and users you assign as maintainers can edit the set. Only accounts three days or older can make public sets.
   /// * `post_set[transfer_on_delete]` If "Transfer on Delete" is enabled, when a post is deleted from the site, its parent (if any) will be added to this set in its place. Disable if you want posts to simply be removed from this set with no replacement.
-  /// 
-  /// Success: 201 
-  /// 
+  ///
+  /// Success: 201
+  ///
   /// Returns the created set.
   /// {@macro setListing}
-  /// 
-  /// Error: 
+  ///
+  /// Error:
   /// 422 {"errors":{"name":["must be between three and one hundred characters long"],"shortname":["must be between three and fifty characters long","must only contain numbers, lowercase letters, and underscores","must contain at least one lowercase letter or underscore"]}}
   static http.Request initCreateSetRequest({
     required String postSetName,
@@ -1562,7 +1568,7 @@ class Api {
   /// https://e621.net/post_versions?search%5Bupdater_name%5D=a&search%5Bpost_id%5D=1&search%5Breason%5D=a&search%5Bdescription%5D=a&search%5Bdescription_changed%5D=true&search%5Brating_changed%5D=any&search%5Brating%5D=s&search%5Bparent_id%5D=10&search%5Bparent_id_changed%5D=1&search%5Btags%5D=1&search%5Btags_added%5D=1&search%5Btags_removed%5D=1&search%5Blocked_tags%5D=1&search%5Blocked_tags_added%5D=1&search%5Blocked_tags_removed%5D=1&search%5Bsource_changed%5D=true&search%5Buploads%5D=excluded&commit=Search
   ///
   /// The base URL is `/post_versions.json` called with `GET`.
-  /// 
+  ///
   /// * `limit` The limit of how many items should be retrieved.
   // TODO: this
   // #endregion Post Versions
