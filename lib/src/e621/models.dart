@@ -40,7 +40,7 @@ class Pool {
   String get searchById => 'pool:$id';
   String get searchByName => 'pool:$name';
 
-  Pool({
+  const Pool({
     required this.id,
     required this.name,
     required this.createdAt,
@@ -130,7 +130,7 @@ class Note {
   final String body;
   final String creatorName;
 
-  Note({
+  const Note({
     required this.id,
     required this.createdAt,
     required this.updatedAt,
@@ -219,21 +219,46 @@ class Note {
 }
 
 class User {
+  /// From User
   final int id;
+
+  /// From User
   final DateTime createdAt;
+
+  /// From User
   final String name;
+
+  /// From User
   final int level;
+
+  /// From User
   final int baseUploadLimit;
+
+  /// From User
   final int noteUpdateCount;
+
+  /// From User
   final int postUpdateCount;
+
+  /// From User
   final int postUploadCount;
+
+  /// From User
   final bool isBanned;
+
+  /// From User
   final bool canApprovePosts;
+
+  /// From User
   final bool canUploadFree;
+
+  /// From User
   final UserLevel levelString;
+
+  /// From User
   final int? avatarId;
 
-  User({
+  const User({
     required this.id,
     required this.createdAt,
     required this.name,
@@ -320,19 +345,40 @@ class User {
 }
 
 enum UserLevel with PrettyPrintEnum {
-  anonymous._default(),
-  blocked._default(),
-  member._default(),
-  privileged._default(),
-  formerStaff._default(),
-  janitor._default(),
-  moderator._default(),
-  admin._default();
+  anonymous._default(0, 0, 9),
+  blocked._default(10, 10, 11),
+  member._default(11, 20, 21),
+  privileged._default(21, 30, 31),
+  formerStaff._default(31, 34, 35),
+  janitor._default(35, 35, 36),
+  moderator._default(36, 40, 41),
+  admin._default(41, 50, 51);
 
+  static const anonymousLevel = 0;
+  static const blockedLevel = 10;
+  static const memberLevel = 20;
+  static const privilegedLevel = 30;
+  static const formerStaffLevel = 34;
+  static const janitorLevel = 35;
+  static const moderatorLevel = 40;
+  static const adminLevel = 50;
+  final int min;
+  final int value;
+  final int max;
   @override
   String toString() => namePretty;
   String get jsonString => namePretty;
-  const UserLevel._default();
+  int get level => switch (this) {
+        anonymous => anonymousLevel,
+        blocked => blockedLevel,
+        member => memberLevel,
+        privileged => privilegedLevel,
+        formerStaff => formerStaffLevel,
+        janitor => janitorLevel,
+        moderator => moderatorLevel,
+        admin => adminLevel,
+      };
+  const UserLevel._default(this.min, this.value, this.max);
   // static UserLevel fromJsonString(String json) => switch (json) {
   // factory UserLevel.fromJsonString(String json) => switch (json) {
   factory UserLevel(String json) => switch (json) {
@@ -351,43 +397,91 @@ enum UserLevel with PrettyPrintEnum {
                 '"Privileged", "Former Staff", "Janitor", "Moderator", or "Admin".',
           ),
       };
+  factory UserLevel.fromInt(int json) => switch (json) {
+        == anonymousLevel => anonymous,
+        // int t when t > anonymous.min && t < anonymous.max => anonymous,
+        == blockedLevel => blocked,
+        // int t when t > blocked.min && t < blocked.max => blocked,
+        == memberLevel => member,
+        // int t when t > member.min && t < member.max => member,
+        == privilegedLevel => privileged,
+        // int t when t > privileged.min && t < privileged.max => privileged,
+        == formerStaffLevel => formerStaff,
+        // int t when t > formerStaff.min && t < formerStaff.max => formerStaff,
+        == janitorLevel => janitor,
+        // int t when t > janitor.min && t < janitor.max => janitor,
+        == moderatorLevel => moderator,
+        // int t when t > moderator.min && t < moderator.max => moderator,
+        == adminLevel => admin,
+        // int t when t > admin.min && t < admin.max => admin,
+        _ => throw ArgumentError.value(
+            json,
+            "json",
+            'must be a value of "Anonymous", "Blocked", "Member", '
+                '"Privileged", "Former Staff", "Janitor", "Moderator", or "Admin".',
+          ),
+      };
   static const jsonPropertyName = "level_string";
 }
 
 class UserDetailed extends User {
+  /// From UserDetailed
+  ///
   /// wiki_page_version_count
   final int wikiPageVersionCount;
 
+  /// From UserDetailed
+  ///
   /// artist_version_count
   final int artistVersionCount;
 
+  /// From UserDetailed
+  ///
   /// pool_version_count
   final int poolVersionCount;
 
+  /// From UserDetailed
+  ///
   /// forum_post_count
   final int forumPostCount;
 
+  /// From UserDetailed
+  ///
   /// comment_count
   final int commentCount;
 
+  /// From UserDetailed
+  ///
   /// flag_count
   final int flagCount;
 
+  /// From UserDetailed
+  ///
   /// positive_feedback_count
   final int positiveFeedbackCount;
 
+  /// From UserDetailed
+  ///
   /// neutral_feedback_count
   final int neutralFeedbackCount;
 
+  /// From UserDetailed
+  ///
   /// negative_feedback_count
   final int negativeFeedbackCount;
 
+  /// From UserDetailed
+  ///
   /// upload_limit
   final int uploadLimit;
 
+  /// From UserDetailed
+  ///
   /// profile_about
   final String profileAbout;
 
+  /// From UserDetailed
+  ///
   /// profile_artinfo
   final String profileArtInfo;
 
@@ -546,46 +640,119 @@ class UserDetailed extends User {
 } */
 
 class UserLoggedIn extends User {
+  /// From UserLoggedIn
   final bool blacklistUsers;
+
+  /// From UserLoggedIn
   final bool descriptionCollapsedInitially;
+
+  /// From UserLoggedIn
   final bool hideComments;
+
+  /// From UserLoggedIn
   final bool showHiddenComments;
+
+  /// From UserLoggedIn
   final bool showPostStatistics;
+
+  /// From UserLoggedIn
   final bool receiveEmailNotifications;
+
+  /// From UserLoggedIn
   final bool enableKeyboardNavigation;
+
+  /// From UserLoggedIn
   final bool enablePrivacyMode;
+
+  /// From UserLoggedIn
   final bool styleUsernames;
+
+  /// From UserLoggedIn
   final bool enableAutoComplete;
+
+  /// From UserLoggedIn
   final bool disableCroppedThumbnails;
+
+  /// From UserLoggedIn
   final bool enableSafeMode;
+
+  /// From UserLoggedIn
   final bool disableResponsiveMode;
+
+  /// From UserLoggedIn
   final bool noFlagging;
+
+  /// From UserLoggedIn
   final bool disableUserDmails;
+
+  /// From UserLoggedIn
   final bool enableCompactUploader;
+
+  /// From UserLoggedIn
   final bool replacementsBeta;
+
+  /// From UserLoggedIn
   final DateTime updatedAt;
+
+  /// From UserLoggedIn
   final String email;
+
+  /// From UserLoggedIn
   final DateTime lastLoggedInAt;
+
+  /// From UserLoggedIn
   final DateTime lastForumReadAt;
+
+  /// From UserLoggedIn
   final String recentTags;
+
+  /// From UserLoggedIn
   final int commentThreshold;
+
+  /// From UserLoggedIn
   final String defaultImageSize;
+
+  /// From UserLoggedIn
   final String favoriteTags;
+
+  /// From UserLoggedIn
   final String blacklistedTags;
+
+  /// From UserLoggedIn
   final String timeZone;
+
+  /// From UserLoggedIn
   final int perPage;
+
+  /// From UserLoggedIn
   final String customStyle;
+
+  /// From UserLoggedIn
   final int favoriteCount;
+
+  /// From UserLoggedIn
   final int apiRegenMultiplier;
+
+  /// From UserLoggedIn
   final int apiBurstLimit;
+
+  /// From UserLoggedIn
   final int remainingApiLimit;
+
+  /// From UserLoggedIn
   final int statementTimeout;
 
+  /// From UserLoggedIn
+  ///
   /// Defaults to 80000.
   final int favoriteLimit;
 
+  /// From UserLoggedIn
+  ///
   /// Defaults to 40.
   final int tagQueryLimit;
+
+  /// From UserLoggedIn
   final bool hasMail;
 
   UserLoggedIn({
@@ -761,58 +928,45 @@ class UserLoggedIn extends User {
   @override
   String toRawJson() => dc.json.encode(toJson());
 
-  factory UserLoggedIn.fromJson(Map<String, dynamic> json) => UserLoggedIn(
-        id: json["id"],
-        createdAt: DateTime.parse(json["created_at"]),
-        name: json["name"],
-        level: json["level"],
-        baseUploadLimit: json["base_upload_limit"],
-        postUploadCount: json["post_upload_count"],
-        postUpdateCount: json["post_update_count"],
-        noteUpdateCount: json["note_update_count"],
-        isBanned: json["is_banned"],
-        canApprovePosts: json["can_approve_posts"],
-        canUploadFree: json["can_upload_free"],
-        levelString: UserLevel(json["level_string"]),
-        avatarId: json["avatar_id"],
-        blacklistUsers: json["blacklist_users"],
-        descriptionCollapsedInitially: json["description_collapsed_initially"],
-        hideComments: json["hide_comments"],
-        showHiddenComments: json["show_hidden_comments"],
-        showPostStatistics: json["show_post_statistics"],
-        receiveEmailNotifications: json["receive_email_notifications"],
-        enableKeyboardNavigation: json["enable_keyboard_navigation"],
-        enablePrivacyMode: json["enable_privacy_mode"],
-        styleUsernames: json["style_usernames"],
-        enableAutoComplete: json["enable_auto_complete"],
-        disableCroppedThumbnails: json["disable_cropped_thumbnails"],
-        enableSafeMode: json["enable_safe_mode"],
-        disableResponsiveMode: json["disable_responsive_mode"],
-        noFlagging: json["no_flagging"],
-        disableUserDmails: json["disable_user_dmails"],
-        enableCompactUploader: json["enable_compact_uploader"],
-        replacementsBeta: json["replacements_beta"],
-        updatedAt: DateTime.parse(json["updated_at"]),
-        email: json["email"],
-        lastLoggedInAt: DateTime.parse(json["last_logged_in_at"]),
-        lastForumReadAt: DateTime.parse(json["last_forum_read_at"]),
-        recentTags: json["recent_tags"],
-        commentThreshold: json["comment_threshold"],
-        defaultImageSize: json["default_image_size"],
-        favoriteTags: json["favorite_tags"],
-        blacklistedTags: json["blacklisted_tags"],
-        timeZone: json["time_zone"],
-        perPage: json["per_page"],
-        customStyle: json["custom_style"],
-        favoriteCount: json["favorite_count"],
-        apiRegenMultiplier: json["api_regen_multiplier"],
-        apiBurstLimit: json["api_burst_limit"],
-        remainingApiLimit: json["remaining_api_limit"],
-        statementTimeout: json["statement_timeout"],
-        favoriteLimit: json["favorite_limit"],
-        tagQueryLimit: json["tag_query_limit"],
-        hasMail: json["has_mail"],
-      );
+  UserLoggedIn.fromJson(Map<String, dynamic> json)
+      : blacklistUsers = json["blacklist_users"],
+        descriptionCollapsedInitially = json["description_collapsed_initially"],
+        hideComments = json["hide_comments"],
+        showHiddenComments = json["show_hidden_comments"],
+        showPostStatistics = json["show_post_statistics"],
+        receiveEmailNotifications = json["receive_email_notifications"],
+        enableKeyboardNavigation = json["enable_keyboard_navigation"],
+        enablePrivacyMode = json["enable_privacy_mode"],
+        styleUsernames = json["style_usernames"],
+        enableAutoComplete = json["enable_auto_complete"],
+        disableCroppedThumbnails = json["disable_cropped_thumbnails"],
+        enableSafeMode = json["enable_safe_mode"],
+        disableResponsiveMode = json["disable_responsive_mode"],
+        noFlagging = json["no_flagging"],
+        disableUserDmails = json["disable_user_dmails"],
+        enableCompactUploader = json["enable_compact_uploader"],
+        replacementsBeta = json["replacements_beta"],
+        updatedAt = DateTime.parse(json["updated_at"]),
+        email = json["email"],
+        lastLoggedInAt = DateTime.parse(json["last_logged_in_at"]),
+        lastForumReadAt = DateTime.parse(json["last_forum_read_at"]),
+        recentTags = json["recent_tags"],
+        commentThreshold = json["comment_threshold"],
+        defaultImageSize = json["default_image_size"],
+        favoriteTags = json["favorite_tags"],
+        blacklistedTags = json["blacklisted_tags"],
+        timeZone = json["time_zone"],
+        perPage = json["per_page"],
+        customStyle = json["custom_style"],
+        favoriteCount = json["favorite_count"],
+        apiRegenMultiplier = json["api_regen_multiplier"],
+        apiBurstLimit = json["api_burst_limit"],
+        remainingApiLimit = json["remaining_api_limit"],
+        statementTimeout = json["statement_timeout"],
+        favoriteLimit = json["favorite_limit"],
+        tagQueryLimit = json["tag_query_limit"],
+        hasMail = json["has_mail"],
+        super.fromJson(json);
 
   @override
   Map<String, dynamic> toJson() => {
@@ -870,28 +1024,51 @@ class UserLoggedIn extends User {
 }
 
 class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
+  /// From UserDetailed
   @override
   final int wikiPageVersionCount;
+
+  /// From UserDetailed
   @override
   final int artistVersionCount;
+
+  /// From UserDetailed
   @override
   final int poolVersionCount;
+
+  /// From UserDetailed
   @override
   final int forumPostCount;
+
+  /// From UserDetailed
   @override
   final int commentCount;
+
+  /// From UserDetailed
   @override
   final int flagCount;
+
+  /// From UserDetailed
   @override
   final int positiveFeedbackCount;
+
+  /// From UserDetailed
   @override
   final int neutralFeedbackCount;
+
+  /// From UserDetailed
   @override
   final int negativeFeedbackCount;
+
+  /// From UserDetailed
   @override
   final int uploadLimit;
+
+  /// From UserDetailed
   @override
   final String profileAbout;
+
+  /// From UserDetailed
   @override
   final String profileArtInfo;
 
@@ -974,7 +1151,7 @@ class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
     int? negativeFeedbackCount,
     int? uploadLimit,
     String? profileAbout,
-    String? profileArtinfo,
+    String? profileArtInfo,
     int? id,
     DateTime? createdAt,
     String? name,
@@ -1040,7 +1217,7 @@ class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
             negativeFeedbackCount ?? this.negativeFeedbackCount,
         uploadLimit: uploadLimit ?? this.uploadLimit,
         profileAbout: profileAbout ?? this.profileAbout,
-        profileArtInfo: profileArtinfo ?? profileArtInfo,
+        profileArtInfo: profileArtInfo ?? this.profileArtInfo,
         id: id ?? this.id,
         createdAt: createdAt ?? this.createdAt,
         name: name ?? this.name,
@@ -1098,88 +1275,79 @@ class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
         hasMail: hasMail ?? this.hasMail,
       );
   UserLoggedInDetail copyWithInstance(User? other) {
-    dynamic userDynamic = other;
+    var userD = other is UserDetailed ? other : null;
+    var userL = other is UserLoggedIn ? other : null;
     return UserLoggedInDetail(
-      wikiPageVersionCount:
-          userDynamic?.wikiPageVersionCount ?? wikiPageVersionCount,
-      artistVersionCount:
-          userDynamic?.artistVersionCount ?? artistVersionCount,
-      poolVersionCount: userDynamic?.poolVersionCount ?? poolVersionCount,
-      forumPostCount: userDynamic?.forumPostCount ?? forumPostCount,
-      commentCount: userDynamic?.commentCount ?? commentCount,
-      flagCount: userDynamic?.flagCount ?? flagCount,
-      favoriteCount: userDynamic?.favoriteCount ?? favoriteCount,
+      wikiPageVersionCount: userD?.wikiPageVersionCount ?? wikiPageVersionCount,
+      artistVersionCount: userD?.artistVersionCount ?? artistVersionCount,
+      poolVersionCount: userD?.poolVersionCount ?? poolVersionCount,
+      forumPostCount: userD?.forumPostCount ?? forumPostCount,
+      commentCount: userD?.commentCount ?? commentCount,
+      flagCount: userD?.flagCount ?? flagCount,
+      favoriteCount: userL?.favoriteCount ?? favoriteCount,
       positiveFeedbackCount:
-          userDynamic?.positiveFeedbackCount ?? positiveFeedbackCount,
-      neutralFeedbackCount:
-          userDynamic?.neutralFeedbackCount ?? neutralFeedbackCount,
+          userD?.positiveFeedbackCount ?? positiveFeedbackCount,
+      neutralFeedbackCount: userD?.neutralFeedbackCount ?? neutralFeedbackCount,
       negativeFeedbackCount:
-          userDynamic?.negativeFeedbackCount ?? negativeFeedbackCount,
-      uploadLimit: userDynamic?.uploadLimit ?? uploadLimit,
-      profileAbout: userDynamic?.profileAbout ?? profileAbout,
-      profileArtInfo: userDynamic?.profileArtinfo ?? profileArtInfo,
-      id: userDynamic?.id ?? id,
-      createdAt: userDynamic?.createdAt ?? createdAt,
-      name: userDynamic?.name ?? name,
-      level: userDynamic?.level ?? level,
-      baseUploadLimit: userDynamic?.baseUploadLimit ?? baseUploadLimit,
-      postUploadCount: userDynamic?.postUploadCount ?? postUploadCount,
-      postUpdateCount: userDynamic?.postUpdateCount ?? postUpdateCount,
-      noteUpdateCount: userDynamic?.noteUpdateCount ?? noteUpdateCount,
-      isBanned: userDynamic?.isBanned ?? isBanned,
-      canApprovePosts: userDynamic?.canApprovePosts ?? canApprovePosts,
-      canUploadFree: userDynamic?.canUploadFree ?? canUploadFree,
-      levelString: userDynamic?.levelString ?? levelString,
-      avatarId: userDynamic == null ? avatarId : userDynamic!.avatarId,
-      blacklistUsers: userDynamic?.blacklistUsers ?? blacklistUsers,
+          userD?.negativeFeedbackCount ?? negativeFeedbackCount,
+      uploadLimit: userD?.uploadLimit ?? uploadLimit,
+      profileAbout: userD?.profileAbout ?? profileAbout,
+      profileArtInfo: userD?.profileArtInfo ?? profileArtInfo,
+      id: other?.id ?? id,
+      createdAt: other?.createdAt ?? createdAt,
+      name: other?.name ?? name,
+      level: other?.level ?? level,
+      baseUploadLimit: other?.baseUploadLimit ?? baseUploadLimit,
+      postUploadCount: other?.postUploadCount ?? postUploadCount,
+      postUpdateCount: other?.postUpdateCount ?? postUpdateCount,
+      noteUpdateCount: other?.noteUpdateCount ?? noteUpdateCount,
+      isBanned: other?.isBanned ?? isBanned,
+      canApprovePosts: other?.canApprovePosts ?? canApprovePosts,
+      canUploadFree: other?.canUploadFree ?? canUploadFree,
+      levelString: other?.levelString ?? levelString,
+      avatarId: other == null ? avatarId : other!.avatarId,
+      blacklistUsers: userL?.blacklistUsers ?? blacklistUsers,
       descriptionCollapsedInitially:
-          userDynamic?.descriptionCollapsedInitially ?? descriptionCollapsedInitially,
-      hideComments: userDynamic?.hideComments ?? hideComments,
-      showHiddenComments:
-          userDynamic?.showHiddenComments ?? showHiddenComments,
-      showPostStatistics:
-          userDynamic?.showPostStatistics ?? showPostStatistics,
+          userL?.descriptionCollapsedInitially ?? descriptionCollapsedInitially,
+      hideComments: userL?.hideComments ?? hideComments,
+      showHiddenComments: userL?.showHiddenComments ?? showHiddenComments,
+      showPostStatistics: userL?.showPostStatistics ?? showPostStatistics,
       receiveEmailNotifications:
-          userDynamic?.receiveEmailNotifications ?? receiveEmailNotifications,
+          userL?.receiveEmailNotifications ?? receiveEmailNotifications,
       enableKeyboardNavigation:
-          userDynamic?.enableKeyboardNavigation ?? enableKeyboardNavigation,
-      enablePrivacyMode:
-          userDynamic?.enablePrivacyMode ?? enablePrivacyMode,
-      styleUsernames: userDynamic?.styleUsernames ?? styleUsernames,
-      enableAutoComplete:
-          userDynamic?.enableAutoComplete ?? enableAutoComplete,
+          userL?.enableKeyboardNavigation ?? enableKeyboardNavigation,
+      enablePrivacyMode: userL?.enablePrivacyMode ?? enablePrivacyMode,
+      styleUsernames: userL?.styleUsernames ?? styleUsernames,
+      enableAutoComplete: userL?.enableAutoComplete ?? enableAutoComplete,
       disableCroppedThumbnails:
-          userDynamic?.disableCroppedThumbnails ?? disableCroppedThumbnails,
-      enableSafeMode: userDynamic?.enableSafeMode ?? enableSafeMode,
+          userL?.disableCroppedThumbnails ?? disableCroppedThumbnails,
+      enableSafeMode: userL?.enableSafeMode ?? enableSafeMode,
       disableResponsiveMode:
-          userDynamic?.disableResponsiveMode ?? disableResponsiveMode,
-      noFlagging: userDynamic?.noFlagging ?? noFlagging,
-      disableUserDmails:
-          userDynamic?.disableUserDmails ?? disableUserDmails,
+          userL?.disableResponsiveMode ?? disableResponsiveMode,
+      noFlagging: userL?.noFlagging ?? noFlagging,
+      disableUserDmails: userL?.disableUserDmails ?? disableUserDmails,
       enableCompactUploader:
-          userDynamic?.enableCompactUploader ?? enableCompactUploader,
-      replacementsBeta: userDynamic?.replacementsBeta ?? replacementsBeta,
-      updatedAt: userDynamic?.updatedAt ?? updatedAt,
-      email: userDynamic?.email ?? email,
-      lastLoggedInAt: userDynamic?.lastLoggedInAt ?? lastLoggedInAt,
-      lastForumReadAt: userDynamic?.lastForumReadAt ?? lastForumReadAt,
-      recentTags: userDynamic?.recentTags ?? recentTags,
-      commentThreshold: userDynamic?.commentThreshold ?? commentThreshold,
-      defaultImageSize: userDynamic?.defaultImageSize ?? defaultImageSize,
-      favoriteTags: userDynamic?.favoriteTags ?? favoriteTags,
-      blacklistedTags: userDynamic?.blacklistedTags ?? blacklistedTags,
-      timeZone: userDynamic?.timeZone ?? timeZone,
-      perPage: userDynamic?.perPage ?? perPage,
-      customStyle: userDynamic?.customStyle ?? customStyle,
-      apiRegenMultiplier:
-          userDynamic?.apiRegenMultiplier ?? apiRegenMultiplier,
-      apiBurstLimit: userDynamic?.apiBurstLimit ?? apiBurstLimit,
-      remainingApiLimit:
-          userDynamic?.remainingApiLimit ?? remainingApiLimit,
-      statementTimeout: userDynamic?.statementTimeout ?? statementTimeout,
-      favoriteLimit: userDynamic?.favoriteLimit ?? favoriteLimit,
-      tagQueryLimit: userDynamic?.tagQueryLimit ?? tagQueryLimit,
-      hasMail: userDynamic?.hasMail ?? hasMail,
+          userL?.enableCompactUploader ?? enableCompactUploader,
+      replacementsBeta: userL?.replacementsBeta ?? replacementsBeta,
+      updatedAt: userL?.updatedAt ?? updatedAt,
+      email: userL?.email ?? email,
+      lastLoggedInAt: userL?.lastLoggedInAt ?? lastLoggedInAt,
+      lastForumReadAt: userL?.lastForumReadAt ?? lastForumReadAt,
+      recentTags: userL?.recentTags ?? recentTags,
+      commentThreshold: userL?.commentThreshold ?? commentThreshold,
+      defaultImageSize: userL?.defaultImageSize ?? defaultImageSize,
+      favoriteTags: userL?.favoriteTags ?? favoriteTags,
+      blacklistedTags: userL?.blacklistedTags ?? blacklistedTags,
+      timeZone: userL?.timeZone ?? timeZone,
+      perPage: userL?.perPage ?? perPage,
+      customStyle: userL?.customStyle ?? customStyle,
+      apiRegenMultiplier: userL?.apiRegenMultiplier ?? apiRegenMultiplier,
+      apiBurstLimit: userL?.apiBurstLimit ?? apiBurstLimit,
+      remainingApiLimit: userL?.remainingApiLimit ?? remainingApiLimit,
+      statementTimeout: userL?.statementTimeout ?? statementTimeout,
+      favoriteLimit: userL?.favoriteLimit ?? favoriteLimit,
+      tagQueryLimit: userL?.tagQueryLimit ?? tagQueryLimit,
+      hasMail: userL?.hasMail ?? hasMail,
     );
   }
 
@@ -1202,7 +1370,8 @@ class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
         uploadLimit = json["upload_limit"],
         profileAbout = json["profile_about"],
         profileArtInfo = json["profile_artinfo"],
-        super(
+        super.fromJson(
+            json) /* (
           favoriteCount: json["favorite_count"],
           id: json["id"],
           createdAt: DateTime.parse(json["created_at"]),
@@ -1254,7 +1423,8 @@ class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
           favoriteLimit: json["favorite_limit"],
           tagQueryLimit: json["tag_query_limit"],
           hasMail: json["has_mail"],
-        );
+        ) */
+  ;
 
   @override
   Map<String, dynamic> toJson() => {

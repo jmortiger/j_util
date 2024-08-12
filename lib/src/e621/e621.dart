@@ -277,15 +277,12 @@ class Api {
   static String? generateDiff(List<String> oldValues, List<String> newValues) {
     final origTags = oldValues.toSet();
     final editedTagSet = newValues.toSet();
-    final newTags = editedTagSet.difference(origTags).fold("", _folder);
+    final newTags = editedTagSet.difference(origTags).foldToString();
     final removedTags =
-        origTags.difference(editedTagSet).fold("", _minusFolder);
-    final combined = _folder(newTags, removedTags);
+        origTags.difference(editedTagSet).foldToString(prefix: "-");
+    final combined = newTags.isEmpty ? removedTags : "$newTags $removedTags";
     return combined.isEmpty ? null : combined;
   }
-
-  static String _folder(acc, e) => "$acc${acc.isEmpty ? "" : " "}$e";
-  static String _minusFolder(acc, e) => "$acc${acc.isEmpty ? "" : " "}-$e";
   // #endregion Helpers
 
   static http.Request initDbExportRequest({
