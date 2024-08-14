@@ -3,104 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:j_util/j_util_full.dart';
 
+import 'credentials.dart';
 import 'models.dart';
-
-final devDataString = LazyInitializer<String>(
-    () => (rootBundle.loadString("assets/devData.json")));
-final devDataObj = LazyInitializer<Map<String, dynamic>>(
-    () async => dc.jsonDecode(await devDataString.getItem()));
-
-final class AccessData {
-  static final devAccessData = LazyInitializer<AccessData>(() async =>
-      AccessData.fromJson(
-          (await devDataObj.getItem())["e621"] as Map<String, dynamic>));
-  static String? get devApiKey => devAccessData.itemSafe?.apiKey;
-  static String? get devUsername => devAccessData.itemSafe?.username;
-  static String? get devUserAgent => devAccessData.itemSafe?.userAgent;
-  // static get devData => _devData;
-  static final userData = LateFinal<AccessData>();
-  final String apiKey;
-  final String username;
-  final String userAgent;
-  E6Credentials get cred => E6Credentials(username: username, apiKey: apiKey);
-
-  const AccessData({
-    required this.apiKey,
-    required this.username,
-    required this.userAgent,
-  });
-  Map<String, dynamic> toJson() => {
-        "apiKey": apiKey,
-        "username": username,
-        "userAgent": userAgent,
-      };
-  factory AccessData.fromJson(Map<String, dynamic> json) => AccessData(
-        apiKey: json["apiKey"] as String,
-        username: json["username"] as String,
-        userAgent: json["userAgent"] as String,
-      );
-  // Map<String,String> generateHeaders() {
-
-  // }
-}
-
-class BaseCredentials {
-  static const headerKey = "Authorization";
-  void addToHeadersMap(Map<String, dynamic> headers) =>
-      headers[BaseCredentials.headerKey] = headerValue;
-  final String headerValue;
-  BaseCredentials({
-    required String identifier,
-    required String secret,
-  }) : headerValue = 'Basic ${dc.base64Encode(dc.ascii.encode(
-          '${Uri.encodeFull(identifier)}:${Uri.encodeFull(secret)}',
-        ))}';
-
-  static String getAuthHeaderValue(
-    String identifier,
-    String secret,
-  ) =>
-      'Basic ${dc.base64Encode(dc.ascii.encode(
-        '${Uri.encodeFull(identifier)}:${Uri.encodeFull(secret)}',
-      ))}';
-  BaseCredentials._direct(this.headerValue);
-  factory BaseCredentials.fromJson(Map<String, dynamic> json) =>
-      BaseCredentials._direct(json["headerValue"]);
-  Map<String, dynamic> toJson() => {"headerValue": headerValue};
-}
-
-class E6Credentials extends BaseCredentials {
-  static E6Credentials? currentCredentials;
-  final String username;
-  final String apiKey;
-
-  E6Credentials({
-    required this.username,
-    required this.apiKey,
-  }) : super(identifier: username, secret: apiKey);
-  E6Credentials._direct({
-    required this.username,
-    required this.apiKey,
-    required String headerValue,
-  }) : super._direct(headerValue);
-  factory E6Credentials.fromJson(Map<String, dynamic> json) =>
-      json["headerValue"] == null
-          ? E6Credentials(
-              username: json["username"],
-              apiKey: json["apiKey"],
-            )
-          : E6Credentials._direct(
-              username: json["username"],
-              apiKey: json["apiKey"],
-              headerValue: json["headerValue"],
-            );
-  @override
-  Map<String, dynamic> toJson() => {
-        "username": username,
-        "apiKey": apiKey,
-        "headerValue": headerValue,
-      };
-}
 
 class Api {
   // #region Tag parsing
@@ -186,6 +90,7 @@ class Api {
       sendRequestStreamed(request).toResponse();
 
   // #endregion Rate Limit
+  static const maxPageNumber = 750;
   static const maxPostsPerSearch = 320;
   static const maxTagsPerSearch = 40;
 
@@ -290,6 +195,34 @@ class Api {
   }) =>
       _baseInitRequestCredentialsOptional(
           path: "/db_export/tags-${_getDbExportDate(DateTime.now())}.csv.gz",
+          method: "GET",
+          credentials: credentials);
+
+  /// 
+  static http.Request initSearchPopularRequest({
+    DateTime? date,
+    PopularTimeScale? scale,
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsOptional(
+          path: "/popular.json",
+          queryParameters: {
+            if (date != null) "date": date.toIso8601String(),
+            if (scale != null) "scale": scale.name,
+          },
+          method: "GET",
+          credentials: credentials);
+  static http.Request initSearchPopularRequestUnconstrained({
+    String? date,
+    String? scale,
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsOptional(
+          path: "/popular.json",
+          queryParameters: {
+            if (date != null) "date": date,
+            if (scale != null) "scale": scale,
+          },
           method: "GET",
           credentials: credentials);
   // #region Posts
@@ -1561,14 +1494,19 @@ class Api {
         credentials: credentials,
       );
   // #endregion Pools
+  // TODO: Post Versions endpoint
   // #region Post Versions
   /// https://e621.net/post_versions?search%5Bupdater_name%5D=a&search%5Bpost_id%5D=1&search%5Breason%5D=a&search%5Bdescription%5D=a&search%5Bdescription_changed%5D=true&search%5Brating_changed%5D=any&search%5Brating%5D=s&search%5Bparent_id%5D=10&search%5Bparent_id_changed%5D=1&search%5Btags%5D=1&search%5Btags_added%5D=1&search%5Btags_removed%5D=1&search%5Blocked_tags%5D=1&search%5Blocked_tags_added%5D=1&search%5Blocked_tags_removed%5D=1&search%5Bsource_changed%5D=true&search%5Buploads%5D=excluded&commit=Search
   ///
   /// The base URL is `/post_versions.json` called with `GET`.
   ///
   /// * `limit` The limit of how many items should be retrieved.
-  // TODO: this
   // #endregion Post Versions
+  // TODO: Artists endpoint
+  // #region Artists
+  // https://e621.net/artists
+  // https://e621.net/artists.json
+  // #endregion Artists
 }
 
 enum SetOrder with PrettyPrintEnum {
@@ -1813,4 +1751,10 @@ class ResponseParsing {
   static String retrieveErrorMessage(String body) {
     return dc.jsonDecode(body)["message"];
   }
+}
+
+enum PopularTimeScale {
+  day,
+  week,
+  month;
 }

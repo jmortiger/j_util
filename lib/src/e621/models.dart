@@ -1,7 +1,5 @@
 import 'dart:convert' as dc;
 import 'package:j_util/e621.dart';
-import 'package:j_util/src/e621/e621.dart';
-import 'package:j_util/src/types.dart';
 
 class Pool {
   /// The ID of the pool.
@@ -344,7 +342,7 @@ class User {
       };
 }
 
-enum UserLevel with PrettyPrintEnum {
+enum UserLevel {
   anonymous._default(0, 0, 9),
   blocked._default(10, 10, 11),
   member._default(11, 20, 21),
@@ -368,6 +366,7 @@ enum UserLevel with PrettyPrintEnum {
   @override
   String toString() => namePretty;
   String get jsonString => namePretty;
+  String get namePretty => "${name[0].toUpperCase()}${name.substring(1)}";
   int get level => switch (this) {
         anonymous => anonymousLevel,
         blocked => blockedLevel,
@@ -2239,7 +2238,7 @@ enum PostType {
 }
 
 /// https://e621.net/wiki_pages/11262
-enum TagCategory with PrettyPrintEnum {
+enum TagCategory {
   /// 0
   ///
   /// This is the default type of tag, hence why it's mentioned first. If you
