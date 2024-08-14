@@ -36,7 +36,7 @@ class ExpandableFab extends StatefulWidget {
   final String disabledTooltip;
   final bool useDefaultHeroTag;
   final Object? heroTag;
-  
+
   @override
   State<ExpandableFab> createState() => _ExpandableFabState();
 }
@@ -46,7 +46,8 @@ class _ExpandableFabState extends State<ExpandableFab>
   late final AnimationController _controller;
   late final Animation<double> _expandAnimation;
   bool _open = false;
-  List<Widget> get children => (widget.childrenBuilder?.call(context) ?? widget.children)!;
+  List<Widget> get children =>
+      (widget.childrenBuilder?.call(context) ?? widget.children)!;
   @override
   void initState() {
     super.initState();
@@ -82,18 +83,23 @@ class _ExpandableFabState extends State<ExpandableFab>
 
   @override
   Widget build(BuildContext context) {
-    var eab = _buildExpandingActionButtons(context);
-    return eab.isNotEmpty ? SizedBox.expand(
-      child: Stack(
-        alignment: Alignment.bottomRight,
-        clipBehavior: Clip.none,
-        children: [
-          _buildTapToCloseFab(),
-          ...eab,
-          _buildTapToOpenFab(eab.isNotEmpty),
-        ],
-      ),
-    ) : IconButton(tooltip: widget.disabledTooltip, onPressed: null, icon: widget.openIcon);
+    var buttons = _buildExpandingActionButtons(context);
+    return buttons.isNotEmpty
+        ? SizedBox.expand(
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              clipBehavior: Clip.none,
+              children: [
+                _buildTapToCloseFab(),
+                ...buttons,
+                _buildTapToOpenFab(buttons.isNotEmpty),
+              ],
+            ),
+          )
+        : IconButton(
+            tooltip: widget.disabledTooltip,
+            onPressed: null,
+            icon: widget.openIcon);
   }
 
   Widget _buildTapToCloseFab() {
@@ -153,16 +159,16 @@ class _ExpandableFabState extends State<ExpandableFab>
           opacity: _open ? 0.0 : 1.0,
           curve: const Interval(0.25, 1.0, curve: Curves.easeInOut),
           duration: const Duration(milliseconds: 250),
-          child: widget.useDefaultHeroTag ? 
-          FloatingActionButton(
-            onPressed: enabled ? _toggle : null,
-            child: widget.openIcon,
-          ) :
-          FloatingActionButton(
-            onPressed: enabled ? _toggle : null,
-            child: widget.openIcon,
-            heroTag: widget.heroTag,
-          ),
+          child: widget.useDefaultHeroTag
+              ? FloatingActionButton(
+                  onPressed: enabled ? _toggle : null,
+                  child: widget.openIcon,
+                )
+              : FloatingActionButton(
+                  onPressed: enabled ? _toggle : null,
+                  child: widget.openIcon,
+                  heroTag: widget.heroTag,
+                ),
         ),
       ),
     );
@@ -218,23 +224,65 @@ class ActionButton extends StatelessWidget {
     this.onPressed,
     required this.icon,
     this.tooltip,
+    this.shape = const CircleBorder(),
+    this.elevation = 4,
+    this.color,
+  })  : type = MaterialType.canvas,
+        shadowColor = null,
+        surfaceTintColor = null,
+        textStyle = null,
+        borderRadius = null,
+        borderOnForeground = true,
+        animationDuration = kThemeChangeDuration;
+  const ActionButton.full({
+    super.key,
+    this.onPressed,
+    required this.icon,
+    this.tooltip,
+    this.shape = const CircleBorder(),
+    this.elevation = 4,
+    this.type = MaterialType.canvas,
+    this.color,
+    this.shadowColor,
+    this.surfaceTintColor,
+    this.textStyle,
+    this.borderRadius,
+    this.borderOnForeground = true,
+    this.animationDuration = kThemeChangeDuration,
   });
 
   final VoidCallback? onPressed;
   final Widget icon;
+  final ShapeBorder shape;
+  final double elevation;
+  final MaterialType type;
+  final Color? color;
+  final Color? shadowColor;
+  final Color? surfaceTintColor;
+  final TextStyle? textStyle;
+  final BorderRadiusGeometry? borderRadius;
+  final bool borderOnForeground;
+  final Duration animationDuration;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Material(
-      shape: const CircleBorder(),
+      shape: shape,
       clipBehavior: Clip.antiAlias,
-      color: theme.colorScheme.secondary,
-      elevation: 4,
+      color: color ?? theme.colorScheme.secondary,
+      elevation: elevation,
+      type: type, // MaterialType.canvas,
+      shadowColor: shadowColor, // null,
+      surfaceTintColor: surfaceTintColor, // null,
+      textStyle: textStyle, // null,
+      borderRadius: borderRadius, // null,
+      borderOnForeground: borderOnForeground, // true,
+      animationDuration: animationDuration, // kThemeChangeDuration,
       child: IconButton(
         onPressed: onPressed,
         icon: icon,
-        color: theme.colorScheme.onSecondary,
+        color: color ?? theme.colorScheme.onSecondary,
         tooltip: tooltip,
       ),
     );
