@@ -2,8 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:j_util/src/widgets/w_pull_tab.dart';
 
-class WPullTab extends StatefulWidget {
+class WPullTabLayoutFree extends StatefulWidget {
   final AnchorAlignment anchorAlignment;
   final Duration duration;
   final List<Widget>? children;
@@ -21,7 +22,7 @@ class WPullTab extends StatefulWidget {
   final Object? heroTag;
   final Color? color;
   final Color? disabledColor;
-  const WPullTab({
+  const WPullTabLayoutFree({
     super.key,
     this.anchorAlignment = AnchorAlignment.bottom,
     this.duration = const Duration(milliseconds: 250),
@@ -38,7 +39,7 @@ class WPullTab extends StatefulWidget {
     this.verticalBounds,
     this.horizontalBounds,
   }) : builder = null;
-  const WPullTab.builder({
+  const WPullTabLayoutFree.builder({
     super.key,
     this.anchorAlignment = AnchorAlignment.bottom,
     this.duration = const Duration(milliseconds: 250),
@@ -57,10 +58,10 @@ class WPullTab extends StatefulWidget {
   }) : children = null;
 
   @override
-  State<WPullTab> createState() => _WPullTabState();
+  State<WPullTabLayoutFree> createState() => _WPullTabLayoutFreeState();
 }
 
-class _WPullTabState extends State<WPullTab>
+class _WPullTabLayoutFreeState extends State<WPullTabLayoutFree>
     with SingleTickerProviderStateMixin {
   bool _expanded = false;
   late final AnimationController _controller;
@@ -104,21 +105,8 @@ class _WPullTabState extends State<WPullTab>
   Widget build(BuildContext context) {
     var buttons = _buildButtons(context);
     return buttons.isNotEmpty
-        ? OverflowBox(
-            alignment: widget.anchorAlignment.alignment,
-            fit: OverflowBoxFit.deferToChild,
-            // fit: OverflowBoxFit.max,
-            maxHeight:
-                widget.verticalBounds ?? MediaQuery.sizeOf(context).height,
-            maxWidth:
-                widget.horizontalBounds ?? MediaQuery.sizeOf(context).width,
-            minHeight: widget.anchorAlignment.isVertical
-                ? widget.verticalBounds ?? MediaQuery.sizeOf(context).height
-                : null,
-            minWidth: widget.anchorAlignment.isHorizontal
-                ? widget.horizontalBounds ?? MediaQuery.sizeOf(context).width
-                : null,
-            child: Stack(
+        ? SizedBox.expand(
+          child: Stack(
               fit: StackFit.passthrough,
               alignment: widget.anchorAlignment.alignment,
               // clipBehavior: Clip.hardEdge,
@@ -135,7 +123,7 @@ class _WPullTabState extends State<WPullTab>
                 _buildTapToOpen(buttons.isNotEmpty),
               ],
             ),
-          )
+        )
         : IconButton(
             tooltip: widget.disabledTooltip,
             onPressed: null,
@@ -155,7 +143,6 @@ class _WPullTabState extends State<WPullTab>
           widthFactor: widget.anchorAlignment.isHorizontal ? null : 1,
           alignment: widget.anchorAlignment.alignment,
           child: Material(
-            color: widget.color,
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
             elevation: 4,
@@ -163,7 +150,7 @@ class _WPullTabState extends State<WPullTab>
               onTap: _toggle,
               child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: widget.openIcon,
+                child: widget.closeIcon,
               ),
             ),
           ),
@@ -194,20 +181,20 @@ class _WPullTabState extends State<WPullTab>
 
   Widget _buildTapToOpen([bool enabled = true]) {
     return IgnorePointer(
-      ignoring: enabled,
-      child: AnimatedOpacity(
-        opacity: _expanded ? 0.0 : 1.0,
-        curve: const Interval(0.25, 1.0, curve: Curves.easeInOut),
+      ignoring: _expanded,
+      child: AnimatedContainer(
+        transformAlignment: Alignment.center,
+        transform: Matrix4.diagonal3Values(
+          _expanded ? 0.7 : 1.0,
+          _expanded ? 0.7 : 1.0,
+          1.0,
+        ),
         duration: widget.duration,
-        child: AnimatedContainer(
-          transformAlignment: Alignment.center,
-          transform: Matrix4.diagonal3Values(
-            _expanded ? 0.7 : 1.0,
-            _expanded ? 0.7 : 1.0,
-            1.0,
-          ),
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+        child: AnimatedOpacity(
+          opacity: _expanded ? 0.0 : 1.0,
+          curve: const Interval(0.25, 1.0, curve: Curves.easeInOut),
           duration: widget.duration,
-          curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
           child: Align(
             heightFactor: widget.anchorAlignment.isVertical ? null : 1,
             widthFactor: widget.anchorAlignment.isHorizontal ? null : 1,
@@ -216,7 +203,7 @@ class _WPullTabState extends State<WPullTab>
               padding: const EdgeInsets.all(8),
               child: IconButton(
                 onPressed: enabled ? _toggle : null,
-                icon: !_expanded ? widget.openIcon : widget.closeIcon,
+                icon: widget.openIcon,
                 // focusColor: widget.color,
               ),
             ),
@@ -254,30 +241,30 @@ class _WRibbon extends StatelessWidget {
       animation: progress,
       builder: (context, child) => switch (anchorAlignment) {
         AnchorAlignment.top => Positioned(
-            top: 0,
             height: progress.value * distance,
-            right: 0,
+            top: 0,
             left: 0,
+            right: 0,
             child: child!,
           ),
         AnchorAlignment.bottom => Positioned(
-            bottom: 0,
             height: progress.value * distance,
-            right: 0,
+            bottom: 0,
             left: 0,
+            right: 0,
             child: child!,
           ),
         AnchorAlignment.left => Positioned(
-            bottom: 0,
             width: progress.value * distance,
             top: 0,
+            bottom: 0,
             left: 0,
             child: child!,
           ),
         AnchorAlignment.right => Positioned(
-            bottom: 0,
             width: progress.value * distance,
             top: 0,
+            bottom: 0,
             right: 0,
             child: child!,
           ),
@@ -368,57 +355,44 @@ class _ExpandingActionButton extends StatelessWidget {
                         (math.pi / 180.0),
                     progress.value * maxDistance,
                   );
-        switch (anchorFromValues) {
-          case AnchorAlignment.top:
-            // assert(offset.dx == 0);
-            return Positioned(
-              // right: /* 4.0 +  */offset.dx,
+        return switch (anchorFromValues) {
+          AnchorAlignment.top => Positioned(
               top: /* 4.0 +  */ offset.dy,
               child: root,
-            );
-          case AnchorAlignment.bottom:
-            return Positioned(
-              // right: /* 4.0 +  */offset.dx,
+            ),
+          AnchorAlignment.bottom => Positioned(
               bottom: /* 4.0 +  */ offset.dy,
               child: root,
-            );
-          case AnchorAlignment.left:
-            return Positioned(
+            ),
+          AnchorAlignment.left => Positioned(
               left: /* 4.0 +  */ offset.dx,
-              // top: /* 4.0 +  */offset.dy,
               child: root,
-            );
-          case AnchorAlignment.right:
-            return Positioned(
+            ),
+          AnchorAlignment.right => Positioned(
               right: /* 4.0 +  */ offset.dx,
-              // top: /* 4.0 +  */offset.dy,
               child: root,
-            );
-          case AnchorAlignment.topLeft:
-            return Positioned(
-              left: /* 4.0 +  */ offset.dx,
+            ),
+          AnchorAlignment.topLeft => Positioned(
               top: /* 4.0 +  */ offset.dy,
-              child: root,
-            );
-          case AnchorAlignment.bottomLeft:
-            return Positioned(
               left: /* 4.0 +  */ offset.dx,
-              bottom: /* 4.0 +  */ offset.dy,
               child: root,
-            );
-          case AnchorAlignment.bottomRight:
-            return Positioned(
-              right: /* 4.0 +  */ offset.dx,
+            ),
+          AnchorAlignment.bottomLeft => Positioned(
               bottom: /* 4.0 +  */ offset.dy,
+              left: /* 4.0 +  */ offset.dx,
               child: root,
-            );
-          case AnchorAlignment.topRight:
-            return Positioned(
+            ),
+          AnchorAlignment.bottomRight => Positioned(
+              bottom: /* 4.0 +  */ offset.dy,
               right: /* 4.0 +  */ offset.dx,
+              child: root,
+            ),
+          AnchorAlignment.topRight => Positioned(
               top: /* 4.0 +  */ offset.dy,
+              right: /* 4.0 +  */ offset.dx,
               child: root,
-            );
-        }
+            )
+        };
       },
       child: FadeTransition(
         opacity: progress,
@@ -426,116 +400,4 @@ class _ExpandingActionButton extends StatelessWidget {
       ),
     );
   }
-}
-
-enum AnchorAlignmentCardinal {
-  top,
-  bottom,
-  left,
-  right;
-}
-
-enum AnchorAlignment {
-  top(270),
-  bottom(90),
-  left(0),
-  right(180),
-  topLeft(180 + 45),
-  bottomLeft(90 + 45),
-  bottomRight(45),
-  topRight(270 + 45);
-
-  Alignment get alignment => switch (this) {
-        top => Alignment.topCenter,
-        bottom => Alignment.bottomCenter,
-        right => Alignment.centerRight,
-        left => Alignment.centerLeft,
-        topLeft => Alignment.topLeft,
-        bottomLeft => Alignment.bottomLeft,
-        bottomRight => Alignment.bottomRight,
-        topRight => Alignment.topRight,
-      };
-  bool get isHorizontal => switch (this) {
-        top => false,
-        bottom => false,
-        right => true,
-        left => true,
-        topLeft => true,
-        bottomLeft => true,
-        bottomRight => true,
-        topRight => true,
-      };
-  bool get isVertical => switch (this) {
-        top => true,
-        bottom => true,
-        right => false,
-        left => false,
-        topLeft => true,
-        bottomLeft => true,
-        bottomRight => true,
-        topRight => true,
-      };
-  final int facingDegrees;
-  double get facingRadians => facingDegrees * (math.pi / 180);
-  double get xComponent => switch (constrainDegrees(facingDegrees)) {
-        0 => 1,
-        45 => math.cos(facingDegrees),
-        90 => 0,
-        const (90 + 45) => math.cos(facingDegrees),
-        180 => -1,
-        const (180 + 45) => math.cos(facingDegrees),
-        270 => 0,
-        const (270 + 45) => math.cos(facingDegrees),
-        _ => math.cos(facingDegrees),
-      };
-  double get yComponent => switch (constrainDegrees(facingDegrees)) {
-        0 => 0,
-        45 => math.sin(facingDegrees),
-        90 => 1,
-        const (90 + 45) => math.sin(facingDegrees),
-        180 => 0,
-        const (180 + 45) => math.sin(facingDegrees),
-        270 => -1,
-        const (270 + 45) => math.sin(facingDegrees),
-        _ => math.sin(facingDegrees),
-      };
-  const AnchorAlignment(this.facingDegrees);
-  static num constrainDegrees(num degrees) =>
-      degrees < 0 ? 360 + (degrees % 360) : degrees % 360;
-  factory AnchorAlignment.fromLocationDegrees(num degrees) =>
-      switch (constrainDegrees(degrees)) {
-        == 0 => right,
-        > 0 && < 90 => topRight,
-        == 90 => top,
-        > 90 && < 180 => topLeft,
-        == 180 => right,
-        > 180 && < 270 => bottomRight,
-        == 270 => bottom,
-        > 270 && < 360 => topLeft,
-        double.infinity ||
-        double.nan ||
-        double.negativeInfinity =>
-          throw ArgumentError.value(degrees, "degrees", "Must be finite"),
-        >= 360 => throw StateError("Should be 0 <= x < 360 by now"),
-        < 0 => throw StateError("Should be 0 <= x < 360 by now"),
-        _ => throw StateError("Something has gone extremely wrong"),
-      };
-  factory AnchorAlignment.fromDirectionDegrees(num degrees) =>
-      switch (constrainDegrees(degrees)) {
-        == 0 => left,
-        > 0 && < 90 => bottomLeft,
-        == 90 => bottom,
-        > 90 && < 180 => bottomRight,
-        == 180 => right,
-        > 180 && < 270 => topRight,
-        == 270 => top,
-        > 270 && < 360 => topLeft,
-        double.infinity ||
-        double.nan ||
-        double.negativeInfinity =>
-          throw ArgumentError.value(degrees, "degrees", "Must be finite"),
-        >= 360 => throw StateError("Should be 0 <= x < 360 by now"),
-        < 0 => throw StateError("Should be 0 <= x < 360 by now"),
-        _ => throw StateError("Something has gone extremely wrong"),
-      };
 }
