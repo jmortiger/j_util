@@ -9,3 +9,4 @@ export 'src/widgets/expandable_fab.dart';
 export 'src/widgets/auto_snackbar.dart';
 export 'src/widgets/o_auth_manager.dart';
 export 'src/widgets/w_pull_tab.dart';
+export 'src/widgets/w_pull_tab_overlay.dart';

@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:j_util/src/widgets/w_pull_tab.dart';
 
 class WPullTabOverlay extends StatefulWidget {
@@ -58,10 +57,10 @@ class WPullTabOverlay extends StatefulWidget {
   }) : children = null;
 
   @override
-  State<WPullTabOverlay> createState() => _WPullTabState();
+  State<WPullTabOverlay> createState() => _WPullTabOverlayState();
 }
 
-class _WPullTabState extends State<WPullTabOverlay>
+class _WPullTabOverlayState extends State<WPullTabOverlay>
     with SingleTickerProviderStateMixin {
   bool _expanded = false;
   late final AnimationController _controller;
@@ -104,42 +103,26 @@ class _WPullTabState extends State<WPullTabOverlay>
   @override
   Widget build(BuildContext context) {
     var buttons = _buildExpandingActionButtons(context);
-    final ribbon = Material(
-      shape: StadiumBorder(),
-      color: widget.color,
-      animationDuration: widget.duration,
-    );
     return buttons.isNotEmpty
-        ? OverflowBox(
-            fit: OverflowBoxFit.deferToChild,
-            // fit: OverflowBoxFit.max,
-            maxHeight:
-                widget.verticalBounds ?? MediaQuery.sizeOf(context).height,
-            maxWidth:
-                widget.horizontalBounds ?? MediaQuery.sizeOf(context).width,
-            minHeight: /* _expanded &&  */ widget.anchorAlignment.isVertical
-                ? MediaQuery.sizeOf(context).height
-                : 0.0,
-            minWidth: /* _expanded &&  */ widget.anchorAlignment.isHorizontal
-                ? MediaQuery.sizeOf(context).width
-                : 0.0,
-            child: Stack(
-              alignment: widget.anchorAlignment.alignment,
-              // clipBehavior: Clip.hardEdge,
-              children: [
-                WRibbon(
-                  distance: widget.distance,
-                  progress: _expandAnimation,
-                  duration: widget.duration,
-                  color: widget.color,
-                  anchorAlignment: widget.anchorAlignment,
-                ),
-                _buildTapToCloseFab(),
-                ...buttons,
-                _buildTapToOpenFab(buttons.isNotEmpty),
-              ],
-            ),
-          )
+        ? ConstrainedBox(
+          constraints: BoxConstraints.loose(MediaQuery.sizeOf(context)),
+          child: Stack(
+            alignment: widget.anchorAlignment.alignment,
+            // clipBehavior: Clip.hardEdge,
+            children: [
+              _WRibbon(
+                distance: widget.distance,
+                progress: _expandAnimation,
+                duration: widget.duration,
+                color: widget.color,
+                anchorAlignment: widget.anchorAlignment,
+              ),
+              _buildTapToCloseFab(),
+              ...buttons,
+              _buildTapToOpenFab(buttons.isNotEmpty),
+            ],
+          ),
+        )
         : IconButton(
             tooltip: widget.disabledTooltip,
             onPressed: null,
@@ -223,14 +206,14 @@ class _WPullTabState extends State<WPullTabOverlay>
   }
 }
 
-class WRibbon extends StatelessWidget {
+class _WRibbon extends StatelessWidget {
   final Animation<double> progress;
   // final double? directionInDegrees;
   final Duration duration;
   final Color? color;
   final AnchorAlignment anchorAlignment;
   final double distance;
-  const WRibbon({
+  const _WRibbon({
     super.key,
     required this.progress,
     required this.duration,

@@ -102,7 +102,7 @@ class _WPullTabState extends State<WPullTab>
 
   @override
   Widget build(BuildContext context) {
-    var buttons = _buildExpandingActionButtons(context);
+    var buttons = _buildButtons(context);
     return buttons.isNotEmpty
         ? OverflowBox(
             alignment: widget.anchorAlignment.alignment,
@@ -112,12 +112,12 @@ class _WPullTabState extends State<WPullTab>
                 widget.verticalBounds ?? MediaQuery.sizeOf(context).height,
             maxWidth:
                 widget.horizontalBounds ?? MediaQuery.sizeOf(context).width,
-            // minHeight: widget.anchorAlignment.isVertical
-            //     ? widget.verticalBounds ?? MediaQuery.sizeOf(context).height
-            //     : 0.0,
-            // minWidth: widget.anchorAlignment.isHorizontal
-            //     ? widget.horizontalBounds ?? MediaQuery.sizeOf(context).width
-            //     : 0.0,
+            minHeight: widget.anchorAlignment.isVertical
+                ? widget.verticalBounds ?? MediaQuery.sizeOf(context).height
+                : null,
+            minWidth: widget.anchorAlignment.isHorizontal
+                ? widget.horizontalBounds ?? MediaQuery.sizeOf(context).width
+                : null,
             child: Stack(
               fit: StackFit.passthrough,
               alignment: widget.anchorAlignment.alignment,
@@ -130,9 +130,9 @@ class _WPullTabState extends State<WPullTab>
                   color: widget.color,
                   anchorAlignment: widget.anchorAlignment,
                 ),
-                _buildTapToCloseFab(),
+                _buildTapToClose(),
                 ...buttons,
-                _buildTapToOpenFab(buttons.isNotEmpty),
+                _buildTapToOpen(buttons.isNotEmpty),
               ],
             ),
           )
@@ -144,20 +144,26 @@ class _WPullTabState extends State<WPullTab>
           );
   }
 
-  Widget _buildTapToCloseFab() {
+  Widget _buildTapToClose() {
     return SizedBox(
       width: 56,
       height: 56,
-      child: Center(
-        child: Material(
-          shape: const CircleBorder(),
-          clipBehavior: Clip.antiAlias,
-          elevation: 4,
-          child: InkWell(
-            onTap: _toggle,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: widget.closeIcon,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Align(
+          heightFactor: widget.anchorAlignment.isVertical ? null : 1,
+          widthFactor: widget.anchorAlignment.isHorizontal ? null : 1,
+          alignment: widget.anchorAlignment.alignment,
+          child: Material(
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            elevation: 4,
+            child: InkWell(
+              onTap: _toggle,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: widget.closeIcon,
+              ),
             ),
           ),
         ),
@@ -165,7 +171,7 @@ class _WPullTabState extends State<WPullTab>
     );
   }
 
-  List<Widget> _buildExpandingActionButtons(BuildContext context) {
+  List<Widget> _buildButtons(BuildContext context) {
     final children = <Widget>[];
     final widgetChildren = this.children;
     final count = widgetChildren.length;
@@ -185,7 +191,7 @@ class _WPullTabState extends State<WPullTab>
     return children;
   }
 
-  Widget _buildTapToOpenFab([bool enabled = true]) {
+  Widget _buildTapToOpen([bool enabled = true]) {
     return IgnorePointer(
       ignoring: _expanded,
       child: AnimatedContainer(
@@ -201,18 +207,19 @@ class _WPullTabState extends State<WPullTab>
           opacity: _expanded ? 0.0 : 1.0,
           curve: const Interval(0.25, 1.0, curve: Curves.easeInOut),
           duration: widget.duration,
-          child: widget.useDefaultHeroTag
-              ? IconButton(
-                  onPressed: enabled ? _toggle : null,
-                  icon: widget.openIcon,
-                  // focusColor: widget.color,
-                )
-              : IconButton(
-                  onPressed: enabled ? _toggle : null,
-                  icon: widget.openIcon,
-                  // focusColor: widget.color,
-                  // heroTag: widget.heroTag,
-                ),
+          child: Align(
+            heightFactor: widget.anchorAlignment.isVertical ? null : 1,
+            widthFactor: widget.anchorAlignment.isHorizontal ? null : 1,
+            alignment: widget.anchorAlignment.alignment,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: IconButton(
+                onPressed: enabled ? _toggle : null,
+                icon: widget.openIcon,
+                // focusColor: widget.color,
+              ),
+            ),
+          ),
         ),
       ),
     );
