@@ -31,3 +31,4 @@ doc/api/
 .vscode/settings.json
 assets/devData.json
 test/dev_data.dart
+.flutter-plugins-dependencies
