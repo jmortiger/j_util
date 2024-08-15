@@ -1,4 +1,5 @@
 import 'dart:convert' as dc;
+import 'package:flutter/material.dart';
 import 'package:j_util/e621.dart';
 
 class Pool {
@@ -1855,6 +1856,114 @@ class Score {
         up: up ?? this.up,
         down: down ?? this.down,
         total: total ?? this.total,
+      );
+}
+
+/// Result of successful vote call.
+@immutable
+class VoteResult {
+  /// The number of times voted up.
+  final int up;
+
+  /// A negative number representing the number of times voted down.
+  final int down;
+
+  /// The total score (up + down).
+  final int score;
+
+  /// Our score is 1 (for upvoted), 0 (for no vote), or -1 (for downvoted).
+  final int ourScore;
+
+  const VoteResult({
+    required this.up,
+    required this.down,
+    required this.score,
+    required this.ourScore,
+  });
+  factory VoteResult.fromJsonRaw(String json) =>
+      VoteResult.fromJson(dc.jsonDecode(json));
+  factory VoteResult.fromJson(Map<String, dynamic> json) => VoteResult(
+        up: json["up"] as int,
+        down: json["down"] as int,
+        score: json["score"] as int,
+        ourScore: json["our_score"] as int,
+      );
+
+  Map<String, dynamic> toJson() => {
+        "up": up,
+        "down": down,
+        "score": score,
+        "our_score": ourScore,
+      };
+
+  VoteResult copyWith({
+    int? up,
+    int? down,
+    int? score,
+    int? ourScore,
+  }) =>
+      VoteResult(
+        up: up ?? this.up,
+        down: down ?? this.down,
+        score: score ?? this.score,
+        ourScore: ourScore ?? this.ourScore,
+      );
+}
+
+@immutable
+class UpdatedScore extends Score implements VoteResult {
+  /// The total score (up + down).
+  @override
+  int get score => total;
+
+  /// Our score is 1 (for upvoted), 0 (for no vote), or -1 (for downvoted).
+  @override
+  final int ourScore;
+
+  const UpdatedScore.inherited({
+    required super.up,
+    required super.down,
+    required super.total,
+    required this.ourScore,
+  });
+  const UpdatedScore({
+    required int up,
+    required int down,
+    required int score,
+    required this.ourScore,
+  }) : super(up: up, down: down, total: score);
+  factory UpdatedScore.fromJsonRaw(String json) =>
+      UpdatedScore.fromJson(dc.jsonDecode(json));
+  UpdatedScore.fromJson(Map<String, dynamic> json)
+      : this(
+          up: json["up"] as int,
+          down: json["down"] as int,
+          score: json["score"] as int,
+          ourScore: json["our_score"] as int,
+        );
+
+  @override
+  Map<String, dynamic> toJson() => {
+        "up": up,
+        "down": down,
+        "score": score,
+        "total": total,
+        "our_score": ourScore,
+      };
+
+  @override
+  UpdatedScore copyWith({
+    int? up,
+    int? down,
+    int? score,
+    int? total,
+    int? ourScore,
+  }) =>
+      UpdatedScore(
+        up: up ?? this.up,
+        down: down ?? this.down,
+        score: score ?? total ?? this.score,
+        ourScore: ourScore ?? this.ourScore,
       );
 }
 

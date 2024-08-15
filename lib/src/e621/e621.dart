@@ -1,11 +1,11 @@
 import 'dart:convert' as dc;
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:j_util/j_util_full.dart';
 
 import 'credentials.dart';
 import 'models.dart';
 
+/// TODO: Refactor out of static class
 class Api {
   // #region Tag parsing
   /// https://e621.net/help/tags
@@ -96,7 +96,6 @@ class Api {
 
   /// Use this to automatically enforce rate limit.
   static final http.Client client = http.Client();
-  // TODO: Add page validator
 
   // #region Credentials
   static BaseCredentials? activeCredentials;
@@ -168,11 +167,13 @@ class Api {
   }) =>
       (limit > lowerBound && limit <= upperBound) ? limit : defaultValue;
 
+  // TODO: Refactor page validation
   /// Works for postId; presumably works for all id types (user, set, pool, note).
-  static String? getPageString(
-          {String? pageModifier, //pageModifier.contains(RegExp(r'a|b'))
-          int? id,
-          int? pageNumber}) =>
+  static String? getPageString({
+    String? pageModifier,
+    int? id,
+    int? pageNumber,
+  }) =>
       (id != null && (pageModifier == 'a' || pageModifier == 'b'))
           ? "$pageModifier$id"
           : pageNumber != null
@@ -188,6 +189,15 @@ class Api {
     final combined = newTags.isEmpty ? removedTags : "$newTags $removedTags";
     return combined.isEmpty ? null : combined;
   }
+
+  static String? foldIterableForUrl(Iterable i, {bool allowEmpty = true}) =>
+      i.isNotEmpty || allowEmpty
+          ? i
+              .map(
+                (e) => e.toString(),
+              )
+              .foldToString(delimiter: "+")
+          : " ";
   // #endregion Helpers
 
   static http.Request initDbExportRequest({
@@ -198,20 +208,34 @@ class Api {
           method: "GET",
           credentials: credentials);
 
-  /// 
+  /// https://e621.net/popular.json
+  ///
+  /// The base URL is `/popular.json` called with `GET`.
+  ///
+  /// * [date] : Sets the date to get popular posts from.
+  /// * [scale] : The time frame around [date] to get popular posts from.
+  ///
+  /// This returns an object with a `posts` field containing a JSON array, for each post it returns:
+  /// {@macro PostListing}
   static http.Request initSearchPopularRequest({
     DateTime? date,
     PopularTimeScale? scale,
     BaseCredentials? credentials,
   }) =>
-      _baseInitRequestCredentialsOptional(
-          path: "/popular.json",
-          queryParameters: {
-            if (date != null) "date": date.toIso8601String(),
-            if (scale != null) "scale": scale.name,
-          },
-          method: "GET",
-          credentials: credentials);
+      initSearchPopularRequestUnconstrained(
+        date: date?.toIso8601String(),
+        scale: scale?.name,
+      );
+
+  /// https://e621.net/popular.json
+  ///
+  /// The base URL is `/popular.json` called with `GET`.
+  ///
+  /// * [date] : Sets the date to get popular posts from. Must be a ISO 8601 date-time string.
+  /// * [scale] : The time frame around [date] to get popular posts from. Must be either null, `day`, `week`, or `month`.
+  ///
+  /// This returns an object with a `posts` field containing a JSON array, for each post it returns:
+  /// {@macro PostListing}
   static http.Request initSearchPopularRequestUnconstrained({
     String? date,
     String? scale,
@@ -292,7 +316,7 @@ class Api {
   /// {@template SearchPosts}
   /// [List](https://e621.net/wiki_pages/2425#posts_list)
   ///
-  /// The base URL is /posts.json called with GET.
+  /// The base URL is `/posts.json` called with `GET`.
   /// Deleted posts are returned when status:deleted/status:any is in the searched tags.
   ///
   /// The most efficient method to iterate a large number of posts is to search use the page parameter, using page=b<ID> and using the lowest ID retrieved from the previous list of posts. The first request should be made without the page parameter, as this returns the latest posts first, so you can then iterate using the lowest ID. Providing arbitrarily large values to obtain the most recent posts is not portable and may break in the future.
@@ -302,9 +326,10 @@ class Api {
   /// * `limit` How many posts you want to retrieve. There is a hard limit of 320 posts per request. Defaults to the value set in user preferences.
   /// * `tags` The tag search query. Any tag combination that works on the website will work here.
   /// * `page` The page that will be returned. Can also be used with a or b + post_id to get the posts after or before the specified post ID. For example a13 gets every post after post_id 13 up to the limit. This overrides any ordering meta-tag, order:id_desc is always used instead.
-  /// This returns a JSON array, for each post it returns:
-  /// {@template PostListing}
   ///
+  /// This returns an object with a `posts` field containing a JSON array, for each post it returns:
+  ///
+  /// {@template PostListing}
   /// * `id` The ID number of the post.
   /// * `created_at` The time the post was created in the format of YYYY-MM-DDTHH:MM:SS.MS+00:00.
   /// * `updated_at` The time the post was last updated in the format of YYYY-MM-DDTHH:MM:SS.MS+00:00.
@@ -593,7 +618,7 @@ class Api {
   ///
   /// The base URL is `/posts/<Post_ID>/votes.json` called with `POST`.
   ///
-  /// * `score` Set to 1 to vote up and -1 to vote down. Repeat the request to remove the vote.
+  /// * `score` If true, votes up with a value of 1. If false, votes down with a value of -1.
   /// * `no_unvote` Set to true to have this score replace the old score. Repeat votes will not remove the vote.
   /// Response:
   /// Success:
@@ -621,6 +646,48 @@ class Api {
     BaseCredentials? credentials,
   }) =>
       initVotePostRequest(postId: postId, score: voteUp ? 1 : -1);
+
+  /// [Vote](https://e621.net/wiki_pages/2425#posts_vote)
+  ///
+  /// Attempts to clear the vote from the selected post.
+  ///
+  /// Response:
+  /// Success:
+  /// HTTP 200
+  ///
+  /// {
+  ///    "score":<total>,
+  ///    "up":<up>,
+  ///    "down":<down>,
+  ///    "our_score":x
+  /// }
+  /// Where our_score is 1, 0, -1 depending on the action.
+  /// Failure:
+  /// HTTP 422
+  ///
+  /// {
+  ///     "success": false,
+  ///     "message": "An unexpected error occurred.",
+  ///     "code": null
+  /// }
+  static Future<http.Response> clearPostVote({
+    required int postId,
+    BaseCredentials? credentials,
+  }) async {
+    final r = (await sendRequest(
+      initVotePostRequest(postId: postId, score: 1, credentials: credentials),
+    ));
+    return r.statusCodeInfo.isSuccessful
+        ? UpdatedScore.fromJsonRaw(r.body).ourScore == 0
+            ? r
+            : await sendRequest(initVotePostRequest(
+                postId: postId,
+                score: 1,
+                credentials: credentials,
+              ))
+        : r;
+  }
+
   // #endregion Posts
   // #region Tags
   /// (Listing)[https://e621.net/wiki_pages/2425#tags_listing]
@@ -1305,6 +1372,25 @@ class Api {
       );
   static int success_initRemoveFromSetRequest = 201;
 
+  /// `/post_sets/$setId/update_posts.json` `POST`
+  /// * `post_ids_string[]` space separated list (i think) of ALL posts in set
+  ///
+  /// Success: 201 with the body of the chosen set.
+  static http.Request initUpdateSetPostsRequest(
+    int setId,
+    List<int> postIds, {
+    BaseCredentials? credentials,
+  }) =>
+      _baseInitRequestCredentialsRequired(
+        path: "/post_sets/$setId/update_posts.json",
+        method: "POST",
+        credentials: credentials,
+        queryParameters: {
+          "post_set[post_ids_string]": foldIterableForUrl(postIds, allowEmpty: false),
+        },
+      );
+  static int success_initUpdateSetPostsRequest = 302;
+
   // #endregion Sets
   // #region Pools
   /// https://e621.net/wiki_pages/2425#pools_listing
@@ -1635,35 +1721,34 @@ enum PoolCategory {
   series;
 
   dynamic toJson() => name;
-  static PoolCategory fromJson(dynamic json) => fromJsonString(json);
+  static PoolCategory fromJson(dynamic json) => _fromJsonString(json);
+  static PoolCategory fromJsonNonStrict(dynamic json) =>
+      _fromJsonString(json.toString().toLowerCase());
 
   String toJsonString() => name;
-  static PoolCategory fromJsonString(String name) => switch (name) {
+  @Deprecated("Use PoolCategory.fromJson")
+  static PoolCategory fromJsonString(String name) => _fromJsonString(name);
+  static PoolCategory _fromJsonString(String name) => switch (name) {
         "collection" => collection,
         "series" => series,
         _ => throw UnsupportedError(
             "Value $name not supported, must be `collection` or `series`.",
           ),
       };
+  @Deprecated("Use PoolCategory.fromJsonNonStrict")
   static PoolCategory fromJsonStringNonStrict(String name) =>
-      switch (name.toLowerCase()) {
-        "collection" => collection,
-        "series" => series,
-        _ => throw UnsupportedError(
-            "Value $name not supported, must be `collection` or `series`.",
-          ),
-      };
+      _fromJsonString(name.toLowerCase());
   String toParamString() => name;
-  static PoolCategory fromParamString(String name) => switch (name) {
-        "collection" => collection,
-        "series" => series,
-        _ => throw UnsupportedError(
-            "Value $name not supported, must be `collection` or `series`.",
-          ),
-      };
+  static PoolCategory fromParamString(String name) => _fromJsonString(name);
 }
 
-// /post_sets/11775/update_posts method post
+enum PopularTimeScale {
+  day,
+  week,
+  month;
+}
+
+// /post_sets/$id/update_posts method post
 // post_set[post_ids_string]
 enum Endpoint {
   /// https://e621.net/wiki_pages/2425#posts_create
@@ -1751,10 +1836,4 @@ class ResponseParsing {
   static String retrieveErrorMessage(String body) {
     return dc.jsonDecode(body)["message"];
   }
-}
-
-enum PopularTimeScale {
-  day,
-  week,
-  month;
 }
