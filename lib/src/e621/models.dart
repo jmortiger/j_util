@@ -1469,7 +1469,7 @@ class PostSet {
   String get searchById => 'set:$id';
   String get searchByShortname => 'set:$shortname';
 
-  PostSet({
+  const PostSet({
     required this.id,
     required this.createdAt,
     required this.updatedAt,
@@ -1919,6 +1919,17 @@ class UpdatedScore extends Score implements VoteResult {
   /// Our score is 1 (for upvoted), 0 (for no vote), or -1 (for downvoted).
   @override
   final int ourScore;
+
+  bool get isUpvoted => ourScore > 0;
+  bool get isDownvoted => ourScore < 0;
+  bool get isVotedOn => ourScore != 0;
+  /// `true` if the user upvoted this post, `false` if the user downvoted this post, `null` if the user didn't vote on this post.
+  bool? get voteState => switch (ourScore) {
+    > 0 => true,
+    < 0 => false,
+    == 0 => null,
+    _ => null,
+  };
 
   const UpdatedScore.inherited({
     required super.up,

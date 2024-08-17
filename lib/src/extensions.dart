@@ -426,8 +426,24 @@ extension PrettyPrintCollection on Iterable {
 }
 
 extension RegExpExt on RegExp {
+  /// A string containing all whitespace characters.
+  /// 
+  /// {@template WhitespaceList}
+  /// Contains:
+  /// * Line Separator (LS, `\u2028`)
+  /// * New Line/Line Feed (LF, `\n`)
+  /// * Carriage Return (CR, `\r`)
+  /// * Line Tabulation/Vertical Tab (VT, `\u000B`)
+  /// * Form Feed (FF, `\f`)
+  /// * Paragraph Separator/¶ (PS, `\u2029`)
+  /// * Next Line (NEL, `\u0085`)
+  /// * Space (SP, `\u0020`)
+  /// * (Horizontal) Tab (`\t`, `\u0009`)
+  /// {@endtemplate}
   static const whitespaceCharacters = r'\u2028\n\r\u000B\f\u2029\u0085 	';
+  /// {@macro WhitespaceList}
   static const whitespacePattern = '[$whitespaceCharacters]';
+  /// {@macro WhitespaceList}
   static final whitespace = RegExp(whitespacePattern);
   static final removeZerosFromTime = RegExp(
       r'(^0+:|^0+(?=[123456789]+:)|(?<=:)(?<!.*[123456789].*)0{2}:|(?<=:)(?<!.*[123456789].*)0{1}|(?<=\.\d*?[123456789]*?)(?<!\.)0+(?!\d+$))');
@@ -459,6 +475,11 @@ extension RegExpExt on RegExp {
   static final camelCaseWordBorders = RegExp(r'(?<!^)(?=[A-Z])');
 
   static final lowercase = RegExp(r'([a-z]+)');
+  static const lowercaseLetters = "a""b""c""d""e""f""g""h""i""j""k""l""m""n""o""p""q""r""s""t""u""z""w""x""y""z";
+  static const uppercaseLetters = "A""B""C""D""E""F""G""H""I""J""K""L""M""N""O""P""Q""R""S""T""U""Z""W""X""Y""Z";
+  static const letters = "$lowercaseLetters$uppercaseLetters";
+  static const numbers = "0123456789";
+  static const alphanumericCharacters = "$lowercaseLetters$uppercaseLetters$numbers";
 }
 
 // #endregion Strings & Printing
