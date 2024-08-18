@@ -132,10 +132,16 @@ enum Platform {
 
 /// Handles safely accessing and initializing an asynchronously created asset
 /// that's otherwise constant.
+/// 
+/// As this doesn't check to prevent the initializer from running multiple times,
+/// this is unsuited for time-consuming operations or frequently-checked 
+/// variables. For those cases, use [LazyInitializer] instead. This has a slight
+/// boost to performance.
 ///
-/// TODO: Test
+/// TODO: Test cases
 /// TODO: Extend with optional event-based assignment triggering.
-class LazyInitializer<T> {
+@Deprecated("Use LazySingleInitializer")
+class LazyUnsafeInitializer<T> {
   final Future<T> Function() initializer;
   final T? defaultValue;
 
@@ -174,11 +180,89 @@ class LazyInitializer<T> {
               if (!_isAssigned) {
                 _isAssigned = true;
                 _item = value;
-              } else
-                ; // TODO: Warn, shouldn't ever happen
-            });
+              } else {
+                print(
+                  "LazyUnsafeInitializer<$T> was initialized before initializer completed.",
+                );
+              }
+            }).ignore();
             return defaultValue;
           })();
+  }
+
+  LazyUnsafeInitializer(this.initializer, {this.defaultValue});
+  LazyUnsafeInitializer.immediate(this.initializer, {this.defaultValue}) {
+    getItem();
+  }
+
+  /// Synchronously accesses and returns the item, immediately asynchronously
+  /// accessing and setting the item with [initializer] if that fails.
+  Future<T> getItem() async => _isAssigned
+      ? _item
+      : await (initializer()
+        ..then((v) {
+          if (!_isAssigned) {
+            _isAssigned = true;
+            return _item = v;
+          } else {
+            print(
+              "LazyUnsafeInitializer<$T> was initialized before initializer completed.",
+            );
+            return _item;
+          }
+        }).ignore());
+}
+
+/// Handles safely accessing and initializing an asynchronously created asset
+/// that's otherwise constant. This ensures the initializer won't be triggered
+/// multiple times if there's a long time between the initial firing and the
+/// value's return.
+///
+/// TODO: Test
+/// TODO: Extend with optional event-based assignment triggering.
+class LazyInitializer<T> {
+  final Future<T> Function() initializer;
+  final T? defaultValue;
+
+  bool _isAssigned = false;
+  bool get isAssigned => _isAssigned;
+
+  Future<T>? _future;
+  bool get isAssigning => _future != null;
+
+  /// The true item.
+  /// {@template lateError}
+  /// Accessing before assignment will throw a [LateInitializationError].
+  /// {@endtemplate}
+  late final T _item;
+
+  /// Accesses the true item.
+  /// {@macro lateError}
+  @Deprecated(r"Use $")
+  T get item => _item;
+
+  /// Accesses the true item.
+  /// {@macro lateError}
+  T get $ => _item;
+
+  /// Synchronously accesses and returns the item, immediately
+  /// asynchronously setting the item with [initializer] and
+  /// returning [defaultValue] if that fails.
+  @Deprecated(r"Use $Safe")
+  T? get itemSafe => $Safe;
+
+  /// Synchronously accesses and returns the item, immediately
+  /// asynchronously setting the item with [initializer] and
+  /// returning [defaultValue] if that fails.
+  T? get $Safe {
+    return _isAssigned
+        ? _item
+        : !isAssigning
+            ? (() {
+                _future = initializer()..then(_myThen).ignore();
+                return defaultValue;
+              })()
+            : defaultValue;
   }
 
   LazyInitializer(this.initializer, {this.defaultValue});
@@ -190,16 +274,22 @@ class LazyInitializer<T> {
   /// accessing and setting the item with [initializer] if that fails.
   Future<T> getItem() async => _isAssigned
       ? _item
-      : (await (initializer()
-        ..then((v) {
-          if (!_isAssigned) {
-            _isAssigned = true;
-            return _item = v;
-          } else {
-            // TODO: Warn, shouldn't ever happen
-            return _item;
-          }
-        })));
+      : isAssigning
+          ? await _future!
+          : await (_future = (initializer()..then(_myThen).ignore())) ?? _item;
+
+  T _myThen(T v) {
+    _future = null;
+    if (!_isAssigned) {
+      _isAssigned = true;
+      return _item = v;
+    } else {
+      print(
+        "LazySingleInitializer<$T> was initialized before initializer completed.",
+      );
+      return _item;
+    }
+  }
 }
 
 ///
@@ -255,17 +345,17 @@ class LateFinal<T> {
 
   T? get $Safe => _isAssigned ? _item : null;
 
-  /// If the given value is null or [item] has been assigned, will not set value,
+  /// If the given value is null or [$] has been assigned, will not set value,
   /// even if [T] is a nullable type.
-  set $Safe(T? valOrNull) => (valOrNull != null) ? (item = valOrNull) : null;
+  set $Safe(T? valOrNull) => (valOrNull != null) ? ($ = valOrNull) : null;
 
   T operator +(T value) {
-    item = value;
-    return item;
+    $ = value;
+    return $;
   }
 
   T? operator ~() {
-    return itemSafe;
+    return $Safe;
   }
 }
 
@@ -641,9 +731,7 @@ class ValueAsync<V> {
   }) async {
     if (value is Future<V>) {
       if (onError != null) value.onError(onError);
-      value.catchError(!cacheErrors
-          ? catchError
-          : (e, s) => catchError(e, s));
+      value.catchError(!cacheErrors ? catchError : (e, s) => catchError(e, s));
       return value..then((v) => then?.call(v));
     } else {
       then?.call(value);
