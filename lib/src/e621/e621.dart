@@ -1,4 +1,5 @@
 import 'dart:convert' as dc;
+import 'dart:collection' show ListQueue;
 import 'package:http/http.dart' as http;
 import 'package:j_util/j_util_full.dart';
 
@@ -67,31 +68,48 @@ class Api {
           : softRateLimit;
   static DateTime timeOfLastRequest =
       DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  static int defaultBurstLimit = 60;
+  static int get currentBurstLimit => defaultBurstLimit;
+  static ListQueue<DateTime> burstTimes = ListQueue(defaultBurstLimit - 1);
 
   /// Won't blow the rate limit
   static Future<http.StreamedResponse> sendRequestStreamed(
-    http.BaseRequest request,
-  ) async {
+    http.BaseRequest request, {
+    bool useBurst = false,
+  }) async {
     doTheThing() {
       timeOfLastRequest = DateTime.timestamp();
       return client.send(request);
     }
 
     var t = DateTime.timestamp().difference(timeOfLastRequest);
-    return (t < currentRateLimit)
-        ? Future.delayed(currentRateLimit - t, doTheThing)
-        : doTheThing();
+    if (t >= currentRateLimit) {
+      return doTheThing();
+    } else {
+      if (useBurst && burstTimes.length < currentBurstLimit) {
+        final ts = DateTime.timestamp();
+        burstTimes.add(ts);
+        Future.delayed(currentRateLimit, () => burstTimes.remove(ts)).ignore();
+        return client.send(request);
+      }
+      return Future.delayed(currentRateLimit - t, doTheThing);
+    }
   }
 
   /// Won't blow the rate limit
   static Future<http.Response> sendRequest(
-    http.BaseRequest request,
-  ) async =>
-      sendRequestStreamed(request).toResponse();
+    http.BaseRequest request, {
+    bool useBurst = false,
+  }) async =>
+      sendRequestStreamed(request, useBurst: useBurst).toResponse();
 
   // #endregion Rate Limit
   static const maxPageNumber = 750;
   static const maxPostsPerSearch = 320;
+
+  /// If searching by page number, the max amount of posts that can be accessed.
+  static const maxPostsPerSearchByPageNumber =
+      maxPageNumber * maxPostsPerSearch;
   static const maxTagsPerSearch = 40;
 
   /// Use this to automatically enforce rate limit.
@@ -1386,7 +1404,8 @@ class Api {
         method: "POST",
         credentials: credentials,
         queryParameters: {
-          "post_set[post_ids_string]": foldIterableForUrl(postIds, allowEmpty: false),
+          "post_set[post_ids_string]":
+              foldIterableForUrl(postIds, allowEmpty: false),
         },
       );
   static int success_initUpdateSetPostsRequest = 302;

@@ -10,7 +10,7 @@ class ExpandableFab extends StatefulWidget {
     required List<Widget> this.children,
     this.openIcon = const Icon(Icons.create),
     this.closeIcon = const Icon(Icons.close),
-    this.disabledTooltip = "",
+    this.disabledTooltip,
     this.useDefaultHeroTag = true,
     this.heroTag,
   }) : childrenBuilder = null;
@@ -21,7 +21,7 @@ class ExpandableFab extends StatefulWidget {
     required List<Widget> Function(BuildContext context) this.childrenBuilder,
     this.openIcon = const Icon(Icons.create),
     this.closeIcon = const Icon(Icons.close),
-    this.disabledTooltip = "",
+    this.disabledTooltip,
     this.useDefaultHeroTag = true,
     this.heroTag,
   }) : children = null;
@@ -33,7 +33,7 @@ class ExpandableFab extends StatefulWidget {
   final double distance;
   final List<Widget>? children;
   final List<Widget> Function(BuildContext context)? childrenBuilder;
-  final String disabledTooltip;
+  final String? disabledTooltip;
   final bool useDefaultHeroTag;
   final Object? heroTag;
 
@@ -96,10 +96,17 @@ class _ExpandableFabState extends State<ExpandableFab>
               ],
             ),
           )
-        : IconButton(
-            tooltip: widget.disabledTooltip,
-            onPressed: null,
-            icon: widget.openIcon);
+        : (widget.disabledTooltip?.isEmpty ?? true)
+            ? IgnorePointer(
+                child: IconButton(
+                    tooltip: widget.disabledTooltip,
+                    onPressed: null,
+                    icon: widget.openIcon),
+              )
+            : IconButton(
+                tooltip: widget.disabledTooltip,
+                onPressed: null,
+                icon: widget.openIcon);
   }
 
   Widget _buildTapToCloseFab() {

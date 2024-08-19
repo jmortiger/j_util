@@ -272,7 +272,13 @@ class LazyInitializer<T> {
 
   /// Synchronously accesses and returns the item, immediately asynchronously
   /// accessing and setting the item with [initializer] if that fails.
-  Future<T> getItem() async => _isAssigned
+  FutureOr<T> getItem() => _isAssigned
+      ? _item
+      : (isAssigning
+          ? _future!
+          : (_future = (initializer()..then(_myThen).ignore()))) as FutureOr<T>;
+  /// Same as [getItem], but always returns a future.
+  Future<T> getItemAsync() async => _isAssigned
       ? _item
       : isAssigning
           ? await _future!
