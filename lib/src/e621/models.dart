@@ -1759,6 +1759,23 @@ class File extends Preview {
         md5: json["md5"] as String,
         json: json,
       );
+  @override
+  File copyWith({
+    String? ext,
+    int? size,
+    String? md5,
+    String? url,
+    int? width,
+    int? height,
+  }) =>
+      File(
+        ext: ext ?? this.ext,
+        size: size ?? this.size,
+        md5: md5 ?? this.md5,
+        height: height ?? this.height,
+        url: url ?? this.url,
+        width: width ?? this.width,
+      );
 }
 
 class Preview {
@@ -1796,6 +1813,16 @@ class Preview {
       : width = json["width"],
         height = json["height"],
         url = json["url"] as String? ?? "";
+  Preview copyWith({
+    String? url,
+    int? width,
+    int? height,
+  }) =>
+      Preview(
+        height: height ?? this.height,
+        url: url ?? this.url,
+        width: width ?? this.width,
+      );
 }
 
 class Sample extends Preview {
@@ -1923,13 +1950,14 @@ class UpdatedScore extends Score implements VoteResult {
   bool get isUpvoted => ourScore > 0;
   bool get isDownvoted => ourScore < 0;
   bool get isVotedOn => ourScore != 0;
+
   /// `true` if the user upvoted this post, `false` if the user downvoted this post, `null` if the user didn't vote on this post.
   bool? get voteState => switch (ourScore) {
-    > 0 => true,
-    < 0 => false,
-    == 0 => null,
-    _ => null,
-  };
+        > 0 => true,
+        < 0 => false,
+        == 0 => null,
+        _ => null,
+      };
 
   const UpdatedScore.inherited({
     required super.up,
