@@ -1937,6 +1937,7 @@ class VoteResult {
       );
 }
 
+/// TODO: Cancelling an unvote returns ourScore as 0. Change to reflect.
 @immutable
 class UpdatedScore extends Score implements VoteResult {
   /// The total score (up + down).
@@ -1946,6 +1947,16 @@ class UpdatedScore extends Score implements VoteResult {
   /// Our score is 1 (for upvoted), 0 (for no vote), or -1 (for downvoted).
   @override
   final int ourScore;
+
+  /* /// Cast vote.
+  @override
+  final int? voteCast;
+
+  /// Our score is 1 (for upvoted), 0 (for no vote), or -1 (for downvoted).
+  int? get ourScoreTrue => noUnvote != null ? ourScore == 0 && noUnvote! ?  : null;
+
+  @override
+  final bool? noUnvote; */
 
   bool get isUpvoted => ourScore > 0;
   bool get isDownvoted => ourScore < 0;
@@ -1964,12 +1975,16 @@ class UpdatedScore extends Score implements VoteResult {
     required super.down,
     required super.total,
     required this.ourScore,
+    /* this.castVote,
+    this.noUnvote, */
   });
   const UpdatedScore({
     required int up,
     required int down,
     required int score,
     required this.ourScore,
+    /* this.castVote,
+    this.noUnvote, */
   }) : super(up: up, down: down, total: score);
   factory UpdatedScore.fromJsonRaw(String json) =>
       UpdatedScore.fromJson(dc.jsonDecode(json));
@@ -2004,6 +2019,19 @@ class UpdatedScore extends Score implements VoteResult {
         score: score ?? total ?? this.score,
         ourScore: ourScore ?? this.ourScore,
       );
+  static int determineOurTrueScore(int castVote, int ourScore, bool noUnvote) {
+    if (noUnvote) {
+      if (castVote > 0 && ourScore >= 0) {
+        return 1;
+      } else if (castVote < 0 && ourScore <= 0) {
+        return -1;
+      } else {
+        return ourScore;
+      }
+    } else {
+      return ourScore;
+    }
+  }
 }
 
 class PostTags {
