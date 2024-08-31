@@ -11,3 +11,6 @@
 
 ## 2.1.0
 - Added SelectorNotifiers
+
+## 2.1.1
+- Updated deprecated members, minor housekeeping

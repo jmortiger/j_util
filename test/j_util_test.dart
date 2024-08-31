@@ -1,9 +1,8 @@
 import 'package:j_util/collections.dart';
-import 'package:j_util/j_util.dart';
 import 'package:j_util/src/types.dart';
 import 'package:test/test.dart';
 
-import '../lib/src/collection_extensions.dart';
+import 'package:j_util/src/collection_extensions.dart';
 
 // WidgetsFlutterBinding.ensureInitialized
 void main() {
@@ -22,40 +21,28 @@ void main() {
       expect(Platform.isWeb, isNot(isA<Error>()));
     });
   });
-  group("Late<T>", () {
+  group("LateFinal<T>", () {
     test("error on access before assign", () {
-      final Late<int> l = Late();
+      final LateFinal<int> l = LateFinal();
       try {
-        expect(l.item, isA<Error>());
+        expect(l.$, isA<Error>());
       } catch (e) {
         expect(e, isA<Error>());
       }
-      l.item = 5;
+      l.$ = 5;
       try {
-        expect(l.item, isNot(isA<Error>()));
+        expect(l.$, isNot(isA<Error>()));
       } catch (e) {
         expect(e, isNot(isA<Error>()));
       }
     });
     test("isAssigned works correctly", () {
-      final Late<int> l = Late();
+      final LateFinal<int> l = LateFinal();
       expect(l.isAssigned, false);
-      l.item = 5;
+      l.$ = 5;
       expect(l.isAssigned, true);
     });
   });
-  // test("extends Abst Inter", () {
-  //   foo y = foo();
-  //   expect(y.check(), true);
-  //   expect(y.doubleCheck(), true);
-  // });
-  // group("StringComparisons", () {
-
-  // });
-  // TODO: Check if postfix doesn't interfere with assignment
-  // var i = 1;
-  // (1, 2) || (2, 2) ?
-  // return (i++, i);
   group("List Extensions", () {
     late List<int> l0To4growable;
     late List<int> l5To9growable;

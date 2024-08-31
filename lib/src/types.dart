@@ -388,7 +388,7 @@ class LateInstance<T> {
 
   /// Sets the true item. Safely assigns the item
   /// and sets the [isAssigned] flag.
-  @Deprecated(r"Use $Safe")
+  @Deprecated(r"Use $")
   set item(T value) {
     _item = value;
     _isAssigned = true;
@@ -396,8 +396,10 @@ class LateInstance<T> {
 
   /// Sets the true item. Safely assigns the item
   /// and sets the [isAssigned] flag.
-  /// TODO: inline implementation
-  set $(T value) => item = value;
+  set $(T value) {
+    _item = value;
+    _isAssigned = true;
+  }
 
   @Deprecated(r"Use $Safe")
   T? get itemSafe => $Safe;
@@ -414,13 +416,15 @@ class LateInstance<T> {
   /// even if [T] is a nullable type.
   set $Safe(T? valOrNull) => (valOrNull != null) ? (_item = valOrNull) : null;
 
+  @Deprecated(r"Use $")
   T operator +(T value) {
-    item = value;
-    return item;
+    $ = value;
+    return $;
   }
 
+  @Deprecated(r"Use $Safe")
   T? operator ~() {
-    return itemSafe;
+    return $Safe;
   }
 }
 

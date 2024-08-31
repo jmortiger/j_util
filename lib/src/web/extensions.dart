@@ -69,22 +69,22 @@ extension Conversion on http.StreamedResponse {
   /// {@endtemplate}
   Future<http.BaseResponse> toResponse() async {
     var t =
-        await http.ByteStream(this.stream.asBroadcastStream()).bytesToString();
+        await http.ByteStream(stream.asBroadcastStream()).bytesToString();
     return http.Response(
       t,
-      this.statusCode,
-      headers: this.headers,
-      isRedirect: this.isRedirect,
-      persistentConnection: this.persistentConnection,
-      reasonPhrase: this.reasonPhrase,
-      request: this.request,
+      statusCode,
+      headers: headers,
+      isRedirect: isRedirect,
+      persistentConnection: persistentConnection,
+      reasonPhrase: reasonPhrase,
+      request: request,
     );
   }
 }
 
 extension ConversionOnFut on Future<http.StreamedResponse> {
   /// {@macro StreamConvert}
-  Future<http.Response> toResponse() => this.then((v) async {
+  Future<http.Response> toResponse() => then((v) async {
         var t =
             await http.ByteStream(v.stream.asBroadcastStream()).bytesToString();
         return http.Response(
@@ -99,7 +99,7 @@ extension ConversionOnFut on Future<http.StreamedResponse> {
       });
 
   /// {@macro StreamConvert}
-  Future<http.BaseResponse> toBaseResponse() => this.then((v) async {
+  Future<http.BaseResponse> toBaseResponse() => then((v) async {
         var t =
             await http.ByteStream(v.stream.asBroadcastStream()).bytesToString();
         return http.Response(

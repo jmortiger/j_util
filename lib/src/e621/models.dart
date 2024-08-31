@@ -1,6 +1,5 @@
 import 'dart:convert' as dc;
 import 'general_enums.dart';
-import 'search_enums.dart';
 
 class Pool {
   /// The ID of the pool.

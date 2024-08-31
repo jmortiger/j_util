@@ -508,8 +508,8 @@ class _PriorityQueue<T extends Comparable<T>> /*  extends Iterable<T> */ {
   final List<List<T>> queue = [];
   final LateFinal<List<T>> _queueToList = LateFinal();
   List<T> get squashedList => _queueToList.isAssigned
-      ? _queueToList.item
-      : (_queueToList.item = queue.fold(
+      ? _queueToList.$
+      : (_queueToList.$ = queue.fold(
           <T>[], (previousValue, element) => previousValue..addAll(element)));
 
   _PriorityQueue(List<T> collection) {
@@ -586,8 +586,8 @@ class CoarsePriorityQueue<T extends IComparable<T>>
   final LateFinal<List<T>> _queueToList = LateFinal();
   @override
   List<T> get squashedList => _queueToList.isAssigned
-      ? _queueToList.item
-      : (_queueToList.item = queue.fold(
+      ? _queueToList.$
+      : (_queueToList.$ = queue.fold(
           <T>[], (previousValue, element) => previousValue..addAll(element)));
 
   CoarsePriorityQueue(List<T> collection) /*  : super(collection) */ {

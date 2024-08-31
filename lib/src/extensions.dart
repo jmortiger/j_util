@@ -38,9 +38,6 @@ extension NumExtensions on num {
             Duration.millisecondsPerHour,
         TimeInterval.days => (this * Duration.millisecondsPerDay).truncate() /
             Duration.millisecondsPerDay,
-        _ => throw UnsupportedError(
-            "TimeInterval.${represents.name} not supported",
-          ),
       };
 
   /// Converts to a Duration.
@@ -61,9 +58,6 @@ extension NumExtensions on num {
                       (this * Duration.microsecondsPerHour).truncate(),
                     TimeInterval.days =>
                       (this * Duration.microsecondsPerDay).truncate(),
-                    _ => throw UnsupportedError(
-                        "TimeInterval.${represents.name} not supported",
-                      ),
                   } *
                   (discardMicroseconds ? 1 / 1000 : 1))
               .truncate());

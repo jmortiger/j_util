@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:j_util/collections.dart';
-import 'package:j_util/events.dart';
 
 class WFoldout extends StatefulWidget {
   final Widget header;

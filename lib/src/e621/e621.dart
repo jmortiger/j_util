@@ -1367,8 +1367,8 @@ http.Request initCreateSetRequest({
       method: "POST",
       credentials: credentials,
       queryParameters: {
-        if (postSetName != null) "post_set[name]": postSetName,
-        if (postSetShortname != null) "post_set[shortname]": postSetShortname,
+        "post_set[name]": postSetName,
+        "post_set[shortname]": postSetShortname,
         if (postSetDescription != null)
           "post_set[description]": postSetDescription,
         if (postSetIsPublic != null) "post_set[is_public]": postSetIsPublic,
