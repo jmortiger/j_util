@@ -2,8 +2,9 @@ import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:j_util/collections.dart';
 import 'package:j_util/src/types.dart' show LateFinal;
+
+import 'collection_extensions.dart';
 
 typedef ReduceConditional<T, U> = bool Function(
     U accumulator, T elem, int index, Iterable<T> list);
@@ -13,31 +14,6 @@ typedef ConditionalReducer<T, U> = (U, bool) Function(
     U accumulator, T elem, int index, Iterable<T> list);
 typedef Mapper<T, U> = U Function(T elem, int index, Iterable<T> list);
 typedef MapperSparse<T, U> = U Function(T elem, Iterable<T> list);
-
-extension StringFold on Iterable<String> {
-  // TODO: Profile performance.
-  /// String folding w/o leading nor trailing [delimiter] and the prefix [prefix], and discarding empty strings if [excludeEmpty] is true.
-  String foldToStringFull({
-    String delimiter = " ",
-    String prefix = "",
-    bool excludeEmpty = false,
-  }) =>
-      fold(
-          "",
-          (acc, e) => !excludeEmpty || e.isNotEmpty
-              ? (acc.isNotEmpty ? "$acc$delimiter$prefix$e" : "$prefix$e")
-              : acc);
-  /// String folding w/o leading nor trailing [delimiter] and the prefix [prefix]
-  String foldToString({String delimiter = " ", String prefix = ""}) => fold(
-      "", (acc, e) => acc.isNotEmpty ? "$acc$delimiter$prefix$e" : "$prefix$e");
-  // String foldToString1({String delimiter = " ", String prefix = ""}) =>
-  //     skip(1).fold("$prefix${elementAtOrNull(0) ?? ""}",
-  //         (acc, e) => "$acc$delimiter$prefix$e");
-  // fold("", (acc, e) => "$acc$delimiter$e");
-  /// String folding w/o leading nor trailing [delimiter] and the prefix [prefix]
-  // String foldToStringWithPrefix({String delimiter = " ", String prefix = ""}) =>
-  //     fold("", (acc, e) => acc.isNotEmpty ? "$acc$delimiter$prefix$e" : "$prefix$e");
-}
 
 class IterableInjector<From, To> extends Iterable<To> {
   final Iterable<From> _baseIterable;

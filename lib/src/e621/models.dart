@@ -1,6 +1,6 @@
 import 'dart:convert' as dc;
-import 'package:flutter/material.dart';
-import 'package:j_util/e621.dart';
+import 'general_enums.dart';
+import 'search_enums.dart';
 
 class Pool {
   /// The ID of the pool.
@@ -91,7 +91,6 @@ class Pool {
         creatorId: json["creator_id"],
         description: json["description"],
         isActive: json["is_active"],
-        // category: PoolCategory.map[json["category"]]!,
         category: PoolCategory.fromJson(json["category"]),
         postIds: List<int>.from(json["post_ids"].map((x) => x)),
         creatorName: json["creator_name"],
@@ -106,7 +105,6 @@ class Pool {
         "creator_id": creatorId,
         "description": description,
         "is_active": isActive,
-        // "category": PoolCategory.reverseMap[category],
         "category": category.toJson(),
         "post_ids": List<dynamic>.from(postIds.map((x) => x)),
         "creator_name": creatorName,
@@ -1305,7 +1303,7 @@ class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
       canApprovePosts: other?.canApprovePosts ?? canApprovePosts,
       canUploadFree: other?.canUploadFree ?? canUploadFree,
       levelString: other?.levelString ?? levelString,
-      avatarId: other == null ? avatarId : other!.avatarId,
+      avatarId: other == null ? avatarId : other.avatarId,
       blacklistUsers: userL?.blacklistUsers ?? blacklistUsers,
       descriptionCollapsedInitially:
           userL?.descriptionCollapsedInitially ?? descriptionCollapsedInitially,
@@ -1887,7 +1885,6 @@ class Score {
 }
 
 /// Result of successful vote call.
-@immutable
 class VoteResult {
   /// The number of times voted up.
   final int up;
@@ -1938,7 +1935,6 @@ class VoteResult {
 }
 
 /// TODO: Cancelling an unvote returns ourScore as 0. Change to reflect.
-@immutable
 class UpdatedScore extends Score implements VoteResult {
   /// The total score (up + down).
   @override
@@ -2202,7 +2198,7 @@ enum PostFlag {
 
 class PostBitFlags implements PostFlags {
   @override
-  bool get deleted => (_data & pendingFlag) == pendingFlag;
+  bool get pending => (_data & pendingFlag) == pendingFlag;
 
   @override
   bool get flagged => (_data & flaggedFlag) == flaggedFlag;
@@ -2211,13 +2207,13 @@ class PostBitFlags implements PostFlags {
   bool get noteLocked => (_data & noteLockedFlag) == noteLockedFlag;
 
   @override
-  bool get pending => (_data & statusLockedFlag) == statusLockedFlag;
+  bool get statusLocked => (_data & statusLockedFlag) == statusLockedFlag;
 
   @override
   bool get ratingLocked => (_data & ratingLockedFlag) == ratingLockedFlag;
 
   @override
-  bool get statusLocked => (_data & deletedFlag) == deletedFlag;
+  bool get deleted => (_data & deletedFlag) == deletedFlag;
   final int _data;
   PostBitFlags({
     required bool pending,
@@ -2517,11 +2513,11 @@ enum TagCategory {
   ///
   /// Note that there are also four meta tags that are typed as artist tags instead:
   ///
-  /// * epilepsy_warning for posts containing flashing lights that could trigger epileptic seizures.
-  /// * jumpscare_warning for animated and Flash posts containing shocking imagery and/or sounds that can catch a viewer off-guard.
-  /// * audio_warning for loud, deafening audio in Flash and WebM posts
-  /// * unknown_artist_signature for posts in which the artist isn't known but a signature is on it.
-  /// * third-party edit for posts edited by someone other than the original artist(s).
+  /// * `epilepsy_warning` for posts containing flashing lights that could trigger epileptic seizures.
+  /// * `jumpscare_warning` for animated and Flash posts containing shocking imagery and/or sounds that can catch a viewer off-guard.
+  /// * `sound_warning` for loud, deafening audio in Flash and WebM posts
+  /// * `unknown_artist_signature` for posts in which the artist isn't known but a signature is on it.
+  /// * `third-party_edit` for posts edited by someone other than the original artist(s).
   ///
   /// The first three are deliberately typed as such because the bright orange
   /// color warns users about the potential dangers of those posts. The fourth

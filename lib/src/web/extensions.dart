@@ -147,24 +147,3 @@ class StatusCode {
     return "$statusCode";
   }
 }
-
-abstract interface class IQueryParameter<T> {
-  String get queryValueString;
-  T get queryValue;
-  String get queryName;
-  String get query;
-}
-
-// abstract interface class IEnumQueryParameter<T extends IEnumQueryParameter<T>> extends Enum implements IQueryParameter<T> {
-//   static String getQueryValueString(IEnumQueryParameter i) => i.name;
-//   static String getQuery(IEnumQueryParameter i) => "${i.queryName}=${i.queryValueString}";
-// }
-mixin EnumQueryParameter<T extends EnumQueryParameter<T>> on Enum
-    implements IQueryParameter<T> {
-  @override
-  String get queryValueString => name;
-  @override
-  String get query => "$queryName=$queryValueString";
-  @override
-  T get queryValue => this as T;
-}

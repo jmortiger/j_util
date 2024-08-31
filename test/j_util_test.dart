@@ -3,6 +3,8 @@ import 'package:j_util/j_util.dart';
 import 'package:j_util/src/types.dart';
 import 'package:test/test.dart';
 
+import '../lib/src/collection_extensions.dart';
+
 // WidgetsFlutterBinding.ensureInitialized
 void main() {
   // group('A group of tests', () {

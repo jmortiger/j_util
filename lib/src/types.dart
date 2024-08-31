@@ -528,7 +528,7 @@ mixin UniqueIdGenerator<T> {
   }
 
   static String _generateNewProposedId(String prior) => prior.codeUnits
-      .mapAsList((e, i, l) => validCharacters[e % validCharacters.length])
+      .map((e) => validCharacters[e % validCharacters.length])
       .fold("", (acc, e) => "$acc$e");
 
   static String getNewId([String proposedId = ""]) => _getNewId(1, proposedId);

@@ -1,157 +1,5 @@
-import 'dart:convert';
-
-import 'package:j_util/src/j_util_base.dart';
-import 'package:j_util/src/types.dart';
-
-import 'collections.dart';
-
-// #region Iterable
-extension ListIterators<T> on List<T> {
-  /// Unlike the built-in [List.map] this:
-  /// 1. Completes synchronously
-  /// 1. Allows the current index and the list as a whole to affect the outcome
-  /// 1. Returns a [List] instead of an [Iterable]
-  List<U> mapAsList<U>(
-    U Function(T e, int index, List<T> list) mapper, [
-    bool growable = true,
-  ]) {
-    // final r = <U>[];
-    // for (int i = 0; i < length; i++) {
-    //   r.add(mapper(this[i], i, this));
-    // }
-    // return r;
-    return List<U>.generate(
-      length,
-      (index) => mapper(this[index], index, this),
-      growable: growable,
-    );
-  }
-
-  void mutate(
-    T Function(T e, int i, List<T> l) mapper, [
-    bool growable = true,
-  ]) {
-    for (int i = 0; i < length; i++) {
-      this[i] = mapper(this[i], i, this);
-    }
-    // return this;
-  }
-
-  U reduceToType<U>(
-      U Function(U accumulator, T elem, int index, List<T> list) reducer,
-      U initialValue) {
-    for (int i = 0; i < length; i++) {
-      initialValue = reducer(initialValue, this[i], i, this);
-    }
-    return initialValue;
-  }
-
-  bool get isFixedLength {
-    try {
-      add(removeLast());
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  ///
-  /// [failSilently] handles non-growable lists.
-  ///
-  /// If [mutate] and:
-  ///
-  /// * [failSilently] -> create new list, mutate this list and new list, return copy.
-  /// * ![failSilently] -> don't create new list, mutate and return this list, no error handling.
-  ///
-  /// Else JS behavior; create new list, mutate only new list, return new list.
-  List<T> filter(
-    bool Function(T e, int i, List<T> l) compareFunction, {
-    bool mutate = false,
-    bool failSilently = false,
-  }) {
-    bool? isMutable;
-    final r = mutate && !failSilently ? this : <T>[];
-    for (int i = 0; i < length; i++) {
-      if (compareFunction(this[i], i, this)) {
-        mutate && !failSilently ? () : r.add(this[i]);
-      } else if (mutate &&
-          (!failSilently || (isMutable ??= this.isFixedLength))) {
-        removeAt(i);
-        i--;
-      }
-    }
-    return r;
-  }
-
-  List<int> indicesWhere(
-    Mapper<T, bool> condition, [
-    int start = 0,
-    int end = -1,
-  ]) {
-    if (end == -1) end = length;
-    var r = <int>[];
-    for (var i = start; i < length; i++) {
-      if (condition(this[i], i, this)) r.add(i);
-    }
-    return r;
-  }
-}
-
-extension Iterators<T> on Iterable<T> {
-  List<U> mapAsList<U>(Mapper<T, U> mapper) {
-    final r = <U>[];
-    final iterator = this.iterator;
-    for (int i = 0; i < length && iterator.moveNext(); i++) {
-      r.add(mapper(iterator.current, i, this));
-    }
-    return r;
-  }
-
-  Iterable<U> mapTo<U>(Mapper<T, U> mapper) =>
-      IterableInjector(baseIterable: this, mapper: mapper);
-
-  U reduceToType<U>(
-    Reducer<T, U> reducer,
-    U initialValue, {
-    ReduceConditional<T, U>? breakIfTrue,
-  }) {
-    final iterator = this.iterator;
-    for (int i = 0; i < length && iterator.moveNext(); i++) {
-      if (breakIfTrue?.call(initialValue, iterator.current, i, this) ?? false) {
-        break;
-      }
-      initialValue = reducer(initialValue, iterator.current, i, this);
-    }
-    return initialValue;
-  }
-
-  U reduceUntilTrue<U>(
-    ConditionalReducer<T, U> reducer,
-    U initialValue,
-  ) {
-    final iterator = this.iterator;
-    for (int i = 0; i < length && iterator.moveNext(); i++) {
-      if (((initialValue, _) = reducer(initialValue, iterator.current, i, this))
-          .$2) break;
-    }
-    return initialValue;
-  }
-
-  U iterateUntilTrueLazy<U>(
-    (U, bool) Function(
-            U accumulator, int index, Iterable<T> list, Iterator<T> iterator)
-        reducer,
-    U initialValue,
-  ) {
-    final iterator = this.iterator;
-    for (int i = 0; i < length && iterator.moveNext(); i++) {
-      if (((initialValue, _) = reducer(initialValue, i, this, iterator)).$2)
-        break;
-    }
-    return initialValue;
-  }
-}
-// #endregion Iterable
+import 'package:j_util/src/j_util_base.dart' show defaultIndent;
+import 'package:j_util/src/types.dart' show Platform, TimeInterval;
 
 // #region Numerics
 extension NumExtensions on num {
@@ -282,14 +130,10 @@ extension DurationExtensions on Duration {
       (_, false) => t,
     };
     if (!fillZeros) {
-      return RegExpExt.removeZerosFromTime
-          .allMatches(t)
-          .toList()
-          .reversed
-          .reduceToType(
-              (accumulator, elem, index, list) =>
-                  t.replaceRange(elem.start, elem.end, ""),
-              t);
+      return RegExpExt.removeZerosFromTime.allMatches(t).toList().reversed.fold(
+            t,
+            (accumulator, elem) => t.replaceRange(elem.start, elem.end, ""),
+          );
     }
     return t;
   }
@@ -393,11 +237,10 @@ extension StringExtensions on String {
     return finalResult;
   }
 
-  String toSnakeCaseFromCamelCase() =>
-      RegExpExt.camelCase.allMatches(this).reduceToType(
-          (accumulator, elem, index, list) =>
-              "$accumulator${(elem.group(1)?.toLowerCase() ?? "")}_${(elem.group(2)?.toLowerCase() ?? "")}${(elem.group(3)?.toLowerCase() ?? "")}",
-          "");
+  String toSnakeCaseFromCamelCase() => RegExpExt.camelCase.allMatches(this).fold(
+      "",
+      (accumulator, elem) =>
+          "$accumulator${(elem.group(1)?.toLowerCase() ?? "")}_${(elem.group(2)?.toLowerCase() ?? "")}${(elem.group(3)?.toLowerCase() ?? "")}");
   // /// Will throw an error if T doesn't have a `fromJson` named constructor.
   // T decodeRawJson<T>() => (T as dynamic).fromJson(json.decode(this));
 }
@@ -407,27 +250,9 @@ extension PrettyPrint on Object? {
       toString().replaceAll("\n", "\n$indent");
 }
 
-extension PrettyPrintCollection on Iterable {
-  // TODO: Test
-  String toStringIterable({
-    String elementDelimiter = ", ",
-    bool lineBreakCollectionStart = false,
-    String indent = defaultIndent,
-    PrettyPrintPrefixStyle prefixStyle =
-        PrettyPrintPrefixStyle.applyPrefixToAllLinesButFirst,
-    String prefix = "",
-  }) =>
-      "[${lineBreakCollectionStart ? "\n" : ""}${mapAsList((e, index, list) => "${switch (prefixStyle) {
-            PrettyPrintPrefixStyle.doNotApplyPrefix => "",
-            PrettyPrintPrefixStyle.applyPrefixToAllLines => prefix,
-            PrettyPrintPrefixStyle.applyPrefixToAllLinesButFirst =>
-              index != 0 ? prefix : "",
-          }}${e.toString().replaceAll("\n", "\n$indent")}${index < list.length - 1 ? "$elementDelimiter${lineBreakCollectionStart && elementDelimiter.contains("\n") ? indent : ""}" : ""}").reduce((value, element) => value + element)}${lineBreakCollectionStart ? "\n" : ""}]";
-}
-
 extension RegExpExt on RegExp {
   /// A string containing all whitespace characters.
-  /// 
+  ///
   /// {@template WhitespaceList}
   /// Contains:
   /// * Line Separator (LS, `\u2028`)
@@ -441,8 +266,10 @@ extension RegExpExt on RegExp {
   /// * (Horizontal) Tab (`\t`, `\u0009`)
   /// {@endtemplate}
   static const whitespaceCharacters = r'\u2028\n\r\u000B\f\u2029\u0085 	';
+
   /// {@macro WhitespaceList}
   static const whitespacePattern = '[$whitespaceCharacters]';
+
   /// {@macro WhitespaceList}
   static final whitespace = RegExp(whitespacePattern);
   static final removeZerosFromTime = RegExp(
@@ -475,11 +302,61 @@ extension RegExpExt on RegExp {
   static final camelCaseWordBorders = RegExp(r'(?<!^)(?=[A-Z])');
 
   static final lowercase = RegExp(r'([a-z]+)');
-  static const lowercaseLetters = "a""b""c""d""e""f""g""h""i""j""k""l""m""n""o""p""q""r""s""t""u""z""w""x""y""z";
-  static const uppercaseLetters = "A""B""C""D""E""F""G""H""I""J""K""L""M""N""O""P""Q""R""S""T""U""Z""W""X""Y""Z";
+  static const lowercaseLetters = "a"
+      "b"
+      "c"
+      "d"
+      "e"
+      "f"
+      "g"
+      "h"
+      "i"
+      "j"
+      "k"
+      "l"
+      "m"
+      "n"
+      "o"
+      "p"
+      "q"
+      "r"
+      "s"
+      "t"
+      "u"
+      "z"
+      "w"
+      "x"
+      "y"
+      "z";
+  static const uppercaseLetters = "A"
+      "B"
+      "C"
+      "D"
+      "E"
+      "F"
+      "G"
+      "H"
+      "I"
+      "J"
+      "K"
+      "L"
+      "M"
+      "N"
+      "O"
+      "P"
+      "Q"
+      "R"
+      "S"
+      "T"
+      "U"
+      "Z"
+      "W"
+      "X"
+      "Y"
+      "Z";
   static const letters = "$lowercaseLetters$uppercaseLetters";
   static const numbers = "0123456789";
-  static const alphanumericCharacters = "$lowercaseLetters$uppercaseLetters$numbers";
+  static const alphanumericCharacters =
+      "$lowercaseLetters$uppercaseLetters$numbers";
 }
-
 // #endregion Strings & Printing
