@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:j_util/src/widgets/w_pull_tab.dart';
 
 class WPullTabOverlay extends StatefulWidget {
-  final AnchorAlignment anchorAlignment;
+  final AnchorAlignmentOrdinal anchorAlignment;
   final Duration duration;
   final List<Widget>? children;
   final List<Widget> Function(BuildContext context)? builder;
@@ -23,7 +23,7 @@ class WPullTabOverlay extends StatefulWidget {
   final Color? disabledColor;
   const WPullTabOverlay({
     super.key,
-    this.anchorAlignment = AnchorAlignment.bottom,
+    this.anchorAlignment = AnchorAlignmentOrdinal.bottom,
     this.duration = const Duration(milliseconds: 250),
     required List<Widget> this.children,
     this.openIcon = const Icon(Icons.create),
@@ -40,7 +40,7 @@ class WPullTabOverlay extends StatefulWidget {
   }) : builder = null;
   const WPullTabOverlay.builder({
     super.key,
-    this.anchorAlignment = AnchorAlignment.bottom,
+    this.anchorAlignment = AnchorAlignmentOrdinal.bottom,
     this.duration = const Duration(milliseconds: 250),
     required List<Widget> Function(BuildContext context) this.builder,
     this.openIcon = const Icon(Icons.create),
@@ -211,7 +211,7 @@ class _WRibbon extends StatelessWidget {
   // final double? directionInDegrees;
   final Duration duration;
   final Color? color;
-  final AnchorAlignment anchorAlignment;
+  final AnchorAlignmentOrdinal anchorAlignment;
   final double distance;
   const _WRibbon({
     super.key,
@@ -232,56 +232,56 @@ class _WRibbon extends StatelessWidget {
     return AnimatedBuilder(
       animation: progress,
       builder: (context, child) => switch (anchorAlignment) {
-        AnchorAlignment.top => Positioned(
+        AnchorAlignmentOrdinal.top => Positioned(
             top: 0,
             height: progress.value * distance,
             right: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.bottom => Positioned(
+        AnchorAlignmentOrdinal.bottom => Positioned(
             bottom: 0,
             height: progress.value * distance,
             right: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.left => Positioned(
+        AnchorAlignmentOrdinal.left => Positioned(
             bottom: 0,
             width: progress.value * distance,
             top: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.right => Positioned(
+        AnchorAlignmentOrdinal.right => Positioned(
             bottom: 0,
             width: progress.value * distance,
             top: 0,
             right: 0,
             child: child!,
           ),
-        AnchorAlignment.topLeft => Positioned(
+        AnchorAlignmentOrdinal.topLeft => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             top: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.bottomLeft => Positioned(
+        AnchorAlignmentOrdinal.bottomLeft => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             bottom: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.bottomRight => Positioned(
+        AnchorAlignmentOrdinal.bottomRight => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             bottom: 0,
             right: 0,
             child: child!,
           ),
-        AnchorAlignment.topRight => Positioned(
+        AnchorAlignmentOrdinal.topRight => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             top: 0,
@@ -319,9 +319,9 @@ class _ExpandingActionButton extends StatelessWidget {
   final Widget child;
   final bool ignore;
 
-  final AnchorAlignment? anchor;
-  AnchorAlignment get anchorFromValues =>
-      anchor ?? AnchorAlignment.fromDirectionDegrees(directionInDegrees!);
+  final AnchorAlignmentOrdinal? anchor;
+  AnchorAlignmentOrdinal get anchorFromValues =>
+      anchor ?? AnchorAlignmentOrdinal.fromDirectionDegrees(directionInDegrees!);
 
   @override
   Widget build(BuildContext context) {
@@ -346,50 +346,50 @@ class _ExpandingActionButton extends StatelessWidget {
                     progress.value * maxDistance,
                   );
         switch (anchorFromValues) {
-          case AnchorAlignment.top:
+          case AnchorAlignmentOrdinal.top:
             // assert(offset.dx == 0);
             return Positioned(
               // right: /* 4.0 +  */offset.dx,
               top: /* 4.0 +  */ offset.dy,
               child: root,
             );
-          case AnchorAlignment.bottom:
+          case AnchorAlignmentOrdinal.bottom:
             return Positioned(
               // right: /* 4.0 +  */offset.dx,
               bottom: /* 4.0 +  */ offset.dy,
               child: root,
             );
-          case AnchorAlignment.left:
+          case AnchorAlignmentOrdinal.left:
             return Positioned(
               left: /* 4.0 +  */ offset.dx,
               // top: /* 4.0 +  */offset.dy,
               child: root,
             );
-          case AnchorAlignment.right:
+          case AnchorAlignmentOrdinal.right:
             return Positioned(
               right: /* 4.0 +  */ offset.dx,
               // top: /* 4.0 +  */offset.dy,
               child: root,
             );
-          case AnchorAlignment.topLeft:
+          case AnchorAlignmentOrdinal.topLeft:
             return Positioned(
               left: /* 4.0 +  */ offset.dx,
               top: /* 4.0 +  */ offset.dy,
               child: root,
             );
-          case AnchorAlignment.bottomLeft:
+          case AnchorAlignmentOrdinal.bottomLeft:
             return Positioned(
               left: /* 4.0 +  */ offset.dx,
               bottom: /* 4.0 +  */ offset.dy,
               child: root,
             );
-          case AnchorAlignment.bottomRight:
+          case AnchorAlignmentOrdinal.bottomRight:
             return Positioned(
               right: /* 4.0 +  */ offset.dx,
               bottom: /* 4.0 +  */ offset.dy,
               child: root,
             );
-          case AnchorAlignment.topRight:
+          case AnchorAlignmentOrdinal.topRight:
             return Positioned(
               right: /* 4.0 +  */ offset.dx,
               top: /* 4.0 +  */ offset.dy,

@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 class WPullTab extends StatefulWidget {
-  final AnchorAlignment anchorAlignment;
+  final AnchorAlignmentOrdinal anchorAlignment;
   final Duration duration;
   final List<Widget>? children;
   final List<Widget> Function(BuildContext context)? builder;
+  final void Function(bool isOpen)? onToggle;
 
+  /// This icon won't receive interactions while in the opened state.
   final Widget openIcon;
   final Widget closeIcon;
 
@@ -23,7 +25,7 @@ class WPullTab extends StatefulWidget {
   final Color? disabledColor;
   const WPullTab({
     super.key,
-    this.anchorAlignment = AnchorAlignment.bottom,
+    this.anchorAlignment = AnchorAlignmentOrdinal.bottom,
     this.duration = const Duration(milliseconds: 250),
     required List<Widget> this.children,
     this.openIcon = const Icon(Icons.create),
@@ -33,6 +35,7 @@ class WPullTab extends StatefulWidget {
     this.disabledTooltip = "",
     this.useDefaultHeroTag = true,
     this.heroTag,
+    this.onToggle,
     this.color,
     this.disabledColor,
     this.verticalBounds,
@@ -40,7 +43,7 @@ class WPullTab extends StatefulWidget {
   }) : builder = null;
   const WPullTab.builder({
     super.key,
-    this.anchorAlignment = AnchorAlignment.bottom,
+    this.anchorAlignment = AnchorAlignmentOrdinal.bottom,
     this.duration = const Duration(milliseconds: 250),
     required List<Widget> Function(BuildContext context) this.builder,
     this.openIcon = const Icon(Icons.create),
@@ -50,6 +53,7 @@ class WPullTab extends StatefulWidget {
     required this.disabledTooltip,
     required this.useDefaultHeroTag,
     this.heroTag,
+    this.onToggle,
     this.color,
     this.disabledColor,
     this.verticalBounds,
@@ -98,6 +102,7 @@ class _WPullTabState extends State<WPullTab>
         _controller.reverse();
       }
     });
+    widget.onToggle?.call(_expanded);
   }
 
   @override
@@ -179,7 +184,7 @@ class _WPullTabState extends State<WPullTab>
     final step = widget.distance / (count + 1);
     for (var i = 0, displacement = step; i < count; i++, displacement += step) {
       children.add(
-        _ExpandingActionButton.axisBased(
+        SlidingActionButton.axisBased(
           anchor: widget.anchorAlignment,
           // directionInDegrees: angleInDegrees,
           maxDistance: displacement, //widget.distance,
@@ -232,7 +237,7 @@ class _WRibbon extends StatelessWidget {
   // final double? directionInDegrees;
   final Duration duration;
   final Color? color;
-  final AnchorAlignment anchorAlignment;
+  final AnchorAlignmentOrdinal anchorAlignment;
   final double distance;
   const _WRibbon({
     super.key,
@@ -252,57 +257,57 @@ class _WRibbon extends StatelessWidget {
     );
     return AnimatedBuilder(
       animation: progress,
-      builder: (context, child) => switch (anchorAlignment) {
-        AnchorAlignment.top => Positioned(
+      builder: (_, child) => switch (anchorAlignment) {
+        AnchorAlignmentOrdinal.top => Positioned(
             top: 0,
             height: progress.value * distance,
             right: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.bottom => Positioned(
+        AnchorAlignmentOrdinal.bottom => Positioned(
             bottom: 0,
             height: progress.value * distance,
             right: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.left => Positioned(
+        AnchorAlignmentOrdinal.left => Positioned(
             bottom: 0,
             width: progress.value * distance,
             top: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.right => Positioned(
+        AnchorAlignmentOrdinal.right => Positioned(
             bottom: 0,
             width: progress.value * distance,
             top: 0,
             right: 0,
             child: child!,
           ),
-        AnchorAlignment.topLeft => Positioned(
+        AnchorAlignmentOrdinal.topLeft => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             top: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.bottomLeft => Positioned(
+        AnchorAlignmentOrdinal.bottomLeft => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             bottom: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.bottomRight => Positioned(
+        AnchorAlignmentOrdinal.bottomRight => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             bottom: 0,
             right: 0,
             child: child!,
           ),
-        AnchorAlignment.topRight => Positioned(
+        AnchorAlignmentOrdinal.topRight => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             top: 0,
@@ -316,8 +321,8 @@ class _WRibbon extends StatelessWidget {
 }
 
 @immutable
-class _ExpandingActionButton extends StatelessWidget {
-  const _ExpandingActionButton({
+class SlidingActionButton extends StatelessWidget {
+  const SlidingActionButton({
     required this.directionInDegrees,
     required this.maxDistance,
     required this.progress,
@@ -325,7 +330,7 @@ class _ExpandingActionButton extends StatelessWidget {
     this.ignore = false,
     required this.child,
   });
-  const _ExpandingActionButton.axisBased({
+  const SlidingActionButton.axisBased({
     this.directionInDegrees,
     required this.maxDistance,
     required this.progress,
@@ -349,6 +354,7 @@ class _ExpandingActionButton extends StatelessWidget {
     return AnimatedBuilder(
       animation: progress,
       builder: (context, child) {
+        final anchorFromValues = this.anchorFromValues;
         final r1 = Transform.rotate(
           angle: (1.0 - progress.value) * math.pi / 2,
           child: child!,
@@ -364,60 +370,96 @@ class _ExpandingActionButton extends StatelessWidget {
                     anchorFromValues.xComponent * progress.value * maxDistance,
                     anchorFromValues.yComponent * progress.value * maxDistance)
                 : Offset.fromDirection(
-                    (/* anchor?.facingDegrees ??  */ directionInDegrees!) *
-                        (math.pi / 180.0),
+                    directionInDegrees! * (math.pi / 180.0),
                     progress.value * maxDistance,
                   );
-        switch (anchorFromValues) {
-          case AnchorAlignment.top:
-            // assert(offset.dx == 0);
-            return Positioned(
-              // right: /* 4.0 +  */offset.dx,
-              top: /* 4.0 +  */ offset.dy,
-              child: root,
-            );
-          case AnchorAlignment.bottom:
-            return Positioned(
-              // right: /* 4.0 +  */offset.dx,
-              bottom: /* 4.0 +  */ offset.dy,
-              child: root,
-            );
-          case AnchorAlignment.left:
-            return Positioned(
-              left: /* 4.0 +  */ offset.dx,
-              // top: /* 4.0 +  */offset.dy,
-              child: root,
-            );
-          case AnchorAlignment.right:
-            return Positioned(
-              right: /* 4.0 +  */ offset.dx,
-              // top: /* 4.0 +  */offset.dy,
-              child: root,
-            );
-          case AnchorAlignment.topLeft:
-            return Positioned(
-              left: /* 4.0 +  */ offset.dx,
-              top: /* 4.0 +  */ offset.dy,
-              child: root,
-            );
-          case AnchorAlignment.bottomLeft:
-            return Positioned(
-              left: /* 4.0 +  */ offset.dx,
-              bottom: /* 4.0 +  */ offset.dy,
-              child: root,
-            );
-          case AnchorAlignment.bottomRight:
-            return Positioned(
-              right: /* 4.0 +  */ offset.dx,
-              bottom: /* 4.0 +  */ offset.dy,
-              child: root,
-            );
-          case AnchorAlignment.topRight:
-            return Positioned(
-              right: /* 4.0 +  */ offset.dx,
-              top: /* 4.0 +  */ offset.dy,
-              child: root,
-            );
+        if (anchorFromValues is AnchorAlignmentOrdinal) {
+          return switch (anchorFromValues) {
+            AnchorAlignmentOrdinal.top => Positioned(
+                // right: /* 4.0 +  */offset.dx,
+                top: /* 4.0 +  */ offset.dy,
+                child: root,
+              ),
+            AnchorAlignmentOrdinal.bottom => Positioned(
+                // right: /* 4.0 +  */offset.dx,
+                bottom: /* 4.0 +  */ offset.dy,
+                child: root,
+              ),
+            AnchorAlignmentOrdinal.left => Positioned(
+                left: /* 4.0 +  */ offset.dx,
+                // top: /* 4.0 +  */offset.dy,
+                child: root,
+              ),
+            AnchorAlignmentOrdinal.right => Positioned(
+                right: /* 4.0 +  */ offset.dx,
+                // top: /* 4.0 +  */offset.dy,
+                child: root,
+              ),
+            AnchorAlignmentOrdinal.topLeft => Positioned(
+                left: /* 4.0 +  */ offset.dx,
+                top: /* 4.0 +  */ offset.dy,
+                child: root,
+              ),
+            AnchorAlignmentOrdinal.bottomLeft => Positioned(
+                left: /* 4.0 +  */ offset.dx,
+                bottom: /* 4.0 +  */ offset.dy,
+                child: root,
+              ),
+            AnchorAlignmentOrdinal.bottomRight => Positioned(
+                right: /* 4.0 +  */ offset.dx,
+                bottom: /* 4.0 +  */ offset.dy,
+                child: root,
+              ),
+            AnchorAlignmentOrdinal.topRight => Positioned(
+                right: /* 4.0 +  */ offset.dx,
+                top: /* 4.0 +  */ offset.dy,
+                child: root,
+              )
+          };
+        }
+        else {
+          return switch (anchorFromValues.quadrantsContaining) {
+            Quadrants.oneAndTwo => Positioned(
+                // right: /* 4.0 +  */offset.dx,
+                top: /* 4.0 +  */ offset.dy,
+                child: root,
+              ),
+            Quadrants.threeAndFour => Positioned(
+                // right: /* 4.0 +  */offset.dx,
+                bottom: /* 4.0 +  */ offset.dy,
+                child: root,
+              ),
+            Quadrants.twoAndThree => Positioned(
+                left: /* 4.0 +  */ offset.dx,
+                // top: /* 4.0 +  */offset.dy,
+                child: root,
+              ),
+            Quadrants.fourAndOne => Positioned(
+                right: /* 4.0 +  */ offset.dx,
+                // top: /* 4.0 +  */offset.dy,
+                child: root,
+              ),
+            Quadrants.two => Positioned(
+                left: /* 4.0 +  */ offset.dx,
+                top: /* 4.0 +  */ offset.dy,
+                child: root,
+              ),
+            Quadrants.three => Positioned(
+                left: /* 4.0 +  */ offset.dx,
+                bottom: /* 4.0 +  */ offset.dy,
+                child: root,
+              ),
+            Quadrants.four => Positioned(
+                right: /* 4.0 +  */ offset.dx,
+                bottom: /* 4.0 +  */ offset.dy,
+                child: root,
+              ),
+            Quadrants.one => Positioned(
+                right: /* 4.0 +  */ offset.dx,
+                top: /* 4.0 +  */ offset.dy,
+                child: root,
+              )
+          };
         }
       },
       child: FadeTransition(
@@ -428,14 +470,46 @@ class _ExpandingActionButton extends StatelessWidget {
   }
 }
 
-enum AnchorAlignmentCardinal {
-  top,
-  bottom,
-  left,
-  right;
+enum AnchorAlignmentCardinal with AnchorAlignment {
+  top(270),
+  bottom(90),
+  left(0),
+  right(180);
+
+  @override
+  Alignment get alignment => switch (this) {
+        top => Alignment.topCenter,
+        bottom => Alignment.bottomCenter,
+        right => Alignment.centerRight,
+        left => Alignment.centerLeft,
+      };
+  @override
+  bool get isHorizontal => switch (this) {
+        top => false,
+        bottom => false,
+        right => true,
+        left => true,
+      };
+  @override
+  bool get isVertical => switch (this) {
+        top => true,
+        bottom => true,
+        right => false,
+        left => false,
+      };
+  @override
+  final double facingDegrees;
+  const AnchorAlignmentCardinal(this.facingDegrees);
+
+  AnchorAlignmentOrdinal toAnchorAlignmentOrdinal() => switch (this) {
+        top => AnchorAlignmentOrdinal.top,
+        bottom => AnchorAlignmentOrdinal.bottom,
+        left => AnchorAlignmentOrdinal.left,
+        right => AnchorAlignmentOrdinal.right,
+      };
 }
 
-enum AnchorAlignment {
+enum AnchorAlignmentOrdinal with AnchorAlignment {
   top(270),
   bottom(90),
   left(0),
@@ -445,6 +519,7 @@ enum AnchorAlignment {
   bottomRight(45),
   topRight(270 + 45);
 
+  @override
   Alignment get alignment => switch (this) {
         top => Alignment.topCenter,
         bottom => Alignment.bottomCenter,
@@ -455,6 +530,7 @@ enum AnchorAlignment {
         bottomRight => Alignment.bottomRight,
         topRight => Alignment.topRight,
       };
+  @override
   bool get isHorizontal => switch (this) {
         top => false,
         bottom => false,
@@ -465,6 +541,7 @@ enum AnchorAlignment {
         bottomRight => true,
         topRight => true,
       };
+  @override
   bool get isVertical => switch (this) {
         top => true,
         bottom => true,
@@ -475,34 +552,12 @@ enum AnchorAlignment {
         bottomRight => true,
         topRight => true,
       };
-  final int facingDegrees;
-  double get facingRadians => facingDegrees * (math.pi / 180);
-  double get xComponent => switch (constrainDegrees(facingDegrees)) {
-        0 => 1,
-        45 => math.cos(facingDegrees),
-        90 => 0,
-        const (90 + 45) => math.cos(facingDegrees),
-        180 => -1,
-        const (180 + 45) => math.cos(facingDegrees),
-        270 => 0,
-        const (270 + 45) => math.cos(facingDegrees),
-        _ => math.cos(facingDegrees),
-      };
-  double get yComponent => switch (constrainDegrees(facingDegrees)) {
-        0 => 0,
-        45 => math.sin(facingDegrees),
-        90 => 1,
-        const (90 + 45) => math.sin(facingDegrees),
-        180 => 0,
-        const (180 + 45) => math.sin(facingDegrees),
-        270 => -1,
-        const (270 + 45) => math.sin(facingDegrees),
-        _ => math.sin(facingDegrees),
-      };
-  const AnchorAlignment(this.facingDegrees);
+  @override
+  final double facingDegrees;
+  const AnchorAlignmentOrdinal(this.facingDegrees);
   static num constrainDegrees(num degrees) =>
       degrees < 0 ? 360 + (degrees % 360) : degrees % 360;
-  factory AnchorAlignment.fromLocationDegrees(num degrees) =>
+  factory AnchorAlignmentOrdinal.fromLocationDegrees(num degrees) =>
       switch (constrainDegrees(degrees)) {
         == 0 => right,
         > 0 && < 90 => topRight,
@@ -512,15 +567,12 @@ enum AnchorAlignment {
         > 180 && < 270 => bottomRight,
         == 270 => bottom,
         > 270 && < 360 => topLeft,
-        double.infinity ||
-        double.nan ||
-        double.negativeInfinity =>
+        < 0 || >= 360 => throw StateError("Should be 0 <= x < 360 by now"),
+        num n when !n.isFinite =>
           throw ArgumentError.value(degrees, "degrees", "Must be finite"),
-        >= 360 => throw StateError("Should be 0 <= x < 360 by now"),
-        < 0 => throw StateError("Should be 0 <= x < 360 by now"),
         _ => throw StateError("Something has gone extremely wrong"),
       };
-  factory AnchorAlignment.fromDirectionDegrees(num degrees) =>
+  factory AnchorAlignmentOrdinal.fromDirectionDegrees(num degrees) =>
       switch (constrainDegrees(degrees)) {
         == 0 => left,
         > 0 && < 90 => bottomLeft,
@@ -530,12 +582,216 @@ enum AnchorAlignment {
         > 180 && < 270 => topRight,
         == 270 => top,
         > 270 && < 360 => topLeft,
-        double.infinity ||
-        double.nan ||
-        double.negativeInfinity =>
+        < 0 || >= 360 => throw StateError("Should be 0 <= x < 360 by now"),
+        num n when !n.isFinite =>
           throw ArgumentError.value(degrees, "degrees", "Must be finite"),
-        >= 360 => throw StateError("Should be 0 <= x < 360 by now"),
-        < 0 => throw StateError("Should be 0 <= x < 360 by now"),
+        _ => throw StateError("Something has gone extremely wrong"),
+      };
+}
+
+enum CardinalDirection {
+  d0,
+  d90,
+  d180,
+  d270;
+}
+
+enum Quadrants {
+  one,
+  oneAndTwo,
+  two,
+  twoAndThree,
+  three,
+  threeAndFour,
+  four,
+  fourAndOne;
+}
+
+mixin AnchorAlignment {
+  static const top = AnchorAlignmentOrdinal.top;
+  static const bottom = AnchorAlignmentOrdinal.bottom;
+  static const left = AnchorAlignmentOrdinal.left;
+  static const right = AnchorAlignmentOrdinal.right;
+  static const topLeft = AnchorAlignmentOrdinal.topLeft;
+  static const bottomLeft = AnchorAlignmentOrdinal.bottomLeft;
+  static const bottomRight = AnchorAlignmentOrdinal.bottomRight;
+  static const topRight = AnchorAlignmentOrdinal.topRight;
+
+  bool get isCardinal =>
+      isApproximately(facingDegrees, 0) ||
+      isApproximately(facingDegrees, 90) ||
+      isApproximately(facingDegrees, 180) ||
+      isApproximately(facingDegrees, 270) ||
+      isApproximately(facingDegrees, 360);
+  bool get isOrdinal =>
+      isApproximately(facingDegrees, 0 + 45) ||
+      isApproximately(facingDegrees, 90 + 45) ||
+      isApproximately(facingDegrees, 180 + 45) ||
+      isApproximately(facingDegrees, 270 + 45) ||
+      isApproximately(facingDegrees, 360 + 45);
+  bool get isCardinalOrOrdinal => isCardinal || isOrdinal;
+  static CardinalDirection getClosestCardinal(num facingDegrees) {
+    facingDegrees = constrainDegrees(facingDegrees);
+    final d0 = (facingDegrees.toDouble()).abs(),
+        d90 = (facingDegrees.toDouble() - 90).abs(),
+        d180 = (facingDegrees.toDouble() - 180).abs(),
+        d270 = (facingDegrees.toDouble() - 270).abs(),
+        d360 = (facingDegrees.toDouble() - 360).abs();
+    var s = d0;
+    if (d90 < s) s = d90;
+    if (d180 < s) s = d180;
+    if (d270 < s) s = d270;
+    if (d360 < s) s = d360;
+    return switch (s) {
+      double d when d == d0 || d == d360 => CardinalDirection.d0,
+      double d when d == d90 => CardinalDirection.d90,
+      double d when d == d180 => CardinalDirection.d180,
+      double d when d == d270 => CardinalDirection.d270,
+      _ => throw StateError("Something went very wrong"),
+    };
+  }
+
+  Quadrants get quadrantsFacing => getQuadrants(facingDegrees);
+  Quadrants get quadrantsContaining => getQuadrants(constrainDegrees(facingDegrees + 180).toDouble());
+  static Quadrants getQuadrants(double angleDegrees) => switch (angleDegrees) {
+        > 0 + double.minPositive && < 90 - double.minPositive => Quadrants.one,
+        > 90 + double.minPositive && < 180 - double.minPositive =>
+          Quadrants.two,
+        > 180 + double.minPositive && < 270 - double.minPositive =>
+          Quadrants.three,
+        > 270 + double.minPositive && < 360 - double.minPositive =>
+          Quadrants.four,
+        double d when isApproximately(d, 0) || isApproximately(d, 360) =>
+          Quadrants.fourAndOne,
+        double d when isApproximately(d, 90) => Quadrants.oneAndTwo,
+        double d when isApproximately(d, 180) => Quadrants.twoAndThree,
+        double d when isApproximately(d, 270) => Quadrants.threeAndFour,
+        _ => throw StateError("Something went very wrong"),
+      };
+
+  Alignment get alignment {
+    final o = Offset.fromDirection(facingRadians);
+    return Alignment(o.dx, o.dy);
+  }
+
+  bool get isVertical => switch (facingDegrees) {
+        (> 0 + double.minPositive && < 360 - double.minPositive) &&
+              (< 180 - double.minPositive || > 180 + double.minPositive) =>
+          true,
+        _ => false,
+      };
+  bool get isHorizontal => switch (facingDegrees) {
+        (< 90 - double.minPositive || > 90 + double.minPositive) &&
+              (< 270 - double.minPositive || > 270 + double.minPositive) =>
+          true,
+        _ => false,
+      };
+  double get facingDegrees;
+  double get facingRadians => facingDegrees * (math.pi / 180);
+  double get xComponent => switch (constrainDegrees(facingDegrees)) {
+        double d when isApproximately(d, 0) => 1,
+        double d when isApproximately(d, 90) => 0,
+        double d when isApproximately(d, 180) => -1,
+        double d when isApproximately(d, 270) => 0,
+        double d when isApproximately(d, 360) => 1,
+        // 45 => math.cos(facingDegrees),
+        // const (90 + 45) => math.cos(facingDegrees),
+        // const (180 + 45) => math.cos(facingDegrees),
+        // const (270 + 45) => math.cos(facingDegrees),
+        _ => math.cos(facingDegrees),
+      };
+  double get yComponent => switch (constrainDegrees(facingDegrees)) {
+        double d when isApproximately(d, 0) => 0,
+        double d when isApproximately(d, 90) => 1,
+        double d when isApproximately(d, 180) => 0,
+        double d when isApproximately(d, 270) => -1,
+        double d when isApproximately(d, 360) => 0,
+        // 45 => math.sin(facingDegrees),
+        // const (90 + 45) => math.sin(facingDegrees),
+        // const (180 + 45) => math.sin(facingDegrees),
+        // const (270 + 45) => math.sin(facingDegrees),
+        _ => math.sin(facingDegrees),
+      };
+  // const AnchorAlignmentM(this.facingDegrees);
+  static num constrainDegrees(num degrees) =>
+      degrees < 0 ? 360 + (degrees % 360) : degrees % 360;
+  static bool isApproximately(double lhs, double rhs,
+          [double epsilon = double.minPositive]) =>
+      lhs <= rhs + epsilon && lhs >= rhs - epsilon;
+  static AnchorAlignmentOrdinal fromLocationDegrees(num degrees) =>
+      switch (constrainDegrees(degrees)) {
+        == 0 => AnchorAlignmentOrdinal.right,
+        > 0 && < 90 => AnchorAlignmentOrdinal.topRight,
+        == 90 => AnchorAlignmentOrdinal.top,
+        > 90 && < 180 => AnchorAlignmentOrdinal.topLeft,
+        == 180 => AnchorAlignmentOrdinal.right,
+        > 180 && < 270 => AnchorAlignmentOrdinal.bottomRight,
+        == 270 => AnchorAlignmentOrdinal.bottom,
+        > 270 && < 360 => AnchorAlignmentOrdinal.topLeft,
+        < 0 || >= 360 => throw StateError("Should be 0 <= x < 360 by now"),
+        num n when !n.isFinite =>
+          throw ArgumentError.value(degrees, "degrees", "Must be finite"),
+        _ => throw StateError("Something has gone extremely wrong"),
+      };
+  static AnchorAlignment fromDirectionDegrees(num degrees) =>
+      switch (constrainDegrees(degrees)) {
+        == 0 => AnchorAlignmentOrdinal.left,
+        == 45 => AnchorAlignmentOrdinal.bottomLeft,
+        == 90 => AnchorAlignmentOrdinal.bottom,
+        == 90 + 45 => AnchorAlignmentOrdinal.bottomRight,
+        == 180 => AnchorAlignmentOrdinal.right,
+        == 180 + 45 => AnchorAlignmentOrdinal.topRight,
+        == 270 => AnchorAlignmentOrdinal.top,
+        == 270 + 45 => AnchorAlignmentOrdinal.topLeft,
+        < 0 || >= 360 => throw StateError("Should be 0 <= x < 360 by now"),
+        num n when !n.isFinite =>
+          throw ArgumentError.value(degrees, "degrees", "Must be finite"),
+        _ => AnchorAlignmentInstance(degrees.toDouble()),
+      };
+  static AnchorAlignmentOrdinal fromDirectionDegreesOrdinal(num degrees) =>
+      switch (constrainDegrees(degrees)) {
+        == 0 => AnchorAlignmentOrdinal.left,
+        > 0 && < 90 => AnchorAlignmentOrdinal.bottomLeft,
+        == 90 => AnchorAlignmentOrdinal.bottom,
+        > 90 && < 180 => AnchorAlignmentOrdinal.bottomRight,
+        == 180 => AnchorAlignmentOrdinal.right,
+        > 180 && < 270 => AnchorAlignmentOrdinal.topRight,
+        == 270 => AnchorAlignmentOrdinal.top,
+        > 270 && < 360 => AnchorAlignmentOrdinal.topLeft,
+        < 0 || >= 360 => throw StateError("Should be 0 <= x < 360 by now"),
+        num n when !n.isFinite =>
+          throw ArgumentError.value(degrees, "degrees", "Must be finite"),
+        _ => throw StateError("Something has gone extremely wrong"),
+      };
+}
+
+class AnchorAlignmentInstance with AnchorAlignment {
+  @override
+  final double facingDegrees;
+  const AnchorAlignmentInstance(this.facingDegrees);
+  static num constrainDegrees(num degrees) =>
+      degrees < 0 ? 360 + (degrees % 360) : degrees % 360;
+  factory AnchorAlignmentInstance.fromLocationDegrees(num degrees) =>
+      AnchorAlignmentInstance.fromDirectionDegrees(degrees + 180);
+  factory AnchorAlignmentInstance.fromDirectionDegrees(num degrees) {
+    degrees = constrainDegrees(degrees);
+    return !degrees.isFinite
+        ? throw ArgumentError.value(degrees, "degrees", "Must be finite")
+        : AnchorAlignmentInstance(degrees.toDouble());
+  }
+  AnchorAlignmentOrdinal toOrdinal() =>
+      switch (constrainDegrees(facingDegrees)) {
+        == 0 => AnchorAlignmentOrdinal.left,
+        > 0 && < 90 => AnchorAlignmentOrdinal.bottomLeft,
+        == 90 => AnchorAlignmentOrdinal.bottom,
+        > 90 && < 180 => AnchorAlignmentOrdinal.bottomRight,
+        == 180 => AnchorAlignmentOrdinal.right,
+        > 180 && < 270 => AnchorAlignmentOrdinal.topRight,
+        == 270 => AnchorAlignmentOrdinal.top,
+        > 270 && < 360 => AnchorAlignmentOrdinal.topLeft,
+        < 0 || >= 360 => throw StateError("Should be 0 <= x < 360 by now"),
+        num n when !n.isFinite => throw ArgumentError.value(
+            facingDegrees, "facingDegrees", "Must be finite"),
         _ => throw StateError("Something has gone extremely wrong"),
       };
 }

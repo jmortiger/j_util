@@ -1,5 +1,5 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:j_util/src/widgets/w_pull_tab.dart';
 
 @immutable
 class ExpandableFab extends StatefulWidget {
@@ -13,6 +13,7 @@ class ExpandableFab extends StatefulWidget {
     this.disabledTooltip,
     this.useDefaultHeroTag = true,
     this.heroTag,
+    this.onToggle,
   }) : childrenBuilder = null;
   const ExpandableFab.builder({
     super.key,
@@ -24,11 +25,14 @@ class ExpandableFab extends StatefulWidget {
     this.disabledTooltip,
     this.useDefaultHeroTag = true,
     this.heroTag,
+    this.onToggle,
   }) : children = null;
 
   final Widget openIcon;
   final Widget closeIcon;
+  final void Function(bool isOpen)? onToggle;
 
+  /// This icon won't receive interactions while in the opened state.
   final bool? initialOpen;
   final double distance;
   final List<Widget>? children;
@@ -79,6 +83,7 @@ class _ExpandableFabState extends State<ExpandableFab>
         _controller.reverse();
       }
     });
+    widget.onToggle?.call(_open);
   }
 
   @override
@@ -139,7 +144,7 @@ class _ExpandableFabState extends State<ExpandableFab>
         i < count;
         i++, angleInDegrees += step) {
       children.add(
-        _ExpandingActionButton(
+        SlidingActionButton(
           directionInDegrees: angleInDegrees,
           maxDistance: widget.distance,
           progress: _expandAnimation,
@@ -177,46 +182,6 @@ class _ExpandableFabState extends State<ExpandableFab>
                   heroTag: widget.heroTag,
                 ),
         ),
-      ),
-    );
-  }
-}
-
-@immutable
-class _ExpandingActionButton extends StatelessWidget {
-  const _ExpandingActionButton({
-    required this.directionInDegrees,
-    required this.maxDistance,
-    required this.progress,
-    required this.child,
-  });
-
-  final double directionInDegrees;
-  final double maxDistance;
-  final Animation<double> progress;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: progress,
-      builder: (context, child) {
-        final offset = Offset.fromDirection(
-          directionInDegrees * (math.pi / 180.0),
-          progress.value * maxDistance,
-        );
-        return Positioned(
-          right: 4.0 + offset.dx,
-          bottom: 4.0 + offset.dy,
-          child: Transform.rotate(
-            angle: (1.0 - progress.value) * math.pi / 2,
-            child: child!,
-          ),
-        );
-      },
-      child: FadeTransition(
-        opacity: progress,
-        child: child,
       ),
     );
   }
@@ -296,24 +261,64 @@ class ActionButton extends StatelessWidget {
   }
 }
 
-// @immutable
-// class FakeItem extends StatelessWidget {
-//   const FakeItem({
-//     super.key,
-//     required this.isBig,
-//   });
+/* @immutable
+class FakeItem extends StatelessWidget {
+  const FakeItem({
+    super.key,
+    required this.isBig,
+  });
 
-//   final bool isBig;
+  final bool isBig;
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
-//       height: isBig ? 128 : 36,
-//       decoration: BoxDecoration(
-//         borderRadius: const BorderRadius.all(Radius.circular(8)),
-//         color: Colors.grey.shade300,
-//       ),
-//     );
-//   }
-// }
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+      height: isBig ? 128 : 36,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
+        color: Colors.grey.shade300,
+      ),
+    );
+  }
+} */
+
+/* @immutable
+class _ExpandingActionButton extends StatelessWidget {
+  const _ExpandingActionButton({
+    required this.directionInDegrees,
+    required this.maxDistance,
+    required this.progress,
+    required this.child,
+  });
+
+  final double directionInDegrees;
+  final double maxDistance;
+  final Animation<double> progress;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: progress,
+      builder: (context, child) {
+        final offset = Offset.fromDirection(
+          directionInDegrees * (math.pi / 180.0),
+          progress.value * maxDistance,
+        );
+        return Positioned(
+          right: 4.0 + offset.dx,
+          bottom: 4.0 + offset.dy,
+          child: Transform.rotate(
+            angle: (1.0 - progress.value) * math.pi / 2,
+            child: child!,
+          ),
+        );
+      },
+      child: FadeTransition(
+        opacity: progress,
+        child: child,
+      ),
+    );
+  }
+} */

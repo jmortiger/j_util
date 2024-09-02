@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:j_util/src/widgets/w_pull_tab.dart';
 
 class WPullTabLayoutFree extends StatefulWidget {
-  final AnchorAlignment anchorAlignment;
+  final AnchorAlignmentOrdinal anchorAlignment;
   final Duration duration;
   final List<Widget>? children;
   final List<Widget> Function(BuildContext context)? builder;
@@ -23,7 +23,7 @@ class WPullTabLayoutFree extends StatefulWidget {
   final Color? disabledColor;
   const WPullTabLayoutFree({
     super.key,
-    this.anchorAlignment = AnchorAlignment.bottom,
+    this.anchorAlignment = AnchorAlignmentOrdinal.bottom,
     this.duration = const Duration(milliseconds: 250),
     required List<Widget> this.children,
     this.openIcon = const Icon(Icons.create),
@@ -40,7 +40,7 @@ class WPullTabLayoutFree extends StatefulWidget {
   }) : builder = null;
   const WPullTabLayoutFree.builder({
     super.key,
-    this.anchorAlignment = AnchorAlignment.bottom,
+    this.anchorAlignment = AnchorAlignmentOrdinal.bottom,
     this.duration = const Duration(milliseconds: 250),
     required List<Widget> Function(BuildContext context) this.builder,
     this.openIcon = const Icon(Icons.create),
@@ -218,7 +218,7 @@ class _WRibbon extends StatelessWidget {
   // final double? directionInDegrees;
   final Duration duration;
   final Color? color;
-  final AnchorAlignment anchorAlignment;
+  final AnchorAlignmentOrdinal anchorAlignment;
   final double distance;
   const _WRibbon({
     super.key,
@@ -239,56 +239,56 @@ class _WRibbon extends StatelessWidget {
     return AnimatedBuilder(
       animation: progress,
       builder: (context, child) => switch (anchorAlignment) {
-        AnchorAlignment.top => Positioned(
+        AnchorAlignmentOrdinal.top => Positioned(
             height: progress.value * distance,
             top: 0,
             left: 0,
             right: 0,
             child: child!,
           ),
-        AnchorAlignment.bottom => Positioned(
+        AnchorAlignmentOrdinal.bottom => Positioned(
             height: progress.value * distance,
             bottom: 0,
             left: 0,
             right: 0,
             child: child!,
           ),
-        AnchorAlignment.left => Positioned(
+        AnchorAlignmentOrdinal.left => Positioned(
             width: progress.value * distance,
             top: 0,
             bottom: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.right => Positioned(
+        AnchorAlignmentOrdinal.right => Positioned(
             width: progress.value * distance,
             top: 0,
             bottom: 0,
             right: 0,
             child: child!,
           ),
-        AnchorAlignment.topLeft => Positioned(
+        AnchorAlignmentOrdinal.topLeft => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             top: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.bottomLeft => Positioned(
+        AnchorAlignmentOrdinal.bottomLeft => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             bottom: 0,
             left: 0,
             child: child!,
           ),
-        AnchorAlignment.bottomRight => Positioned(
+        AnchorAlignmentOrdinal.bottomRight => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             bottom: 0,
             right: 0,
             child: child!,
           ),
-        AnchorAlignment.topRight => Positioned(
+        AnchorAlignmentOrdinal.topRight => Positioned(
             height: progress.value * distance * anchorAlignment.yComponent,
             width: progress.value * distance * anchorAlignment.xComponent,
             top: 0,
@@ -326,9 +326,9 @@ class _ExpandingActionButton extends StatelessWidget {
   final Widget child;
   final bool ignore;
 
-  final AnchorAlignment? anchor;
-  AnchorAlignment get anchorFromValues =>
-      anchor ?? AnchorAlignment.fromDirectionDegrees(directionInDegrees!);
+  final AnchorAlignmentOrdinal? anchor;
+  AnchorAlignmentOrdinal get anchorFromValues =>
+      anchor ?? AnchorAlignmentOrdinal.fromDirectionDegrees(directionInDegrees!);
 
   @override
   Widget build(BuildContext context) {
@@ -355,38 +355,38 @@ class _ExpandingActionButton extends StatelessWidget {
                     progress.value * maxDistance,
                   );
         return switch (anchorFromValues) {
-          AnchorAlignment.top => Positioned(
+          AnchorAlignmentOrdinal.top => Positioned(
               top: /* 4.0 +  */ offset.dy,
               child: root,
             ),
-          AnchorAlignment.bottom => Positioned(
+          AnchorAlignmentOrdinal.bottom => Positioned(
               bottom: /* 4.0 +  */ offset.dy,
               child: root,
             ),
-          AnchorAlignment.left => Positioned(
+          AnchorAlignmentOrdinal.left => Positioned(
               left: /* 4.0 +  */ offset.dx,
               child: root,
             ),
-          AnchorAlignment.right => Positioned(
+          AnchorAlignmentOrdinal.right => Positioned(
               right: /* 4.0 +  */ offset.dx,
               child: root,
             ),
-          AnchorAlignment.topLeft => Positioned(
+          AnchorAlignmentOrdinal.topLeft => Positioned(
               top: /* 4.0 +  */ offset.dy,
               left: /* 4.0 +  */ offset.dx,
               child: root,
             ),
-          AnchorAlignment.bottomLeft => Positioned(
+          AnchorAlignmentOrdinal.bottomLeft => Positioned(
               bottom: /* 4.0 +  */ offset.dy,
               left: /* 4.0 +  */ offset.dx,
               child: root,
             ),
-          AnchorAlignment.bottomRight => Positioned(
+          AnchorAlignmentOrdinal.bottomRight => Positioned(
               bottom: /* 4.0 +  */ offset.dy,
               right: /* 4.0 +  */ offset.dx,
               child: root,
             ),
-          AnchorAlignment.topRight => Positioned(
+          AnchorAlignmentOrdinal.topRight => Positioned(
               top: /* 4.0 +  */ offset.dy,
               right: /* 4.0 +  */ offset.dx,
               child: root,
