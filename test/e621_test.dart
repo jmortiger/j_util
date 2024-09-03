@@ -1,7 +1,7 @@
 import 'package:http/http.dart';
 import 'package:j_util/web_full.dart';
 import 'package:j_util/e621.dart';
-import 'package:j_util/e621_api.dart' as Api;
+import 'package:j_util/e621_api.dart' as api;
 
 import 'dev_data.dart';
 import 'package:test/test.dart';
@@ -29,13 +29,13 @@ void main() {
   }
 
   searchPostId(int postId, BaseCredentials? c) async =>
-      (await Api.initSearchPostRequest(
+      (await api.initSearchPostRequest(
         postId,
         credentials: c,
       ).send().toResponse());
 
   searchSetId(int setId, BaseCredentials? c) async =>
-      (await Api.initGetSetRequest(
+      (await api.initGetSetRequest(
         setId,
         credentials: c,
       ).send().toResponse());
@@ -50,7 +50,7 @@ void main() {
       setId = devData["e621"]["sets"][0]["id"];
     });
     removeSetPostSlim([Response? priorStartState]) async {
-      var req = Api.initRemoveFromSetRequest(
+      var req = api.initRemoveFromSetRequest(
         setId,
         [postId],
         credentials: c,
@@ -64,7 +64,7 @@ void main() {
     }
 
     addSetPostSlim([Response? priorStartState]) async {
-      var req = Api.initAddToSetRequest(
+      var req = api.initAddToSetRequest(
         setId,
         [postId],
         credentials: c,
@@ -80,7 +80,7 @@ void main() {
     test("AddSetPost", ([Response? priorStartState]) async {
       var startState = priorStartState ?? (await searchSetId(setId, c));
       print(startState.body);
-      await Future.delayed(Api.softRateLimit);
+      await Future.delayed(api.softRateLimit);
       var initialIds = PostSet.fromRawJson(startState.body).postIds;
       if (initialIds.contains(postId)) {
         await removeSetPostSlim(startState);
@@ -88,7 +88,7 @@ void main() {
         print(startState.body);
       }
       print("BEGINNING");
-      var req = Api.initAddToSetRequest(
+      var req = api.initAddToSetRequest(
         setId,
         [postId],
         credentials: c,
@@ -103,14 +103,14 @@ void main() {
     test("RemoveSetPost", ([Response? priorStartState]) async {
       var startState = priorStartState ?? (await searchSetId(setId, c));
       print(startState.body);
-      await Future.delayed(Api.softRateLimit);
+      await Future.delayed(api.softRateLimit);
       var initialIds = PostSet.fromRawJson(startState.body).postIds;
       if (!initialIds.contains(postId)) {
         await addSetPostSlim(startState);
         startState = await searchSetId(setId, c);
         print(startState.body);
       }
-      var req = Api.initRemoveFromSetRequest(
+      var req = api.initRemoveFromSetRequest(
         setId,
         [postId],
         credentials: c,
@@ -123,7 +123,7 @@ void main() {
       expect(postId, isNot(isIn(t.postIds)));
     });
     addSetPostsSlim([Response? priorStartState]) async {
-      var req = Api.initAddToSetRequest(
+      var req = api.initAddToSetRequest(
         setId,
         [postId, postId2],
         credentials: c,
@@ -138,7 +138,7 @@ void main() {
     }
 
     removeSetPostsSlim([Response? priorStartState]) async {
-      var req = Api.initRemoveFromSetRequest(
+      var req = api.initRemoveFromSetRequest(
         setId,
         [postId, postId2],
         credentials: c,
@@ -155,7 +155,7 @@ void main() {
     test("AddSetPosts", ([Response? priorStartState]) async {
       var startState = priorStartState ?? (await searchSetId(setId, c));
       print(startState.body);
-      await Future.delayed(Api.softRateLimit);
+      await Future.delayed(api.softRateLimit);
       var initialIds = PostSet.fromRawJson(startState.body).postIds;
       if (initialIds.contains(postId) || initialIds.contains(postId2)) {
         await removeSetPostsSlim(startState);
@@ -164,7 +164,7 @@ void main() {
       }
       print("BEGINNING");
       // addSetPostsSlim(priorStartState);
-      var req = Api.initAddToSetRequest(
+      var req = api.initAddToSetRequest(
         setId,
         [postId, postId2],
         credentials: c,
@@ -180,7 +180,7 @@ void main() {
     test("RemoveSetPosts", ([Response? priorStartState]) async {
       var startState = priorStartState ?? (await searchSetId(setId, c));
       print(startState.body);
-      await Future.delayed(Api.softRateLimit);
+      await Future.delayed(api.softRateLimit);
       var initialIds = PostSet.fromRawJson(startState.body).postIds;
       if (!initialIds.contains(postId) || !initialIds.contains(postId2)) {
         await addSetPostsSlim(startState);
@@ -189,7 +189,7 @@ void main() {
       }
       print("BEGINNING");
       // removeSetPostsSlim(priorStartState);
-      var req = Api.initRemoveFromSetRequest(
+      var req = api.initRemoveFromSetRequest(
         setId,
         [postId, postId2],
         credentials: c,
@@ -205,7 +205,7 @@ void main() {
     test("UpdateSetPosts", ([Response? priorStartState]) async {
       var startState = priorStartState ?? (await searchSetId(setId, c));
       print(startState.body);
-      await Future.delayed(Api.softRateLimit);
+      await Future.delayed(api.softRateLimit);
       var initialIds = PostSet.fromRawJson(startState.body).postIds;
       if (!initialIds.contains(postId) || !initialIds.contains(postId2)) {
         await addSetPostsSlim(startState);
@@ -214,88 +214,88 @@ void main() {
       }
       print("BEGINNING");
       print("Testing removing 1 keeping 1");
-      var req = Api.initUpdateSetPostsRequest(
+      var req = api.initUpdateSetPostsRequest(
         setId,
         [postId],
         credentials: c,
       );
       logRequestData(req);
-      var res = await Api.sendRequest(req);
+      var res = await api.sendRequest(req);
       logResponseData(res);
       expect(res.statusCode, test_lib.anyOf(201, 302));
       if (res.statusCode != 201) {
-        req = Api.initGetSetRequest(
+        req = api.initGetSetRequest(
           setId,
           credentials: c,
         );
         logRequestData(req);
-        res = await Api.sendRequest(req);
+        res = await api.sendRequest(req);
         logResponseData(res);
       }
       PostSet t = PostSet.fromRawJson(res.body);
       expect(postId, isIn(t.postIds));
       expect(postId2, isNot(isIn(t.postIds)));
       print("Testing switching kept post");
-      req = Api.initUpdateSetPostsRequest(
+      req = api.initUpdateSetPostsRequest(
         setId,
         [postId2],
         credentials: c,
       );
       logRequestData(req);
-      res = await Api.sendRequest(req);
+      res = await api.sendRequest(req);
       logResponseData(res);
       expect(res.statusCode, test_lib.anyOf(201, 302));
       if (res.statusCode != 201) {
-        req = Api.initGetSetRequest(
+        req = api.initGetSetRequest(
           setId,
           credentials: c,
         );
         logRequestData(req);
-        res = await Api.sendRequest(req);
+        res = await api.sendRequest(req);
         logResponseData(res);
       }
       t = PostSet.fromRawJson(res.body);
       expect(postId, isNot(isIn(t.postIds)));
       expect(postId2, isIn(t.postIds));
       print("Testing adding both");
-      req = Api.initUpdateSetPostsRequest(
+      req = api.initUpdateSetPostsRequest(
         setId,
         [postId, postId2],
         credentials: c,
       );
       logRequestData(req);
-      res = await Api.sendRequest(req);
+      res = await api.sendRequest(req);
       logResponseData(res);
       expect(res.statusCode, test_lib.anyOf(201, 302));
       if (res.statusCode != 201) {
-        req = Api.initGetSetRequest(
+        req = api.initGetSetRequest(
           setId,
           credentials: c,
         );
         logRequestData(req);
-        res = await Api.sendRequest(req);
+        res = await api.sendRequest(req);
         logResponseData(res);
       }
       t = PostSet.fromRawJson(res.body);
       expect(postId, isIn(t.postIds));
       expect(postId2, isIn(t.postIds));
       print("Testing Removing both");
-      req = Api.initUpdateSetPostsRequest(
+      req = api.initUpdateSetPostsRequest(
         setId,
         [],
         credentials: c,
       );
       logRequestData(req);
-      res = await Api.sendRequest(req);
+      res = await api.sendRequest(req);
       logResponseData(res);
       expect(res.statusCode, test_lib.anyOf(201, 302));
       if (res.statusCode != 201) {
-        req = Api.initGetSetRequest(
+        req = api.initGetSetRequest(
           setId,
           credentials: c,
         );
         logRequestData(req);
-        res = await Api.sendRequest(req);
+        res = await api.sendRequest(req);
         logResponseData(res);
       }
       t = PostSet.fromRawJson(res.body);
@@ -303,7 +303,7 @@ void main() {
       expect(postId2, isNot(isIn(t.postIds)));
     });
     tearDown(() {
-      Api.initRemoveFromSetRequest(
+      api.initRemoveFromSetRequest(
         setId,
         [postId, postId2],
         credentials: c,
@@ -321,11 +321,11 @@ void main() {
     addFav([Response? priorStartState]) async {
       var startState = priorStartState ?? (await searchPostId(postId, c));
       print(startState.body);
-      await Future.delayed(Api.softRateLimit);
+      await Future.delayed(api.softRateLimit);
       if (Post.fromRawJson(startState.body).isFavorited) {
         await removeFav();
       }
-      var req = Api.initCreateFavoriteRequest(
+      var req = api.initCreateFavoriteRequest(
         postId: postId,
         credentials: c,
       );
@@ -341,11 +341,11 @@ void main() {
     removeFav = ([Response? priorStartState]) async {
       var startState = priorStartState ?? (await searchPostId(postId, c));
       print(startState.body);
-      await Future.delayed(Api.softRateLimit);
+      await Future.delayed(api.softRateLimit);
       if (!Post.fromRawJson(startState.body).isFavorited) {
         await addFav(startState);
       }
-      var req = Api.initDeleteFavoriteRequest(
+      var req = api.initDeleteFavoriteRequest(
         postId: postId,
         credentials: c,
       );
@@ -354,8 +354,8 @@ void main() {
       logResponseData(res);
       expect(res.statusCode, 204);
       expect(res.body, "");
-      await Future.delayed(Api.softRateLimit);
-      var p = await Api.initSearchPostRequest(postId, credentials: c)
+      await Future.delayed(api.softRateLimit);
+      var p = await api.initSearchPostRequest(postId, credentials: c)
           .send()
           .toResponse();
       Post t = Post.fromRawJson(p.body);
