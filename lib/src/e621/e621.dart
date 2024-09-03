@@ -1,14 +1,11 @@
+import 'dart:async' show Future, FutureOr;
+// import 'dart:collection' show ListQueue;
 import 'dart:convert' as dc;
-import 'dart:collection' show ListQueue;
 import 'package:http/http.dart' as http;
-import 'package:j_util/src/collection_extensions.dart';
-import 'package:j_util/web_extensions.dart';
 
 import 'credentials.dart';
-import 'general_enums.dart';
-import 'models.dart';
-import 'search_enums.dart'
-    show PoolOrder, PopularTimeScale, SetOrder, UserOrder;
+import 'general_enums.dart' as ge;
+import 'search_enums.dart' as se;
 
 // #region Tag parsing
 /// https://e621.net/help/tags
@@ -58,7 +55,8 @@ DateTime timeOfLastRequest =
     DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
 int defaultBurstLimit = 60;
 int get currentBurstLimit => defaultBurstLimit;
-ListQueue<DateTime> burstTimes = ListQueue(defaultBurstLimit - 1);
+// ListQueue<DateTime> burstTimes = ListQueue(defaultBurstLimit - 1);
+List<DateTime> burstTimes = <DateTime>[];
 
 /// Won't blow the rate limit
 Future<http.StreamedResponse> sendRequestStreamed(
@@ -142,15 +140,7 @@ BaseCredentials _getValidCredentials(BaseCredentials? credentials) =>
     ));
 // #endregion Credentials
 // #region Helpers
-final _angleBracketDelimited = RegExp(r'<(.*)>');
-@Deprecated("Use _getDbExportDate")
-String _getDbExportDateManual(DateTime dt) =>
-    "${dt.year}-${dt.month < 10 ? "0${dt.month}" : dt.month}"
-    "-${dt.day < 10 ? "0${dt.day}" : dt.day}";
 String _getDbExportDate(DateTime dt) => dt.toIso8601String().substring(0, 10);
-String _getDbExportDateSafe() => DateTime.now().hour >= 8
-    ? _getDbExportDate(DateTime.now())
-    : _getDbExportDate(DateTime.now().subtract(const Duration(days: -1)));
 http.Request _baseInitRequestCredentialsRequired({
   required String path,
   required String method,
@@ -158,7 +148,8 @@ http.Request _baseInitRequestCredentialsRequired({
   BaseCredentials? credentials,
 }) {
   var uri = baseUri.replace(
-      path: path, queryParameters: queryParameters?._prepareQueryParameters());
+      path: path,
+      queryParameters: _prepareQueryParametersSafe(queryParameters));
   var req = http.Request(method, uri);
   _getValidCredentials(credentials).addToHeadersMap(req.headers);
   return req;
@@ -171,7 +162,8 @@ http.Request _baseInitRequestCredentialsOptional({
   BaseCredentials? credentials,
 }) {
   var uri = baseUri.replace(
-      path: path, queryParameters: queryParameters?._prepareQueryParameters());
+      path: path,
+      queryParameters: _prepareQueryParametersSafe(queryParameters));
   var req = http.Request(method, uri);
   (credentials ?? activeCredentials)?.addToHeadersMap(req.headers);
   return req;
@@ -202,20 +194,24 @@ String? getPageString({
 String? generateDiff(List<String> oldValues, List<String> newValues) {
   final origTags = oldValues.toSet();
   final editedTagSet = newValues.toSet();
-  final newTags = editedTagSet.difference(origTags).foldToString();
-  final removedTags =
-      origTags.difference(editedTagSet).foldToString(prefix: "-");
-  final combined = newTags.isEmpty ? removedTags : "$newTags $removedTags";
+  final newTags = editedTagSet
+      .difference(origTags)
+      .fold("", (acc, e) => "$acc $e")
+      .trimLeft();
+  final removedTags = origTags
+      .difference(editedTagSet)
+      .fold("", (acc, e) => "$acc -$e")
+      .trimLeft();
+  final combined = "$newTags $removedTags".trimLeft();
   return combined.isEmpty ? null : combined;
 }
 
-String? foldIterableForUrl(Iterable i, {bool allowEmpty = true}) =>
+String foldIterableForUrl(Iterable i, {bool allowEmpty = true}) =>
     i.isNotEmpty || allowEmpty
         ? i
-            .map(
-              (e) => e.toString(),
-            )
-            .foldToString(delimiter: "+")
+            .map((e) => e is ge.ApiQueryParameter ? e.query : e.toString())
+            .fold("", (acc, e) => "$acc +$e")
+            .trimLeft()
         : " ";
 // #endregion Helpers
 
@@ -229,6 +225,7 @@ http.Request initDbExportRequest({
         credentials: credentials);
 
 // #region Popular Posts
+/// {@template postsPopular}
 /// https://e621.net/popular.json
 ///
 /// The base URL is `/popular.json` called with `GET`.
@@ -238,9 +235,10 @@ http.Request initDbExportRequest({
 ///
 /// This returns an object with a `posts` field containing a JSON array, for each post it returns:
 /// {@macro PostListing}
+/// {@endtemplate}
 http.Request initSearchPopularRequest({
   DateTime? date,
-  PopularTimeScale? scale,
+  se.PopularTimeScale? scale,
   BaseCredentials? credentials,
 }) =>
     initSearchPopularRequestUnconstrained(
@@ -248,6 +246,7 @@ http.Request initSearchPopularRequest({
       scale: scale?.name,
     );
 
+/// {@template postsPopularUnconstrained}
 /// https://e621.net/popular.json
 ///
 /// The base URL is `/popular.json` called with `GET`.
@@ -257,6 +256,7 @@ http.Request initSearchPopularRequest({
 ///
 /// This returns an object with a `posts` field containing a JSON array, for each post it returns:
 /// {@macro PostListing}
+/// {@endtemplate}
 http.Request initSearchPopularRequestUnconstrained({
   String? date,
   String? scale,
@@ -335,10 +335,11 @@ http.Request initSearchPopularRequestUnconstrained({
           },
           method: "POST",
           credentials: credentials); */
-/// {@template SearchPosts}
+/// {@template postSearch}
 /// [List](https://e621.net/wiki_pages/2425#posts_list)
 ///
 /// The base URL is `/posts.json` called with `GET`.
+///
 /// Deleted posts are returned when status:deleted/status:any is in the searched tags.
 ///
 /// The most efficient method to iterate a large number of posts is to search use the page parameter, using page=b<ID> and using the lowest ID retrieved from the previous list of posts. The first request should be made without the page parameter, as this returns the latest posts first, so you can then iterate using the lowest ID. Providing arbitrarily large values to obtain the most recent posts is not portable and may break in the future.
@@ -433,7 +434,7 @@ http.Request initSearchPopularRequestUnconstrained({
 /// }
 /// ```
 /// {@endtemplate}
-http.Request initSearchPostsRequest({
+http.Request initPostSearchRequest({
   int? limit,
   String? tags,
   String? page,
@@ -449,12 +450,13 @@ http.Request initSearchPostsRequest({
         method: "GET",
         credentials: credentials);
 
-/// Same as [initSearchPostsRequest], but checks the [tags] length to ensure it doesn't exceed the tag limit in [Api.maxTagsPerSearch].
+/// Same as [initPostSearchRequest], but checks the [tags] length to
+/// ensure it doesn't exceed the tag limit in [maxTagsPerSearch].
 ///
-/// {@macro SearchPosts}
+/// {@macro postSearch}
 ///
-/// Throws an [ArgumentError] if you exceed the tag limit
-http.Request initSearchPostsRequestChecked({
+/// Throws an [ArgumentError] if you exceed the tag limit.
+http.Request initPostSearchRequestChecked({
   int? limit,
   List<String>? tags,
   String? page,
@@ -466,10 +468,7 @@ http.Request initSearchPostsRequestChecked({
           if (limit != null) "limit": limit,
           if (tags != null)
             "tags": tags.length <= maxTagsPerSearch
-                ? tags.fold(
-                    "",
-                    (acc, e) => "$acc$e ",
-                  )
+                ? tags.fold("", (acc, e) => "$acc $e").trimLeft()
                 : (throw ArgumentError.value(tags, "tags",
                     "You cannot search for more than 40 tags at a time")),
           if (page != null) "page": page,
@@ -589,6 +588,7 @@ bool doesPostUpdateHaveChanges({
         postOldRating != null &&
         postRating != postOldRating);
 
+// #region Post Vote
 /// [Vote](https://e621.net/wiki_pages/2425#posts_vote)
 ///
 /// The base URL is `/posts/<Post_ID>/votes.json` called with `POST`.
@@ -636,6 +636,7 @@ http.Request initVotePostRequest({
         method: "POST",
         credentials: credentials);
 
+/// {@template postVote}
 /// [Vote](https://e621.net/wiki_pages/2425#posts_vote)
 ///
 /// The base URL is `/posts/<Post_ID>/votes.json` called with `POST`.
@@ -643,7 +644,9 @@ http.Request initVotePostRequest({
 /// * `score` If true, votes up with a value of 1. If false, votes down with a value of -1.
 /// * `no_unvote` Set to true to have this score replace the old score. Repeat votes will not remove the vote.
 /// Response:
-/// Success:
+///
+/// * Success:
+/// ```
 /// HTTP 200
 ///
 /// {
@@ -652,8 +655,11 @@ http.Request initVotePostRequest({
 ///    "down":<down>,
 ///    "our_score":x
 /// }
+/// ```
 /// Where our_score is 1, 0, -1 depending on the action.
-/// Failure:
+/// * Failure:
+///
+/// ```
 /// HTTP 422
 ///
 /// {
@@ -661,6 +667,8 @@ http.Request initVotePostRequest({
 ///     "message": "An unexpected error occurred.",
 ///     "code": null
 /// }
+/// ```
+/// {@endtemplate}
 http.Request initPostCastVoteRequest({
   required int postId,
   required bool voteUp,
@@ -669,46 +677,25 @@ http.Request initPostCastVoteRequest({
 }) =>
     initVotePostRequest(postId: postId, score: voteUp ? 1 : -1);
 
-/// [Vote](https://e621.net/wiki_pages/2425#posts_vote)
-///
 /// Attempts to clear the vote from the selected post.
 ///
-/// Response:
-/// Success:
-/// HTTP 200
-///
-/// {
-///    "score":<total>,
-///    "up":<up>,
-///    "down":<down>,
-///    "our_score":x
-/// }
-/// Where our_score is 1, 0, -1 depending on the action.
-/// Failure:
-/// HTTP 422
-///
-/// {
-///     "success": false,
-///     "message": "An unexpected error occurred.",
-///     "code": null
-/// }
+/// {@macro postVote}
 Future<http.Response> clearPostVote({
   required int postId,
   BaseCredentials? credentials,
-}) async {
-  final r = (await sendRequest(
-    initVotePostRequest(postId: postId, score: 1, credentials: credentials),
-  ));
-  return r.statusCodeInfo.isSuccessful
-      ? UpdatedScore.fromJsonRaw(r.body).ourScore == 0
-          ? r
-          : await sendRequest(initVotePostRequest(
-              postId: postId,
-              score: 1,
-              credentials: credentials,
-            ))
-      : r;
-}
+}) =>
+    sendRequest(
+      initVotePostRequest(postId: postId, score: 1, credentials: credentials),
+    ).then((r) => r.statusCode >= 200 && r.statusCode < 300 // Is successful
+        ? dc.jsonDecode(r.body)["our_score"] == 0
+            ? r as FutureOr<http.Response>
+            : sendRequest(initVotePostRequest(
+                postId: postId,
+                score: 1,
+                credentials: credentials,
+              ))
+        : r);
+// #endregion Post Vote
 
 // #endregion Posts
 // #region Tags
@@ -1219,12 +1206,12 @@ http.Request initSearchUsersRequest({
   String? searchNameMatches,
   String? searchAboutMe,
   int? searchAvatarId,
-  UserLevel? searchLevel,
-  UserLevel? searchMinLevel,
-  UserLevel? searchMaxLevel,
+  ge.UserLevel? searchLevel,
+  ge.UserLevel? searchMinLevel,
+  ge.UserLevel? searchMaxLevel,
   bool? searchCanUploadFree,
   bool? searchCanApprovePosts,
-  UserOrder? searchOrder,
+  se.UserOrder? searchOrder,
   int? limit = 75,
   String? page,
   BaseCredentials? credentials,
@@ -1275,7 +1262,7 @@ http.Request initSearchSetsRequest({
   String? searchShortname,
   String? searchCreatorName,
   int? searchCreatorId,
-  SetOrder? searchOrder,
+  se.SetOrder? searchOrder,
   int? maintainerId,
   int? limit = 75,
   String? page,
@@ -1379,7 +1366,8 @@ http.Request initCreateSetRequest({
 
 /// `/post_sets/$setId/add_posts.json` `POST`
 /// * `post_ids[]` space separated list (i think)
-/// Success: 201 with the body of the chosen set.
+///
+/// Success: `HTTP 201` with the body of the chosen set.
 http.Request initAddToSetRequest(
   int setId,
   List<int> postIds, {
@@ -1393,11 +1381,11 @@ http.Request initAddToSetRequest(
         "post_ids[]": postIds,
       },
     );
-int success_initAddToSetRequest = 201;
 
 /// `/post_sets/$setId/remove_posts.json` `POST`
 /// * `post_ids[]` space separated list (i think)
-/// Success: 201 with the body of the chosen set.
+///
+/// Success: `201` with the body of the chosen set.
 http.Request initRemoveFromSetRequest(
   int setId,
   List<int> postIds, {
@@ -1411,12 +1399,11 @@ http.Request initRemoveFromSetRequest(
         "post_ids[]": postIds,
       },
     );
-int success_initRemoveFromSetRequest = 201;
 
 /// `/post_sets/$setId/update_posts.json` `POST`
 /// * `post_ids_string[]` space separated list (i think) of ALL posts in set
 ///
-/// Success: 201 with the body of the chosen set.
+/// Success: `302` with a redirect.
 http.Request initUpdateSetPostsRequest(
   int setId,
   List<int> postIds, {
@@ -1431,7 +1418,6 @@ http.Request initUpdateSetPostsRequest(
             foldIterableForUrl(postIds, allowEmpty: false),
       },
     );
-int success_initUpdateSetPostsRequest = 302;
 
 // #endregion Sets
 // #region Pools
@@ -1469,8 +1455,8 @@ http.Request initSearchPoolsRequest({
   String? searchCreatorName,
   int? searchCreatorId,
   bool? searchIsActive,
-  PoolCategory? searchCategory,
-  PoolOrder? searchOrder,
+  ge.PoolCategory? searchCategory,
+  se.PoolOrder? searchOrder,
   int? limit,
   BaseCredentials? credentials,
 }) =>
@@ -1551,7 +1537,7 @@ http.Request initUpdatePoolRequest(
   String? poolDescription,
   Iterable<int>? poolPostIds,
   int? poolIsActive,
-  PoolCategory? poolCategory,
+  ge.PoolCategory? poolCategory,
   BaseCredentials? credentials,
 }) =>
     _baseInitRequestCredentialsRequired(
@@ -1585,7 +1571,7 @@ http.Request initUpdatePoolRequest(
 http.Request initCreatePoolRequest({
   String? poolName,
   String? poolDescription,
-  PoolCategory? poolCategory,
+  ge.PoolCategory? poolCategory,
   int? poolIsLocked,
   BaseCredentials? credentials,
 }) =>
@@ -1637,8 +1623,17 @@ http.Request initRevertPoolRequest(
 
 // /post_sets/$id/update_posts method post
 // post_set[post_ids_string]
+/// TODO: Use to keep track of completed, unfinished endpoints
+/// TODO: Map to initializing and sending requests.
 enum Endpoint {
-  /// https://e621.net/wiki_pages/2425#posts_create
+  /// initSearchPopularRequest
+  ///
+  /// {@macro postsPopular}
+  postPopular,
+
+  /// initCreatePostRequest
+  ///
+  /// {@macro postCreate}
   postCreate,
 
   /// https://e621.net/wiki_pages/2425#posts_update
@@ -1646,6 +1641,9 @@ enum Endpoint {
 
   /// https://e621.net/wiki_pages/2425#posts_list
   postSearch,
+
+  /// https://e621.net/wiki_pages/2425#posts_list
+  postGet,
 
   /// https://e621.net/wiki_pages/2425#flags_listing
   postFlagSearch,
@@ -1706,9 +1704,26 @@ enum Endpoint {
 
   /// https://e621.net/post_sets/7410.json
   setInfo,
+  ;
+  /* Function get invoke => switch (this) {
+    postPopular => initSearchPopularRequest,
+    postCreate => throw UnimplementedError(),
+  }; */
 }
 
-class ResponseParsing {
+Map<String, dynamic>? _prepareQueryParametersSafe(Map<String, dynamic>? qp) =>
+    qp
+      ?..updateAll((k, v) {
+        dynamic recurse(val) => switch (val) {
+              String v1 => v1,
+              Iterable v1 => v1.map(recurse),
+              ge.ApiQueryParameter v1 => v1.query,
+              _ => val.toString(),
+            };
+        return recurse(v);
+      });
+
+/* class ResponseParsing {
   /// When an attempt to add a fav fails due to hitting the 80000 post cap, the code is 422 and the body is as follows:
   /// ```{
   ///   "success": false,
@@ -1723,18 +1738,4 @@ class ResponseParsing {
   String retrieveErrorMessage(String body) {
     return dc.jsonDecode(body)["message"];
   }
-}
-
-extension _QueryParameterPrep on Map<String, dynamic> {
-  Map<String, dynamic> _prepareQueryParameters() => prepareQueryParameters(this);
-}
-
-Map<String, dynamic> prepareQueryParameters(Map<String, dynamic> qp) => qp
-  ..updateAll((k, v) {
-    dynamic recurse(val) => switch (val) {
-          String v1 => v1,
-          Iterable v1 => v1.map(recurse),
-          _ => val.toString(),
-        };
-    return recurse(v);
-  });
+} */

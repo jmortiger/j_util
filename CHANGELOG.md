@@ -14,3 +14,7 @@
 
 ## 2.1.1
 - Updated deprecated members, minor housekeeping
+
+## 3.0.0
+- Removed alt pull tabs
+- Refactored e621 dependencies in preparation for migration to independent package
