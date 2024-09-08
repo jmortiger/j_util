@@ -18,3 +18,6 @@
 ## 3.0.0
 - Removed alt pull tabs
 - Refactored e621 dependencies in preparation for migration to independent package
+
+## 3.1.0
+- Updated deprecated members, minor housekeeping

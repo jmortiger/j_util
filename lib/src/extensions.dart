@@ -245,29 +245,8 @@ extension PrettyPrint on Object? {
 }
 
 extension RegExpExt on RegExp {
-  /// A string containing all whitespace characters.
-  ///
-  /// {@template WhitespaceList}
-  /// Contains:
-  /// * Line Separator (LS, `\u2028`)
-  /// * New Line/Line Feed (LF, `\n`)
-  /// * Carriage Return (CR, `\r`)
-  /// * Line Tabulation/Vertical Tab (VT, `\u000B`)
-  /// * Form Feed (FF, `\f`)
-  /// * Paragraph Separator/¶ (PS, `\u2029`)
-  /// * Next Line (NEL, `\u0085`)
-  /// * Space (SP, `\u0020`)
-  /// * (Horizontal) Tab (`\t`, `\u0009`)
-  /// {@endtemplate}
-  static const whitespaceCharacters = r'\u2028\n\r\u000B\f\u2029\u0085 	';
-
-  /// {@macro WhitespaceList}
-  static const whitespacePattern = '[$whitespaceCharacters]';
-
-  /// {@macro WhitespaceList}
-  static final whitespace = RegExp(whitespacePattern);
-  static final removeZerosFromTime = RegExp(
-      r'(^0+:|^0+(?=[123456789]+:)|(?<=:)(?<!.*[123456789].*)0{2}:|(?<=:)(?<!.*[123456789].*)0{1}|(?<=\.\d*?[123456789]*?)(?<!\.)0+(?!\d+$))');
+  static RegExp get removeZerosFromTime => RegExp(
+      r'(^0+:|^0+(?=[1-9]+:)|(?<=:)(?<!.*[1-9].*)0{2}:|(?<=:)(?<!.*[1-9].*)0{1}|(?<=\.\d*?[1-9]*?)(?<!\.)0+(?!\d+$))');
 
   /// If a match is found, matches the whole input in segments. Matches
   /// everything preceding the first uppercase letter (that isn't preceded
@@ -278,79 +257,82 @@ extension RegExpExt on RegExp {
   /// prepend group 2 with `_`.
   ///
   /// e.g. `CamelCaseMeBro` -> match 1: `CamelCas` (group 1: `Camel`, 2: `C`, 3: `as`), match 2: `eM` (group 1: `e`, 2: `M`, 3: empty), match 3: `eBro` (group 1: `e`, 2: `B`, 3: `ro`)
-  static final camelCase = RegExp(
-      r'((?:.*?[^_\u2028\n\r\u000B\f\u2029\u0085]))([A-Z])((?:.*?(?=.[A-Z]|[\u2028\n\r\u000B\f\u2029\u0085])))');
+  static RegExp get camelCase =>
+      RegExp(r'((?:.*?[^_\s]))([A-Z])((?:.*?(?=.[A-Z]|[\s])))');
 
   /// Matches \*THIS_STUFF\*, captures THIS_STUFF in group 1
-  static final asteriskBoundConstant = RegExp(asteriskBoundConstantString);
+  static RegExp get asteriskBoundConstant =>
+      RegExp(asteriskBoundConstantString);
   static const asteriskBoundConstantString =
-      r'\*(' + constantCaseString + r')\*';
+      r'\*(' "$constantCaseString" r')\*';
   static const constantCaseString = r'[A-Z_]+';
 
   /// Matches \*THIS_STUFF\*, captures \*THIS_STUFF\* in group 1
-  static final asteriskBoundConstantNameAndAsterisks =
-      RegExp(r'(\*(?:[A-Z_]+)\*)');
+  static RegExp get asteriskBoundConstantNameAndAsterisks =>
+      RegExp(r'(\*(?:' '$constantCaseString' r')\*)');
 
   /// Matches the space between camel cased words (exempting the start of a
   /// string/line).
-  static final camelCaseWordBorders = RegExp(r'(?<!^)(?=[A-Z])');
+  static RegExp get camelCaseWordBorders => RegExp(r'(?<!^)(?=[A-Z])');
+  // TODO: Deprecated; Remove
 
-  static final lowercase = RegExp(r'([a-z]+)');
-  static const lowercaseLetters = "a"
-      "b"
-      "c"
-      "d"
-      "e"
-      "f"
-      "g"
-      "h"
-      "i"
-      "j"
-      "k"
-      "l"
-      "m"
-      "n"
-      "o"
-      "p"
-      "q"
-      "r"
-      "s"
-      "t"
-      "u"
-      "z"
-      "w"
-      "x"
-      "y"
-      "z";
-  static const uppercaseLetters = "A"
-      "B"
-      "C"
-      "D"
-      "E"
-      "F"
-      "G"
-      "H"
-      "I"
-      "J"
-      "K"
-      "L"
-      "M"
-      "N"
-      "O"
-      "P"
-      "Q"
-      "R"
-      "S"
-      "T"
-      "U"
-      "Z"
-      "W"
-      "X"
-      "Y"
-      "Z";
+  // #region TODO: Deprecated; Remove
+  /// A string containing all whitespace characters.
+  ///
+  /// {@template WhitespaceList}
+  /// Contains:
+  /// * Line Separator (LS, `\u2028`)
+  /// * New Line/Line Feed (LF, `\n`)(U+000A)
+  /// * Carriage Return (CR, `\r`)(U+000D)
+  /// * Line Tabulation/Vertical Tab (VT, `\u000B`)
+  /// * Form Feed (FF, `\f`)(U+000C)
+  /// * Paragraph Separator/¶ (PS, `\u2029`)
+  /// * Next Line (NEL, `\u0085`)
+  /// * Space (SP, `\u0020`)
+  /// * (Horizontal) Tab (`\t`, `\u0009`)
+  /// {@endtemplate}
+  ///
+  /// The \s class seems to match all but Next Line (NEL, `\u0085`).
+  @Deprecated(
+      r"The `\s` class seems to match all but Next Line (NEL, `\u0085`). Therefore, this is being deprecated in favor of `\s` or, if necessary, `[\s\u0085]`.")
+  static const whitespaceCharacters = r'\u2028\n\r\u000B\f\u2029\u0085 	';
+
+  /// {@macro WhitespaceList}
+  @Deprecated(
+      r"The `\s` class seems to match all but Next Line (NEL, `\u0085`). Therefore, this is being deprecated in favor of `[\s]` or, if necessary, `[\s\u0085]`.")
+  static const whitespacePattern = '[$whitespaceCharacters]';
+
+  /// {@macro WhitespaceList}
+  @Deprecated(
+      r"The `\s` class seems to match all but Next Line (NEL, `\u0085`). Therefore, this is being deprecated in favor of `[\s]` or, if necessary, `[\s\u0085]`.")
+  static RegExp get whitespace => RegExp(whitespacePattern);
+
+  @Deprecated("This was made due to confusion over RegExp errors. Use the "
+      "([a-z]+) pattern directly instead for better configurability. This is "
+      "being deprecated to trim bloat.")
+  static RegExp get lowercase => RegExp(r'([a-z]+)');
+  @Deprecated(
+      "This was made due to confusion over RegExp errors. Use the [a-z] pattern instead.")
+  static const lowercaseLetters = "abcdefghijklmnopqrstuzwxyz";
+  @Deprecated(
+      "This was made due to confusion over RegExp errors. Use the [A-Z] pattern instead.")
+  static const uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUZWXYZ";
+  @Deprecated(
+      "This was made due to confusion over RegExp errors. Use the [a-zA-Z] pattern instead.")
   static const letters = "$lowercaseLetters$uppercaseLetters";
+  @Deprecated(
+      "This was made due to confusion over RegExp errors. Use the [0-9] pattern instead.")
   static const numbers = "0123456789";
+  @Deprecated(
+      "This was made due to confusion over RegExp errors. Use the [a-zA-Z0-9] pattern instead.")
   static const alphanumericCharacters =
       "$lowercaseLetters$uppercaseLetters$numbers";
+  // #endregion TODO: Deprecated; Remove
 }
+
+// extension RegExpMatchExt on RegExpMatch {
+//   /// A convenience wrapper for [namedGroup].
+//   String? tryNamedGroup(String name) =>
+//       groupNames.contains(name) ? namedGroup(name) : null;
+// }
 // #endregion Strings & Printing

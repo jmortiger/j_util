@@ -1068,7 +1068,10 @@ http.Request initListFavoritesWithCredentialsRequest({
 /// * `search[creator_name]` The creator's name. Exact match.
 /// * `search[creator_id]` The creator's user id.
 /// * `search[is_active]` Can be: true, false
-/// * `limit` Limits the amount of notes returned to the number specified.
+/// {@template limitAndPageParams}
+/// * `limit` Limits the amount of items returned to the number specified.
+/// * `page` The page that will be returned. Can also be used with a or b + item_id to get the items after or before the specified ID. For example a13 gets every item after item_id 13 up to the limit. ??This overrides any ordering meta-tag, order:id_desc is always used instead.??
+/// {@endtemplate}
 ///
 /// This returns a JSON array, for each note it returns:
 /// {@template noteListing}
@@ -1619,6 +1622,70 @@ http.Request initRevertPoolRequest(
 // https://e621.net/artists
 // https://e621.net/artists.json
 // #endregion Artists
+// #region Wiki
+/// Search
+/// https://e621.net/wiki_pages.json?search%5Btitle%5D=unknown_artist
+/// The base URL is `/wiki_pages.json` called with `GET`.
+/// * `search[title]`: unknown_artist
+/// * `search[body_matches]`:
+/// * `search[creator_name]`:
+/// * `search[parent]`:
+/// * `search[other_names_match]`:
+/// * `search[other_names_present]`:
+/// * `search[hide_deleted]`:
+/// * `search[order]`:
+/// {@macro limitAndPageParams}
+/// TODO: RETURNS
+http.Request initWikiSearchRequest({
+  String? searchTitle,
+  String? searchBodyMatches,
+  String? searchCreatorName,
+  String? searchParent,
+  String? searchOtherNamesMatch,
+  String? searchOtherNamesPresent,
+  String? searchHideDeleted,
+  String? searchOrder,
+  int? limit,
+  String? page,
+  BaseCredentials? credentials,
+}) =>
+    _baseInitRequestCredentialsOptional(
+      path: "/wiki_pages.json",
+      queryParameters: {
+        if (searchTitle != null) "search[title]": searchTitle,
+        if (searchBodyMatches != null)
+          "search[body_matches]": searchBodyMatches,
+        if (searchCreatorName != null)
+          "search[creator_name]": searchCreatorName,
+        if (searchParent != null) "search[parent]": searchParent,
+        if (searchOtherNamesMatch != null)
+          "search[other_names_match]": searchOtherNamesMatch,
+        if (searchOtherNamesPresent != null)
+          "search[other_names_present]": searchOtherNamesPresent,
+        if (searchHideDeleted != null)
+          "search[hide_deleted]": searchHideDeleted,
+        if (searchOrder != null) "search[order]": searchOrder,
+        if (limit != null) "limit": limit,
+        if (page != null) "page": page,
+      },
+      method: "GET",
+      credentials: credentials,
+    );
+
+/// Get
+/// https://e621.net/wiki_pages/118.json
+/// The base URL is `/wiki_pages/${id}.json` called with `GET`.
+/// id: Wiki Id
+http.Request initWikiGetPageRequest(
+  int id, {
+  BaseCredentials? credentials,
+}) =>
+    _baseInitRequestCredentialsOptional(
+      path: "/wiki_pages/$id.json",
+      method: "GET",
+      credentials: credentials,
+    );
+// #endregion Wiki
 // #endregion Requests
 
 // /post_sets/$id/update_posts method post
