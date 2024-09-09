@@ -1,38 +1,52 @@
 import 'dart:convert' as dc;
+import 'dart:ui';
+import 'package:j_util/src/e621/model.dart' as model;
+
 import 'general_enums.dart' hide ApiQueryParameter;
 
-class Pool {
+class Pool extends model.Pool {
   /// The ID of the pool.
+  @override
   final int id;
 
   /// The name of the pool.
+  @override
   final String name;
 
   /// The time the pool was created in the format of `YYYY-MM-DDTHH:MM:SS.MS+00:00`.
+  @override
   final DateTime createdAt;
 
   /// The time the pool was updated in the format of `YYYY-MM-DDTHH:MM:SS.MS+00:00`.
+  @override
   final DateTime updatedAt;
 
   /// The ID of the user that created the pool.
+  @override
   final int creatorId;
 
   /// The description of the pool.
+  @override
   final String description;
 
   /// If the pool is active and still getting posts added. (True/False)
+  @override
   final bool isActive;
 
   /// Can be “series” or “collection”.
+  @override
   final PoolCategory category;
 
   /// An array group of posts in the pool.
+  @override
   final List<int> postIds;
 
   /// The name of the user that created the pool.
+  @override
   final String creatorName;
 
   /// The amount of posts in the pool.
+  @override
   final int postCount;
 
   String get searchById => 'pool:$id';
@@ -80,8 +94,6 @@ class Pool {
 
   factory Pool.fromRawJson(String str) => Pool.fromJson(dc.json.decode(str));
 
-  // String toRawJson() => json.encode(toJson());
-
   factory Pool.fromJson(Map<String, dynamic> json) => Pool(
         id: json["id"],
         name: json["name"],
@@ -91,27 +103,13 @@ class Pool {
         description: json["description"],
         isActive: json["is_active"],
         category: PoolCategory.fromJson(json["category"]),
-        postIds: List<int>.from(json["post_ids"].map((x) => x)),
+        postIds: (json["post_ids"] as List).cast<int>(),
         creatorName: json["creator_name"],
         postCount: json["post_count"],
       );
-
-  Map<String, dynamic> toJson() => {
-        "id": id,
-        "name": name,
-        "created_at": createdAt.toIso8601String(),
-        "updated_at": updatedAt.toIso8601String(),
-        "creator_id": creatorId,
-        "description": description,
-        "is_active": isActive,
-        "category": category.toJson(),
-        "post_ids": List<dynamic>.from(postIds.map((x) => x)),
-        "creator_name": creatorName,
-        "post_count": postCount,
-      };
 }
 
-class Note {
+class Note with model.BaseModel {
   final int id;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -175,8 +173,6 @@ class Note {
 
   factory Note.fromRawJson(String str) => Note.fromJson(dc.json.decode(str));
 
-  // String toRawJson() => json.encode(toJson());
-
   /// Safely handles the special value when a search yields no results.
   static Note? fromJsonSafe(Map<String, dynamic> json) =>
       json["notes"]?.runtimeType == List ? null : Note.fromJson(json);
@@ -197,6 +193,7 @@ class Note {
         creatorName: json["creator_name"],
       );
 
+  @override
   Map<String, dynamic> toJson() => {
         "id": id,
         "created_at": createdAt.toIso8601String(),
@@ -214,44 +211,57 @@ class Note {
       };
 }
 
-class User {
+class User extends model.User {
   /// From User
+  @override
   final int id;
 
   /// From User
+  @override
   final DateTime createdAt;
 
   /// From User
+  @override
   final String name;
 
   /// From User
+  @override
   final int level;
 
   /// From User
+  @override
   final int baseUploadLimit;
 
   /// From User
+  @override
   final int noteUpdateCount;
 
   /// From User
+  @override
   final int postUpdateCount;
 
   /// From User
+  @override
   final int postUploadCount;
 
   /// From User
+  @override
   final bool isBanned;
 
   /// From User
+  @override
   final bool canApprovePosts;
 
   /// From User
+  @override
   final bool canUploadFree;
 
   /// From User
+  @override
   final UserLevel levelString;
 
   /// From User
+  @override
   final int? avatarId;
 
   const User({
@@ -306,8 +316,6 @@ class User {
     return (t is List) ? User.fromJson(t[0]) : User.fromJson(t);
   }
 
-  String toRawJson() => dc.json.encode(toJson());
-
   User.fromJson(Map<String, dynamic> json)
       : id = json["id"],
         createdAt = DateTime.parse(json["created_at"]),
@@ -322,22 +330,6 @@ class User {
         canUploadFree = json["can_upload_free"],
         levelString = UserLevel(json["level_string"]),
         avatarId = json["avatar_id"];
-
-  Map<String, dynamic> toJson() => {
-        "id": id,
-        "created_at": createdAt.toIso8601String(),
-        "name": name,
-        "level": level,
-        "base_upload_limit": baseUploadLimit,
-        "note_update_count": noteUpdateCount,
-        "post_update_count": postUpdateCount,
-        "post_upload_count": postUploadCount,
-        "is_banned": isBanned,
-        "can_approve_posts": canApprovePosts,
-        "can_upload_free": canUploadFree,
-        "level_string": levelString.jsonString,
-        "avatar_id": avatarId,
-      };
 }
 
 class UserDetailed extends User {
@@ -465,95 +457,6 @@ class UserDetailed extends User {
         "profile_artinfo": profileArtInfo,
       }..addAll(super.toJson());
 }
-/* mixin UserDetail on User {
-  /// wiki_page_version_count
-  late final int wikiPageVersionCount;
-
-  /// artist_version_count
-  late final int artistVersionCount;
-
-  /// pool_version_count
-  late final int poolVersionCount;
-
-  /// forum_post_count
-  late final int forumPostCount;
-
-  /// comment_count
-  late final int commentCount;
-
-  /// flag_count
-  late final int flagCount;
-
-  /// positive_feedback_count
-  late final int positiveFeedbackCount;
-
-  /// neutral_feedback_count
-  late final int neutralFeedbackCount;
-
-  /// negative_feedback_count
-  late final int negativeFeedbackCount;
-
-  /// upload_limit
-  late final int uploadLimit;
-
-  ctor({
-    required wikiPageVersionCount,
-    required artistVersionCount,
-    required poolVersionCount,
-    required forumPostCount,
-    required commentCount,
-    required flagCount,
-    required positiveFeedbackCount,
-    required neutralFeedbackCount,
-    required negativeFeedbackCount,
-    required uploadLimit,
-  }) {
-    this.wikiPageVersionCount = wikiPageVersionCount;
-    this.artistVersionCount = artistVersionCount;
-    this.poolVersionCount = poolVersionCount;
-    this.forumPostCount = forumPostCount;
-    this.commentCount = commentCount;
-    this.flagCount = flagCount;
-    this.positiveFeedbackCount = positiveFeedbackCount;
-    this.neutralFeedbackCount = neutralFeedbackCount;
-    this.negativeFeedbackCount = negativeFeedbackCount;
-    this.uploadLimit = uploadLimit;
-  }
-  @override
-  UserDetail fromRawJson(String str) =>
-      fromJsonUserDetail(dc.json.decode(str));
-
-  @override
-  String toRawJson() => dc.json.encode(toJson());
-
-  static fromJson(Map<String, dynamic> json) {
-        User
-        wikiPageVersionCount = json["wiki_page_version_count"],
-        artistVersionCount = json["artist_version_count"],
-        poolVersionCount = json["pool_version_count"],
-        forumPostCount = json["forum_post_count"],
-        commentCount = json["comment_count"],
-        flagCount = json["flag_count"],
-        positiveFeedbackCount = json["positive_feedback_count"],
-        neutralFeedbackCount = json["neutral_feedback_count"],
-        negativeFeedbackCount = json["negative_feedback_count"],
-        uploadLimit = json["upload_limit"],
-       super.fromJson(json);
-       }
-  @override
-  Map<String, dynamic> toJson() => {
-        "wiki_page_version_count": wikiPageVersionCount,
-        "artist_version_count": artistVersionCount,
-        "pool_version_count": poolVersionCount,
-        "forum_post_count": forumPostCount,
-        "comment_count": commentCount,
-        "flag_count": flagCount,
-        "positive_feedback_count": positiveFeedbackCount,
-        "neutral_feedback_count": neutralFeedbackCount,
-        "negative_feedback_count": negativeFeedbackCount,
-        "upload_limit": uploadLimit,
-      }..addAll(super.toJson());
-} */
 
 class UserLoggedIn extends User {
   /// From UserLoggedIn
@@ -839,7 +742,7 @@ class UserLoggedIn extends User {
   factory UserLoggedIn.fromRawJson(String str) {
     var t = dc.json.decode(str);
     return (t is List) ? UserLoggedIn.fromJson(t[0]) : UserLoggedIn.fromJson(t);
-  } // => UserLoggedIn.fromJson(dc.json.decode(str));
+  }
 
   @override
   String toRawJson() => dc.json.encode(toJson());
@@ -886,19 +789,19 @@ class UserLoggedIn extends User {
 
   @override
   Map<String, dynamic> toJson() => {
-        "id": id,
-        "created_at": createdAt.toIso8601String(),
-        "name": name,
-        "level": level,
-        "base_upload_limit": baseUploadLimit,
-        "post_upload_count": postUploadCount,
-        "post_update_count": postUpdateCount,
-        "note_update_count": noteUpdateCount,
-        "is_banned": isBanned,
-        "can_approve_posts": canApprovePosts,
-        "can_upload_free": canUploadFree,
-        "level_string": levelString,
-        "avatar_id": avatarId,
+        // "id": id,
+        // "created_at": createdAt.toIso8601String(),
+        // "name": name,
+        // "level": level,
+        // "base_upload_limit": baseUploadLimit,
+        // "post_upload_count": postUploadCount,
+        // "post_update_count": postUpdateCount,
+        // "note_update_count": noteUpdateCount,
+        // "is_banned": isBanned,
+        // "can_approve_posts": canApprovePosts,
+        // "can_upload_free": canUploadFree,
+        // "level_string": levelString,
+        // "avatar_id": avatarId,
         "blacklist_users": blacklistUsers,
         "description_collapsed_initially": descriptionCollapsedInitially,
         "hide_comments": hideComments,
@@ -936,7 +839,7 @@ class UserLoggedIn extends User {
         "favorite_limit": favoriteLimit,
         "tag_query_limit": tagQueryLimit,
         "has_mail": hasMail,
-      };
+      }..addAll(super.toJson());
 }
 
 class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
@@ -1286,61 +1189,7 @@ class UserLoggedInDetail extends UserLoggedIn implements UserDetailed {
         uploadLimit = json["upload_limit"],
         profileAbout = json["profile_about"],
         profileArtInfo = json["profile_artinfo"],
-        super.fromJson(
-            json) /* (
-          favoriteCount: json["favorite_count"],
-          id: json["id"],
-          createdAt: DateTime.parse(json["created_at"]),
-          name: json["name"],
-          level: json["level"],
-          baseUploadLimit: json["base_upload_limit"],
-          postUploadCount: json["post_upload_count"],
-          postUpdateCount: json["post_update_count"],
-          noteUpdateCount: json["note_update_count"],
-          isBanned: json["is_banned"],
-          canApprovePosts: json["can_approve_posts"],
-          canUploadFree: json["can_upload_free"],
-          levelString: json["level_string"],
-          avatarId: json["avatar_id"],
-          blacklistUsers: json["blacklist_users"],
-          descriptionCollapsedInitially:
-              json["description_collapsed_initially"],
-          hideComments: json["hide_comments"],
-          showHiddenComments: json["show_hidden_comments"],
-          showPostStatistics: json["show_post_statistics"],
-          receiveEmailNotifications: json["receive_email_notifications"],
-          enableKeyboardNavigation: json["enable_keyboard_navigation"],
-          enablePrivacyMode: json["enable_privacy_mode"],
-          styleUsernames: json["style_usernames"],
-          enableAutoComplete: json["enable_auto_complete"],
-          disableCroppedThumbnails: json["disable_cropped_thumbnails"],
-          enableSafeMode: json["enable_safe_mode"],
-          disableResponsiveMode: json["disable_responsive_mode"],
-          noFlagging: json["no_flagging"],
-          disableUserDmails: json["disable_user_dmails"],
-          enableCompactUploader: json["enable_compact_uploader"],
-          replacementsBeta: json["replacements_beta"],
-          updatedAt: DateTime.parse(json["updated_at"]),
-          email: json["email"],
-          lastLoggedInAt: DateTime.parse(json["last_logged_in_at"]),
-          lastForumReadAt: DateTime.parse(json["last_forum_read_at"]),
-          recentTags: json["recent_tags"],
-          commentThreshold: json["comment_threshold"],
-          defaultImageSize: json["default_image_size"],
-          favoriteTags: json["favorite_tags"],
-          blacklistedTags: json["blacklisted_tags"],
-          timeZone: json["time_zone"],
-          perPage: json["per_page"],
-          customStyle: json["custom_style"],
-          apiRegenMultiplier: json["api_regen_multiplier"],
-          apiBurstLimit: json["api_burst_limit"],
-          remainingApiLimit: json["remaining_api_limit"],
-          statementTimeout: json["statement_timeout"],
-          favoriteLimit: json["favorite_limit"],
-          tagQueryLimit: json["tag_query_limit"],
-          hasMail: json["has_mail"],
-        ) */
-  ;
+        super.fromJson(json);
 
   @override
   Map<String, dynamic> toJson() => {
@@ -1367,6 +1216,21 @@ Type findUserModelType(Map<String, dynamic> json) =>
         : json["api_burst_limit"] != null
             ? UserLoggedIn
             : User;
+
+/// Gets the mot specific user model based on the provided [json].
+User userFromJson(Map<String, dynamic> json) =>
+    json["wiki_page_version_count"] != null
+        ? json["api_burst_limit"] != null
+            ? UserLoggedInDetail.fromJson(json)
+            : UserDetailed.fromJson(json)
+        : json["api_burst_limit"] != null
+            ? UserLoggedIn.fromJson(json)
+            : User.fromJson(json);
+
+mixin UserHelpers on model.UserLoggedIn {
+  Set<String> get blacklistedTagsSet => blacklistedTagsList.toSet();
+  List<String> get blacklistedTagsList => blacklistedTags.split(RegExp(r'\s'));
+}
 
 /// https://e621.net/post_sets.json?35356
 class PostSet {
@@ -2456,21 +2320,60 @@ enum TagCategory {
   /// https://e621.net/wiki_pages/show_or_new?title=e621%3Alore_tags).
   lore;
 
+  static const artistColor = Color(0xFFF2AC08);
+  static const copyrightColor = Color(0xFFDD00DD);
+  static const characterColor = Color(0xFF00AA00);
+  static const speciesColor = Color(0xFFED5D1F);
+  static const generalColor = Color(0xFFB4C7D9);
+  static const loreColor = Color(0xFF228822);
+  static const metaColor = Color(0xFFFFFFFF);
+  static const invalidColor = Color(0xFFFF3D3D);
+  // TODO: Remove from switch, make final member.
+  Color get color => switch (this) {
+        artist => artistColor,
+        copyright => copyrightColor,
+        character => characterColor,
+        species => speciesColor,
+        general => generalColor,
+        lore => loreColor,
+        meta => metaColor,
+        invalid => invalidColor,
+        _error => throw UnsupportedError(
+            "This value is not valid. Cannot use TagCategory._error."), //Color(0x00000000)
+      };
   bool get isTrueCategory => this != _error;
   bool get isValidCategory => this != _error && this != invalid;
-
+  static const String categoryNameRegExpStr =
+      "artist|character|copyright|species|general|meta|lore|invalid";
   dynamic toJson() => index.toString();
   factory TagCategory.fromJson(dynamic json) =>
-      switch (int.parse(json as String)) {
+      switch (int.tryParse(json as String)) {
         0 => TagCategory.general,
         1 => TagCategory.artist,
-        2 => TagCategory._error,
         3 => TagCategory.copyright,
         4 => TagCategory.character,
         5 => TagCategory.species,
         6 => TagCategory.invalid,
         7 => TagCategory.meta,
         8 => TagCategory.lore,
+        // 2 => TagCategory._error,
+        2 => throw UnsupportedError(
+            "This value is not valid. Cannot use TagCategory._error."),
+        null => TagCategory.fromName(json),
+        _ => throw UnsupportedError("type not supported"),
+      };
+  factory TagCategory.fromName(String name) => switch (name) {
+        "general" => TagCategory.general,
+        "artist" => TagCategory.artist,
+        "copyright" => TagCategory.copyright,
+        "character" => TagCategory.character,
+        "species" => TagCategory.species,
+        "invalid" => TagCategory.invalid,
+        "meta" => TagCategory.meta,
+        "lore" => TagCategory.lore,
+        // "_error" => TagCategory._error,
+        "_error" => throw UnsupportedError(
+            "This value is not valid. Cannot use TagCategory._error."),
         _ => throw UnsupportedError("type not supported"),
       };
 }
