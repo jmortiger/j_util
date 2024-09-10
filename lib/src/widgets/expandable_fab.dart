@@ -14,6 +14,7 @@ class ExpandableFab extends StatefulWidget {
     this.useDefaultHeroTag = true,
     this.heroTag,
     this.onToggle,
+    this.anchorAlignment = AnchorAlignment.bottomRight,
   }) : childrenBuilder = null;
   const ExpandableFab.builder({
     super.key,
@@ -26,6 +27,7 @@ class ExpandableFab extends StatefulWidget {
     this.useDefaultHeroTag = true,
     this.heroTag,
     this.onToggle,
+    this.anchorAlignment = AnchorAlignment.bottomRight,
   }) : children = null;
 
   final Widget openIcon;
@@ -40,6 +42,7 @@ class ExpandableFab extends StatefulWidget {
   final String? disabledTooltip;
   final bool useDefaultHeroTag;
   final Object? heroTag;
+  final AnchorAlignmentOrdinal anchorAlignment;
 
   @override
   State<ExpandableFab> createState() => _ExpandableFabState();
@@ -92,7 +95,7 @@ class _ExpandableFabState extends State<ExpandableFab>
     return buttons.isNotEmpty
         ? SizedBox.expand(
             child: Stack(
-              alignment: Alignment.bottomRight,
+              alignment: widget.anchorAlignment.alignment,//Alignment.bottomRight,
               clipBehavior: Clip.none,
               children: [
                 _buildTapToCloseFab(),
@@ -145,6 +148,7 @@ class _ExpandableFabState extends State<ExpandableFab>
         i++, angleInDegrees += step) {
       children.add(
         SlidingActionButton(
+          anchor: widget.anchorAlignment,//AnchorAlignment.bottomRight,
           directionInDegrees: angleInDegrees,
           maxDistance: widget.distance,
           progress: _expandAnimation,

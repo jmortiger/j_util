@@ -107,7 +107,7 @@ class _WPullTabState extends State<WPullTab>
 
   @override
   Widget build(BuildContext context) {
-    var buttons = _buildButtons(context);
+    final close = _buildTapToClose(), buttons = _buildButtons(context),open = _buildTapToOpen(buttons.isNotEmpty);
     return buttons.isNotEmpty
         ? OverflowBox(
             alignment: widget.anchorAlignment.alignment,
@@ -129,15 +129,20 @@ class _WPullTabState extends State<WPullTab>
               // clipBehavior: Clip.hardEdge,
               children: [
                 _WRibbon(
+                  // startingDistance: 56,
+                  // startingDistance: widget.distance / (children.length + 1),
                   distance: widget.distance,
                   progress: _expandAnimation,
                   duration: widget.duration,
                   color: widget.color,
                   anchorAlignment: widget.anchorAlignment,
+                  child: _expanded
+                      ? close
+                      : open,
                 ),
-                _buildTapToClose(),
+                close,
                 ...buttons,
-                _buildTapToOpen(buttons.isNotEmpty),
+                open,
               ],
             ),
           )
@@ -151,10 +156,12 @@ class _WPullTabState extends State<WPullTab>
 
   Widget _buildTapToClose() {
     return SizedBox(
-      width: 56,
-      height: 56,
+      // width: widget.distance / (children.length + 1),
+      // height: widget.distance / (children.length + 1),
+      // width: 56,
+      // height: 56,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(0), //8
         child: Align(
           heightFactor: widget.anchorAlignment.isVertical ? null : 1,
           widthFactor: widget.anchorAlignment.isHorizontal ? null : 1,
@@ -186,11 +193,9 @@ class _WPullTabState extends State<WPullTab>
       children.add(
         SlidingActionButton.axisBased(
           anchor: widget.anchorAlignment,
-          // directionInDegrees: angleInDegrees,
-          maxDistance: displacement, //widget.distance,
+          maxDistance: displacement,
           progress: _expandAnimation,
           child: widgetChildren[i],
-          ignore: true,
         ),
       );
     }
@@ -218,7 +223,7 @@ class _WPullTabState extends State<WPullTab>
             widthFactor: widget.anchorAlignment.isHorizontal ? null : 1,
             alignment: widget.anchorAlignment.alignment,
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(0), //8
               child: IconButton(
                 onPressed: enabled ? _toggle : null,
                 icon: !_expanded ? widget.openIcon : widget.closeIcon,
@@ -239,77 +244,82 @@ class _WRibbon extends StatelessWidget {
   final Color? color;
   final AnchorAlignmentOrdinal anchorAlignment;
   final double distance;
+  final double startingDistance;
+  final Widget? child;
   const _WRibbon({
     super.key,
     required this.progress,
     required this.duration,
     this.color,
     required this.anchorAlignment,
-    required this.distance,
-  });
-
+    required double distance,
+    this.startingDistance = 0,
+    this.child,
+  }) : distance = distance - startingDistance;
+  double get currentDistance => progress.value * distance + startingDistance;
   @override
   Widget build(BuildContext context) {
     final ribbon = Material(
       shape: StadiumBorder(),
       color: color,
       animationDuration: duration,
+      child: child,
     );
     return AnimatedBuilder(
       animation: progress,
       builder: (_, child) => switch (anchorAlignment) {
         AnchorAlignmentOrdinal.top => Positioned(
             top: 0,
-            height: progress.value * distance,
+            height: currentDistance,
             right: 0,
             left: 0,
             child: child!,
           ),
         AnchorAlignmentOrdinal.bottom => Positioned(
             bottom: 0,
-            height: progress.value * distance,
+            height: currentDistance,
             right: 0,
             left: 0,
             child: child!,
           ),
         AnchorAlignmentOrdinal.left => Positioned(
             bottom: 0,
-            width: progress.value * distance,
+            width: currentDistance,
             top: 0,
             left: 0,
             child: child!,
           ),
         AnchorAlignmentOrdinal.right => Positioned(
             bottom: 0,
-            width: progress.value * distance,
+            width: currentDistance,
             top: 0,
             right: 0,
             child: child!,
           ),
         AnchorAlignmentOrdinal.topLeft => Positioned(
-            height: progress.value * distance * anchorAlignment.yComponent,
-            width: progress.value * distance * anchorAlignment.xComponent,
+            height: currentDistance * anchorAlignment.yComponent,
+            width: currentDistance * anchorAlignment.xComponent,
             top: 0,
             left: 0,
             child: child!,
           ),
         AnchorAlignmentOrdinal.bottomLeft => Positioned(
-            height: progress.value * distance * anchorAlignment.yComponent,
-            width: progress.value * distance * anchorAlignment.xComponent,
+            height: currentDistance * anchorAlignment.yComponent,
+            width: currentDistance * anchorAlignment.xComponent,
             bottom: 0,
             left: 0,
             child: child!,
           ),
         AnchorAlignmentOrdinal.bottomRight => Positioned(
-            height: progress.value * distance * anchorAlignment.yComponent,
-            width: progress.value * distance * anchorAlignment.xComponent,
+            height: currentDistance * anchorAlignment.yComponent,
+            width: currentDistance * anchorAlignment.xComponent,
             bottom: 0,
             right: 0,
             child: child!,
           ),
         AnchorAlignmentOrdinal.topRight => Positioned(
-            height: progress.value * distance * anchorAlignment.yComponent,
-            width: progress.value * distance * anchorAlignment.xComponent,
+            height: currentDistance * anchorAlignment.yComponent,
+            width: currentDistance * anchorAlignment.xComponent,
             top: 0,
             right: 0,
             child: child!,
@@ -327,7 +337,11 @@ class SlidingActionButton extends StatelessWidget {
     required this.maxDistance,
     required this.progress,
     this.anchor,
-    this.ignore = false,
+    this.ignoredStates = const {
+      AnimationStatus.dismissed,
+      AnimationStatus.forward,
+      AnimationStatus.reverse,
+    },
     required this.child,
   });
   const SlidingActionButton.axisBased({
@@ -335,7 +349,11 @@ class SlidingActionButton extends StatelessWidget {
     required this.maxDistance,
     required this.progress,
     required this.anchor,
-    this.ignore = false,
+    this.ignoredStates = const {
+      AnimationStatus.dismissed,
+      AnimationStatus.forward,
+      AnimationStatus.reverse,
+    },
     required this.child,
   });
 
@@ -343,7 +361,10 @@ class SlidingActionButton extends StatelessWidget {
   final double maxDistance;
   final Animation<double> progress;
   final Widget child;
-  final bool ignore;
+
+  /// When [progress] is in one of these states, the
+  /// button will be wrapped in an [IgnorePointer].
+  final Set<AnimationStatus> ignoredStates;
 
   final AnchorAlignment? anchor;
   AnchorAlignment get anchorFromValues =>
@@ -354,25 +375,30 @@ class SlidingActionButton extends StatelessWidget {
     return AnimatedBuilder(
       animation: progress,
       builder: (context, child) {
-        final anchorFromValues = this.anchorFromValues;
-        final r1 = Transform.rotate(
-          angle: (1.0 - progress.value) * math.pi / 2,
-          child: child!,
-        );
-        final root = ignore && progress.status != AnimationStatus.completed
-            ? IgnorePointer(child: r1)
-            : r1;
-        final offset = directionInDegrees == null
-            ? Offset(anchor!.xComponent * progress.value * maxDistance,
-                anchor!.yComponent * progress.value * maxDistance)
-            : anchorFromValues.xComponent == anchorFromValues.xComponent.toInt()
-                ? Offset(
-                    anchorFromValues.xComponent * progress.value * maxDistance,
-                    anchorFromValues.yComponent * progress.value * maxDistance)
-                : Offset.fromDirection(
-                    directionInDegrees! * (math.pi / 180.0),
-                    progress.value * maxDistance,
-                  );
+        final anchorFromValues = this.anchorFromValues,
+            r1 = Transform.rotate(
+              angle: (1.0 - progress.value) * math.pi / 2,
+              child: child!,
+            ),
+            root = ignoredStates.contains(progress.status)
+                ? IgnorePointer(child: r1)
+                : r1,
+            offset = directionInDegrees == null
+                ? Offset(anchor!.xComponent * progress.value * maxDistance,
+                    anchor!.yComponent * progress.value * maxDistance)
+                : anchorFromValues.xComponent ==
+                        anchorFromValues.xComponent.toInt()
+                    ? Offset(
+                        anchorFromValues.xComponent *
+                            progress.value *
+                            maxDistance,
+                        anchorFromValues.yComponent *
+                            progress.value *
+                            maxDistance)
+                    : Offset.fromDirection(
+                        directionInDegrees! * (math.pi / 180.0),
+                        progress.value * maxDistance,
+                      );
         if (anchorFromValues is AnchorAlignmentOrdinal) {
           return switch (anchorFromValues) {
             AnchorAlignmentOrdinal.top => Positioned(
@@ -416,8 +442,7 @@ class SlidingActionButton extends StatelessWidget {
                 child: root,
               )
           };
-        }
-        else {
+        } else {
           return switch (anchorFromValues.quadrantsContaining) {
             Quadrants.oneAndTwo => Positioned(
                 // right: /* 4.0 +  */offset.dx,
@@ -652,7 +677,8 @@ mixin AnchorAlignment {
   }
 
   Quadrants get quadrantsFacing => getQuadrants(facingDegrees);
-  Quadrants get quadrantsContaining => getQuadrants(constrainDegrees(facingDegrees + 180).toDouble());
+  Quadrants get quadrantsContaining =>
+      getQuadrants(constrainDegrees(facingDegrees + 180).toDouble());
   static Quadrants getQuadrants(double angleDegrees) => switch (angleDegrees) {
         > 0 + double.minPositive && < 90 - double.minPositive => Quadrants.one,
         > 90 + double.minPositive && < 180 - double.minPositive =>

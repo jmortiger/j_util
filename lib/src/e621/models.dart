@@ -2191,6 +2191,95 @@ enum PostType {
   ;
 }
 
+class WikiPage {
+  final int id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String title;
+  final String body;
+  final int creatorId;
+  final bool isLocked;
+  final int? updaterId;
+  final bool isDeleted;
+  final List<String> otherNames;
+  final int? parent;
+  final String creatorName;
+  final int categoryId;
+
+  WikiPage({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.title,
+    required this.body,
+    required this.creatorId,
+    required this.isLocked,
+    required this.updaterId,
+    required this.isDeleted,
+    required this.otherNames,
+    required this.parent,
+    required this.creatorName,
+    required this.categoryId,
+  });
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "created_at": createdAt,
+        "updated_at": updatedAt,
+        "title": title,
+        "body": body,
+        "creator_id": creatorId,
+        "is_locked": isLocked,
+        "updater_id": updaterId,
+        "is_deleted": isDeleted,
+        "other_names": otherNames,
+        "parent": parent,
+        "creator_name": creatorName,
+        "category_id": categoryId,
+      };
+  factory WikiPage.fromJson(Map<String, dynamic> json) => WikiPage(
+        id: json["id"],
+        createdAt: DateTime.parse(json["created_at"]),
+        updatedAt: DateTime.parse(json["updated_at"]),
+        title: json["title"],
+        body: json["body"],
+        creatorId: json["creator_id"],
+        isLocked: json["is_locked"],
+        updaterId: json["updater_id"],
+        isDeleted: json["is_deleted"],
+        otherNames: (json["other_names"] as List).cast<String>(),
+        parent: json["parent"],
+        creatorName: json["creator_name"],
+        categoryId: json["category_id"],
+      );
+
+  factory WikiPage.fromRawJson(String json) {
+    final r = dc.jsonDecode(json);
+    return WikiPage.fromJson(r is List ? r.first : r);
+  }
+  static Iterable<WikiPage> fromRawJsonResults(String json) {
+    final r = dc.jsonDecode(json);
+    return r is List
+        ? r.map((e) => WikiPage.fromJson(e))
+        : [WikiPage.fromJson(r)];
+  }
+
+  Map<String, dynamic> fromJson() => {
+        "id": id,
+        "created_at": createdAt,
+        "updated_at": updatedAt,
+        "title": title,
+        "body": body,
+        "creator_id": creatorId,
+        "is_locked": isLocked,
+        "updater_id": updaterId,
+        "is_deleted": isDeleted,
+        "other_names": otherNames,
+        "parent": parent,
+        "creator_name": creatorName,
+        "category_id": categoryId,
+      };
+}
+
 /// https://e621.net/wiki_pages/11262
 enum TagCategory {
   /// 0
