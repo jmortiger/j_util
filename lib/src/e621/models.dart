@@ -1235,8 +1235,8 @@ mixin UserHelpers on model.UserLoggedIn {
 /// https://e621.net/post_sets.json?35356
 class PostSet {
   final int id;
-  final String createdAt;
-  final String updatedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
   final int creatorId;
   final bool isPublic;
   final String name;
@@ -1264,7 +1264,7 @@ class PostSet {
   });
 
   PostSet copyWith({
-    String? createdAt,
+    DateTime? createdAt,
     int? creatorId,
     String? description,
     int? id,
@@ -1274,7 +1274,7 @@ class PostSet {
     List<int>? postIds,
     String? shortname,
     bool? transferOnDelete,
-    String? updatedAt,
+    DateTime? updatedAt,
   }) =>
       PostSet(
         createdAt: createdAt ?? this.createdAt,
@@ -1295,23 +1295,22 @@ class PostSet {
 
   String toRawJson() => dc.json.encode(toJson());
 
-  factory PostSet.fromJson(Map<String, dynamic> json) => PostSet(
-        id: json["id"],
-        createdAt: json["created_at"],
-        updatedAt: json["updated_at"],
-        creatorId: json["creator_id"],
-        isPublic: json["is_public"],
-        name: json["name"],
-        shortname: json["shortname"],
-        description: json["description"],
-        postCount: json["post_count"],
-        transferOnDelete: json["transfer_on_delete"],
-        postIds: (json["post_ids"] as List).cast(),
-      );
+  PostSet.fromJson(Map<String, dynamic> json)
+      : id = json["id"],
+        createdAt = DateTime.parse(json["created_at"]),
+        updatedAt = DateTime.parse(json["updated_at"]),
+        creatorId = json["creator_id"],
+        isPublic = json["is_public"],
+        name = json["name"],
+        shortname = json["shortname"],
+        description = json["description"],
+        postCount = json["post_count"],
+        transferOnDelete = json["transfer_on_delete"],
+        postIds = (json["post_ids"] as List).cast();
   Map<String, dynamic> toJson() => {
         "id": id,
-        "created_at": createdAt,
-        "updated_at": updatedAt,
+        "created_at": createdAt.toIso8601String(),
+        "updated_at": updatedAt.toIso8601String(),
         "creator_id": creatorId,
         "is_public": isPublic,
         "name": name,

@@ -57,6 +57,19 @@ int defaultBurstLimit = 60;
 int get currentBurstLimit => defaultBurstLimit;
 // ListQueue<DateTime> burstTimes = ListQueue(defaultBurstLimit - 1);
 List<DateTime> burstTimes = <DateTime>[];
+/* typedef ApiStreamEvent = (http.StreamedResponse, DateTime);
+final StreamController<ApiStreamEvent> _responseStreamCntr = StreamController<ApiStreamEvent>.broadcast(
+  onListen: _onListen,
+  onPause: _onPause,
+  onResume: _onResume,
+  onCancel: _onCancel,
+);
+Stream<ApiStreamEvent> get responseStream => _responseStreamCntr.stream;
+
+void _onListen(){}
+void _onPause(){}
+void _onResume(){}
+void _onCancel(){} */
 
 /// Won't blow the rate limit
 Future<http.StreamedResponse> sendRequestStreamed(
