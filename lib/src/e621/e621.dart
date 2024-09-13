@@ -1,6 +1,3 @@
-import 'dart:async' show Future, FutureOr;
-// import 'dart:collection' show ListQueue;
-import 'dart:convert' as dc;
 import 'package:http/http.dart' as http;
 
 import 'credentials.dart';
@@ -19,114 +16,23 @@ const e6ValidMetaTagCharacters =
 // #endregion Tag parsing
 
 // #region URI
-bool useNsfw = true;
 const hostNameSfw = "e926.net";
 const hostNameNsfw = "e621.net";
 final baseUriSfw = Uri.https(hostNameSfw);
 final baseUriNsfw = Uri.https(hostNameNsfw);
 Uri get baseUri => useNsfw ? baseUriNsfw : baseUriSfw;
+
+/// If `true`, the host used will be `e621.net`; otherwise,
+/// it will be `e926.net`.
+bool useNsfw = true;
 // #endregion URI
 
-// #region Rate Limit
-/// The hard rate limit in seconds per request.
-///
-/// `hardRateLimit = Duration(seconds: 1);`
-const hardRateLimit = Duration(seconds: 1);
-
-/// The soft rate limit in seconds per request.
-///
-/// `softRateLimit = Duration(seconds: 2);`
-const softRateLimit = Duration(seconds: 2);
-
-/// The ideal rate limit in seconds per request.
-///
-/// The ideal rate limit is a way to ensure that the true rate limit is never even approached.
-///
-/// `idealRateLimit = Duration(seconds: 3);`
-const idealRateLimit = Duration(seconds: 3);
-bool forceHardLimit = false;
-bool useIdealLimit = true;
-Duration get currentRateLimit => forceHardLimit
-    ? hardRateLimit
-    : useIdealLimit
-        ? idealRateLimit
-        : softRateLimit;
-DateTime timeOfLastRequest =
-    DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
-int defaultBurstLimit = 60;
-int get currentBurstLimit => defaultBurstLimit;
-// ListQueue<DateTime> burstTimes = ListQueue(defaultBurstLimit - 1);
-List<DateTime> burstTimes = <DateTime>[];
-/* typedef ApiStreamEvent = (http.StreamedResponse, DateTime);
-final StreamController<ApiStreamEvent> _responseStreamCntr = StreamController<ApiStreamEvent>.broadcast(
-  onListen: _onListen,
-  onPause: _onPause,
-  onResume: _onResume,
-  onCancel: _onCancel,
-);
-Stream<ApiStreamEvent> get responseStream => _responseStreamCntr.stream;
-
-void _onListen(){}
-void _onPause(){}
-void _onResume(){}
-void _onCancel(){} */
-
-/// Won't blow the rate limit
-Future<http.StreamedResponse> sendRequestStreamed(
-  http.BaseRequest request, {
-  bool useBurst = false,
-  bool overrideRateLimit = false,
-}) async {
-  doTheThing() {
-    timeOfLastRequest = DateTime.timestamp();
-    return client.send(request);
-  }
-
-  var t = DateTime.timestamp().difference(timeOfLastRequest);
-  if (t >= currentRateLimit || overrideRateLimit) {
-    return doTheThing();
-  } else {
-    if (useBurst && burstTimes.length < currentBurstLimit) {
-      final ts = DateTime.timestamp();
-      burstTimes.add(ts);
-      Future.delayed(currentRateLimit, () => burstTimes.remove(ts)).ignore();
-      return client.send(request);
-    }
-    return Future.delayed(currentRateLimit - t, doTheThing);
-  }
-}
-
-/// Won't blow the rate limit
-Future<http.Response> sendRequest(
-  http.BaseRequest request, {
-  bool useBurst = false,
-  bool overrideRateLimit = false,
-}) async =>
-    sendRequestStreamed(request, useBurst: useBurst).then((v) async {
-      var t =
-          await http.ByteStream(v.stream.asBroadcastStream()).bytesToString();
-      return http.Response(
-        t,
-        v.statusCode,
-        headers: v.headers,
-        isRedirect: v.isRedirect,
-        persistentConnection: v.persistentConnection,
-        reasonPhrase: v.reasonPhrase,
-        request: v.request,
-      );
-    });
-
-// #endregion Rate Limit
 const maxPageNumber = 750;
 const maxPostsPerSearch = 320;
 
 /// If searching by page number, the max amount of posts that can be accessed.
 const maxPostsPerSearchByPageNumber = maxPageNumber * maxPostsPerSearch;
 const maxTagsPerSearch = 40;
-
-/// Use this to automatically enforce rate limit.
-// ignore: unnecessary_late
-late http.Client client = http.Client();
 
 // #region Credentials
 BaseCredentials? activeCredentials;
@@ -149,7 +55,7 @@ BaseCredentials _getValidCredentials(BaseCredentials? credentials) =>
     (throw ArgumentError.value(
       credentials,
       "credentials",
-      "Either the static credentials or the argument credentials must be defined.",
+      "Either the static activeCredentials or the argument credentials must be non-null.",
     ));
 // #endregion Credentials
 // #region Helpers
@@ -489,6 +395,13 @@ http.Request initPostSearchRequestChecked({
         method: "GET",
         credentials: credentials);
 
+@Deprecated("Use initGetPostRequest")
+http.Request initSearchPostRequest(
+  int postId, {
+  BaseCredentials? credentials,
+}) =>
+    initGetPostRequest(postId, credentials: credentials);
+
 /// [List](https://e621.net/wiki_pages/2425#posts_list)
 ///
 /// The base URL is /posts/<Post_ID>.json called with GET.
@@ -502,7 +415,7 @@ http.Request initPostSearchRequestChecked({
 ///
 /// {"success":false,"reason":"not found"}
 /// ```
-http.Request initSearchPostRequest(
+http.Request initGetPostRequest(
   int postId, {
   BaseCredentials? credentials,
 }) =>
@@ -689,25 +602,6 @@ http.Request initPostCastVoteRequest({
   BaseCredentials? credentials,
 }) =>
     initVotePostRequest(postId: postId, score: voteUp ? 1 : -1);
-
-/// Attempts to clear the vote from the selected post.
-///
-/// {@macro postVote}
-Future<http.Response> clearPostVote({
-  required int postId,
-  BaseCredentials? credentials,
-}) =>
-    sendRequest(
-      initVotePostRequest(postId: postId, score: 1, credentials: credentials),
-    ).then((r) => r.statusCode >= 200 && r.statusCode < 300 // Is successful
-        ? dc.jsonDecode(r.body)["our_score"] == 0
-            ? r as FutureOr<http.Response>
-            : sendRequest(initVotePostRequest(
-                postId: postId,
-                score: 1,
-                credentials: credentials,
-              ))
-        : r);
 // #endregion Post Vote
 
 // #endregion Posts
@@ -1636,18 +1530,30 @@ http.Request initRevertPoolRequest(
 // https://e621.net/artists.json
 // #endregion Artists
 // #region Wiki
-/// Search
-/// https://e621.net/wiki_pages.json?search%5Btitle%5D=unknown_artist
+/// [Search](https://e621.net/wiki_pages.json?search%5Btitle%5D=unknown_artist)
+///
 /// The base URL is `/wiki_pages.json` called with `GET`.
 /// * `search[title]`: unknown_artist
 /// * `search[body_matches]`:
 /// * `search[creator_name]`:
-/// * `search[parent]`:
+/// {@template notWild}
+/// Doesn't support * wildcard.
+/// {@endtemplate}
+/// Must be exact. Doesn't work for blocked users?
+/// * `search[parent]`: The page this entry redirects to.
+/// {@template wild}
+/// Supports * wildcard.
+/// {@endtemplate}
 /// * `search[other_names_match]`:
 /// * `search[other_names_present]`:
 /// * `search[hide_deleted]`:
 /// * `search[order]`:
 /// {@macro limitAndPageParams}
+///
+/// NOTE: For some reason, `search[other_names_present]`
+/// & `search[hide_deleted]`, if present, are sent as `Yes` or `No` in the
+/// query string for the web form, and not as `true`/`false`. However, it
+/// appears normal boolean values work fine.
 /// TODO: RETURNS
 http.Request initWikiSearchRequest({
   String? searchTitle,
@@ -1655,9 +1561,9 @@ http.Request initWikiSearchRequest({
   String? searchCreatorName,
   String? searchParent,
   String? searchOtherNamesMatch,
-  String? searchOtherNamesPresent,
-  String? searchHideDeleted,
-  String? searchOrder,
+  bool? searchOtherNamesPresent,
+  bool? searchHideDeleted,
+  se.WikiOrder? searchOrder,
   int? limit,
   String? page,
   BaseCredentials? credentials,

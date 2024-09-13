@@ -1,7 +1,7 @@
 // import 'package:j_util/j_util_full.dart' show PrettyPrintEnum;
 import 'general_enums.dart';
 
-enum SetOrder with ApiQueryParameter/* , PrettyPrintEnum */ {
+enum SetOrder with ApiQueryParameter /* , PrettyPrintEnum */ {
   name._default("name"),
   shortname._default("shortname"),
   postCount._default("post_count"),
@@ -38,7 +38,7 @@ enum SetOrder with ApiQueryParameter/* , PrettyPrintEnum */ {
       };
 }
 
-enum PoolOrder with ApiQueryParameter/* , PrettyPrintEnum */ {
+enum PoolOrder with ApiQueryParameter /* , PrettyPrintEnum */ {
   name._default("name"),
   postCount._default("post_count"),
   createdAt._default("created_at"),
@@ -72,7 +72,7 @@ enum PoolOrder with ApiQueryParameter/* , PrettyPrintEnum */ {
       };
 }
 
-enum UserOrder with ApiQueryParameter/* , PrettyPrintEnum */ {
+enum UserOrder with ApiQueryParameter /* , PrettyPrintEnum */ {
   joinDate._default("date"),
   name._default("name"),
   postUploadCount._default("post_upload_count"),
@@ -116,4 +116,24 @@ enum PopularTimeScale with ApiQueryParameter {
 
   @override
   String get query => name;
+}
+
+enum WikiOrder with ApiQueryParameter {
+  title._("title"),
+  time._("time"),
+  postCount._("post_count");
+
+  const WikiOrder._(this.query);
+  @override
+  final String query;
+  factory WikiOrder(String query) => switch (query) {
+        "title" => title,
+        "time" => time,
+        "post_count" => postCount,
+        _ => throw ArgumentError.value(
+            query,
+            "query",
+            'must be a value of "title", "time", or "post_count", ',
+          ),
+      };
 }

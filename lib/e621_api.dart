@@ -4,5 +4,6 @@ library;
 
 export 'src/e621/e621.dart';
 export 'src/e621/credentials.dart';
+export 'src/e621/middleware.dart';
 export 'src/e621/search_enums.dart';
 export 'src/e621/general_enums.dart';
