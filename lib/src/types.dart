@@ -132,9 +132,9 @@ enum Platform {
 
 /// Handles safely accessing and initializing an asynchronously created asset
 /// that's otherwise constant.
-/// 
+///
 /// As this doesn't check to prevent the initializer from running multiple times,
-/// this is unsuited for time-consuming operations or frequently-checked 
+/// this is unsuited for time-consuming operations or frequently-checked
 /// variables. For those cases, use [LazyInitializer] instead. This has a slight
 /// boost to performance.
 ///
@@ -277,6 +277,7 @@ class LazyInitializer<T> {
       : (isAssigning
           ? _future!
           : (_future = (initializer()..then(_myThen).ignore()))) as FutureOr<T>;
+
   /// Same as [getItem], but always returns a future.
   Future<T> getItemAsync() async => _isAssigned
       ? _item

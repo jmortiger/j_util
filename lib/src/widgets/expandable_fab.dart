@@ -95,7 +95,8 @@ class _ExpandableFabState extends State<ExpandableFab>
     return buttons.isNotEmpty
         ? SizedBox.expand(
             child: Stack(
-              alignment: widget.anchorAlignment.alignment,//Alignment.bottomRight,
+              alignment:
+                  widget.anchorAlignment.alignment, //Alignment.bottomRight,
               clipBehavior: Clip.none,
               children: [
                 _buildTapToCloseFab(),
@@ -148,7 +149,7 @@ class _ExpandableFabState extends State<ExpandableFab>
         i++, angleInDegrees += step) {
       children.add(
         SlidingActionButton(
-          anchor: widget.anchorAlignment,//AnchorAlignment.bottomRight,
+          anchor: widget.anchorAlignment, //AnchorAlignment.bottomRight,
           directionInDegrees: angleInDegrees,
           maxDistance: widget.distance,
           progress: _expandAnimation,

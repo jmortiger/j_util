@@ -62,9 +62,9 @@ Future<http.StreamedResponse> sendRequestStreamed(
   bool overrideRateLimit = false,
 }) async {
   doTheThing() {
-    /* final ts =  */timeOfLastRequest = DateTime.timestamp();
-    return client.send(request)
-      /* ..then((v) => _responseStreamController.add((v, ts))).ignore() */;
+    /* final ts =  */ timeOfLastRequest = DateTime.timestamp();
+    return client.send(
+        request) /* ..then((v) => _responseStreamController.add((v, ts))).ignore() */;
   }
 
   var t = DateTime.timestamp().difference(timeOfLastRequest);
@@ -75,8 +75,8 @@ Future<http.StreamedResponse> sendRequestStreamed(
       final ts = DateTime.timestamp();
       burstTimes.add(ts);
       Future.delayed(currentRateLimit, () => burstTimes.remove(ts)).ignore();
-      return client.send(request)
-        /* ..then((v) => _responseStreamController.add((v, ts))).ignore() */;
+      return client.send(
+          request) /* ..then((v) => _responseStreamController.add((v, ts))).ignore() */;
     }
     return Future.delayed(currentRateLimit - t, doTheThing);
   }

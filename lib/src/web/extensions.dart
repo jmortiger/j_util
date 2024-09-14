@@ -68,8 +68,7 @@ extension Conversion on http.StreamedResponse {
   /// Converts the [http.StreamedResponse] to a response with a completed body.
   /// {@endtemplate}
   Future<http.BaseResponse> toResponse() async {
-    var t =
-        await http.ByteStream(stream.asBroadcastStream()).bytesToString();
+    var t = await http.ByteStream(stream.asBroadcastStream()).bytesToString();
     return http.Response(
       t,
       statusCode,

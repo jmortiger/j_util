@@ -167,6 +167,7 @@ extension PrettyPrintCollection on Iterable {
               index != 0 ? prefix : "",
           }}${e.toString().replaceAll("\n", "\n$indent")}${index < list.length - 1 ? "$elementDelimiter${lineBreakCollectionStart && elementDelimiter.contains("\n") ? indent : ""}" : ""}").reduce((value, element) => value + element)}${lineBreakCollectionStart ? "\n" : ""}]";
 }
+
 // #endregion From j_util/src/extensions.dart
 extension StringFold on Iterable<String> {
   // TODO: Profile performance.
@@ -181,6 +182,7 @@ extension StringFold on Iterable<String> {
           (acc, e) => !excludeEmpty || e.isNotEmpty
               ? (acc.isNotEmpty ? "$acc$delimiter$prefix$e" : "$prefix$e")
               : acc);
+
   /// String folding w/o leading nor trailing [delimiter] and the prefix [prefix]
   String foldToString({String delimiter = " ", String prefix = ""}) => fold(
       "", (acc, e) => acc.isNotEmpty ? "$acc$delimiter$prefix$e" : "$prefix$e");

@@ -107,7 +107,9 @@ class _WPullTabState extends State<WPullTab>
 
   @override
   Widget build(BuildContext context) {
-    final close = _buildTapToClose(), buttons = _buildButtons(context),open = _buildTapToOpen(buttons.isNotEmpty);
+    final close = _buildTapToClose(),
+        buttons = _buildButtons(context),
+        open = _buildTapToOpen(buttons.isNotEmpty);
     return buttons.isNotEmpty
         ? OverflowBox(
             alignment: widget.anchorAlignment.alignment,
@@ -136,9 +138,7 @@ class _WPullTabState extends State<WPullTab>
                   duration: widget.duration,
                   color: widget.color,
                   anchorAlignment: widget.anchorAlignment,
-                  child: _expanded
-                      ? close
-                      : open,
+                  child: _expanded ? close : open,
                 ),
                 close,
                 ...buttons,

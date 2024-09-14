@@ -16,5 +16,4 @@ void registerImgElement() {
   });
 }
 
-Object getViewById(int viewId) =>
-    ui.platformViewRegistry.getViewById(viewId);
+Object getViewById(int viewId) => ui.platformViewRegistry.getViewById(viewId);

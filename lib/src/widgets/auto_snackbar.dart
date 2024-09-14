@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 /// TODO: Finish
 mixin AutoSnackbarStateful on State {
   ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showSnackBarSimple(
