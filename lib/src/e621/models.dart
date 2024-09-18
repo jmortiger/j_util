@@ -1,6 +1,6 @@
 import 'dart:convert' as dc;
 import 'dart:ui';
-import 'package:j_util/src/e621/model.dart' as model;
+import 'model.dart' as model;
 
 import 'general_enums.dart' hide ApiQueryParameter;
 

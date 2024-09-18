@@ -1,5 +1,5 @@
 import 'dart:convert' as dc;
-import 'package:j_util/src/e621/general_enums.dart';
+import 'general_enums.dart';
 
 mixin BaseModel {
   Map<String, dynamic> toJson();

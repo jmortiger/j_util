@@ -1,7 +1,6 @@
-// import 'package:j_util/j_util_full.dart' show PrettyPrintEnum;
 import 'general_enums.dart';
 
-enum SetOrder with ApiQueryParameter /* , PrettyPrintEnum */ {
+enum SetOrder with ApiQueryParameter {
   name._default("name"),
   shortname._default("shortname"),
   postCount._default("post_count"),
@@ -13,12 +12,9 @@ enum SetOrder with ApiQueryParameter /* , PrettyPrintEnum */ {
 
   @override
   String toString() => query;
-  // String get jsonString => nameSnake;
   @Deprecated("Use query")
   String get jsonString => query;
   const SetOrder._default(this.query);
-  // static SetOrder fromJsonString(String json) => switch (json) {
-  // factory SetOrder.fromJsonString(String json) => switch (json) {
   factory SetOrder(String json) => switch (json) {
         "name" => name,
         "shortname" => shortname,
@@ -38,7 +34,7 @@ enum SetOrder with ApiQueryParameter /* , PrettyPrintEnum */ {
       };
 }
 
-enum PoolOrder with ApiQueryParameter /* , PrettyPrintEnum */ {
+enum PoolOrder with ApiQueryParameter {
   name._default("name"),
   postCount._default("post_count"),
   createdAt._default("created_at"),
@@ -49,12 +45,9 @@ enum PoolOrder with ApiQueryParameter /* , PrettyPrintEnum */ {
 
   @override
   String toString() => query;
-  // String get jsonString => nameSnake;
   @Deprecated("Use query")
   String get jsonString => query;
   const PoolOrder._default(this.query);
-  // static PoolOrder fromJsonString(String json) => switch (json) {
-  // factory PoolOrder.fromJsonString(String json) => switch (json) {
   factory PoolOrder(String json) => switch (json) {
         "name" => name,
         "post_count" => postCount,
@@ -72,7 +65,7 @@ enum PoolOrder with ApiQueryParameter /* , PrettyPrintEnum */ {
       };
 }
 
-enum UserOrder with ApiQueryParameter /* , PrettyPrintEnum */ {
+enum UserOrder with ApiQueryParameter {
   joinDate._default("date"),
   name._default("name"),
   postUploadCount._default("post_upload_count"),
@@ -84,12 +77,9 @@ enum UserOrder with ApiQueryParameter /* , PrettyPrintEnum */ {
 
   @override
   String toString() => query;
-  // String get jsonString => nameSnake;
   @Deprecated("Use query")
   String get jsonString => query;
   const UserOrder._default(this.query);
-  // static UserOrder fromJsonString(String json) => switch (json) {
-  // factory UserOrder.fromJsonString(String json) => switch (json) {
   factory UserOrder(String json) => switch (json) {
         "name" => name,
         "date" => joinDate,

@@ -25,3 +25,4 @@
 ## 4.0.0
 - Removed bloat from collections
 - Added MapNotifier
+- Moved e621 to its own package, deprecated members
