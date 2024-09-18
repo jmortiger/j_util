@@ -29,7 +29,7 @@ void main() {
   }
 
   searchPostId(int postId, BaseCredentials? c) async =>
-      (await api.initSearchPostRequest(
+      (await api.initGetPostRequest(
         postId,
         credentials: c,
       ).send().toResponse());
@@ -355,7 +355,7 @@ void main() {
       expect(res.statusCode, 204);
       expect(res.body, "");
       await Future.delayed(api.softRateLimit);
-      var p = await api.initSearchPostRequest(postId, credentials: c)
+      var p = await api.initGetPostRequest(postId, credentials: c)
           .send()
           .toResponse();
       Post t = Post.fromRawJson(p.body);

@@ -361,12 +361,12 @@ mixin Storable<T> {
       // if (Platform.isWeb) {
       //   return
       // }
-      return (Storable.getStorageAsync(filePath).then((file) => file
-          .readAsString(encoding: encoding)
+      return (Storable.getStorageAsync(filePath).then<String?>(
+          (file) => file.readAsString(encoding: encoding)
           /* .then((v) {
           return ((T as dynamic).fromJson(jsonDecode(v))) as T?;
         }) */
-          .then((v) => v ?? null))).onError((e, s) {
+          )).onError((e, s) {
         _storablePrint("tryLoadStringAsync: $e");
         _storablePrint(getStorageSync(filePath).readAsStringSync());
         return null;

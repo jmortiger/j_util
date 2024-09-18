@@ -21,3 +21,7 @@
 
 ## 3.1.0
 - Updated deprecated members, minor housekeeping
+
+## 4.0.0
+- Removed bloat from collections
+- Added MapNotifier
