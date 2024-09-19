@@ -6,5 +6,6 @@ library;
 export 'src/j_util_base.dart';
 // export 'src/extensions.dart';
 export 'src/collections.dart';
+export 'src/collection_notifiers.dart';
 export 'src/collection_extensions.dart';
 // export 'src/types.dart';

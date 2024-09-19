@@ -403,42 +403,42 @@ class SlidingActionButton extends StatelessWidget {
           return switch (anchorFromValues) {
             AnchorAlignmentOrdinal.top => Positioned(
                 // right: /* 4.0 +  */offset.dx,
-                top: /* 4.0 +  */ offset.dy,
+                top: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               ),
             AnchorAlignmentOrdinal.bottom => Positioned(
                 // right: /* 4.0 +  */offset.dx,
-                bottom: /* 4.0 +  */ offset.dy,
+                bottom: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               ),
             AnchorAlignmentOrdinal.left => Positioned(
-                left: /* 4.0 +  */ offset.dx,
+                left: /* 4.0 +  */ offset.dx.abs(),
                 // top: /* 4.0 +  */offset.dy,
                 child: root,
               ),
             AnchorAlignmentOrdinal.right => Positioned(
-                right: /* 4.0 +  */ offset.dx,
+                right: /* 4.0 +  */ offset.dx.abs(),
                 // top: /* 4.0 +  */offset.dy,
                 child: root,
               ),
             AnchorAlignmentOrdinal.topLeft => Positioned(
-                left: /* 4.0 +  */ offset.dx,
-                top: /* 4.0 +  */ offset.dy,
+                left: /* 4.0 +  */ offset.dx.abs(),
+                top: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               ),
             AnchorAlignmentOrdinal.bottomLeft => Positioned(
-                left: /* 4.0 +  */ offset.dx,
-                bottom: /* 4.0 +  */ offset.dy,
+                left: /* 4.0 +  */ offset.dx.abs(),
+                bottom: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               ),
             AnchorAlignmentOrdinal.bottomRight => Positioned(
-                right: /* 4.0 +  */ offset.dx,
-                bottom: /* 4.0 +  */ offset.dy,
+                right: /* 4.0 +  */ offset.dx.abs(),
+                bottom: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               ),
             AnchorAlignmentOrdinal.topRight => Positioned(
-                right: /* 4.0 +  */ offset.dx,
-                top: /* 4.0 +  */ offset.dy,
+                right: /* 4.0 +  */ offset.dx.abs(),
+                top: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               )
           };
@@ -446,42 +446,42 @@ class SlidingActionButton extends StatelessWidget {
           return switch (anchorFromValues.quadrantsContaining) {
             Quadrants.oneAndTwo => Positioned(
                 // right: /* 4.0 +  */offset.dx,
-                top: /* 4.0 +  */ offset.dy,
+                top: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               ),
             Quadrants.threeAndFour => Positioned(
                 // right: /* 4.0 +  */offset.dx,
-                bottom: /* 4.0 +  */ offset.dy,
+                bottom: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               ),
             Quadrants.twoAndThree => Positioned(
-                left: /* 4.0 +  */ offset.dx,
+                left: /* 4.0 +  */ offset.dx.abs(),
                 // top: /* 4.0 +  */offset.dy,
                 child: root,
               ),
             Quadrants.fourAndOne => Positioned(
-                right: /* 4.0 +  */ offset.dx,
+                right: /* 4.0 +  */ offset.dx.abs(),
                 // top: /* 4.0 +  */offset.dy,
                 child: root,
               ),
             Quadrants.two => Positioned(
-                left: /* 4.0 +  */ offset.dx,
-                top: /* 4.0 +  */ offset.dy,
+                left: /* 4.0 +  */ offset.dx.abs(),
+                top: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               ),
             Quadrants.three => Positioned(
-                left: /* 4.0 +  */ offset.dx,
-                bottom: /* 4.0 +  */ offset.dy,
+                left: /* 4.0 +  */ offset.dx.abs(),
+                bottom: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               ),
             Quadrants.four => Positioned(
-                right: /* 4.0 +  */ offset.dx,
-                bottom: /* 4.0 +  */ offset.dy,
+                right: /* 4.0 +  */ offset.dx.abs(),
+                bottom: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               ),
             Quadrants.one => Positioned(
-                right: /* 4.0 +  */ offset.dx,
-                top: /* 4.0 +  */ offset.dy,
+                right: /* 4.0 +  */ offset.dx.abs(),
+                top: /* 4.0 +  */ offset.dy.abs(),
                 child: root,
               )
           };

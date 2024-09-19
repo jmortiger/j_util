@@ -135,7 +135,22 @@ class CustomPriorityQueue<T> {
   // }
 }
 
-class PriorityQueue<T extends Comparable<T>> {
+class ComparableWrapper<T> implements Comparable<T> {
+  final T $;
+  final Comparator<T> comparator;
+
+  const ComparableWrapper({required this.$, required this.comparator});
+
+  @override
+  int compareTo(T other) => comparator($, other);
+}
+
+int comparatorGeneric<T extends Comparable<T>>(T a, T b) => a.compareTo(b);
+
+@Deprecated("Use PriorityQueueFlat")
+typedef PriorityQueue<T extends Comparable<T>> = PriorityQueueFlat<T>;
+
+class PriorityQueueFlat<T extends Comparable<T>> {
   late final List<T> queue; // = [];
   // final Late<List<T>> _queueToList = Late();
   // List<T> get squashedList => _queueToList.isAssigned
@@ -143,7 +158,7 @@ class PriorityQueue<T extends Comparable<T>> {
   //     : (_queueToList.item = queue.fold(
   //         <T>[], (previousValue, element) => previousValue..addAll(element)));
 
-  PriorityQueue(List<T> collection, [bool mutateProvided = false]) {
+  PriorityQueueFlat(List<T> collection, [bool mutateProvided = false]) {
     queue = (mutateProvided ? collection : collection.sublist(0))..sort();
     // // queue.add([collection.first]);
     // for (var element in collection) {
@@ -485,7 +500,7 @@ class PriorityQueue<T extends Comparable<T>> {
       };
 
   /// The return value will always a valid index in the post-insertion [collection].
-  int insert(T element, {int start = 0, int? end}) => PriorityQueue.insertInto(
+  int insert(T element, {int start = 0, int? end}) => insertInto(
         collection: queue,
         item: element,
         start: start,
@@ -497,36 +512,433 @@ class PriorityQueue<T extends Comparable<T>> {
   // }
 }
 
-class _PriorityQueue<T extends Comparable<T>> /*  extends Iterable<T> */ {
+/* class PriorityQueueNested<T extends Comparable<T>> {
+  late final List<List<T>> queue;
+  final Comparator<T>? _comparator;
+  Comparator<T> get comparator => _comparator ?? (T a, T b) => a.compareTo(b);
+
+  PriorityQueueNested(
+    List<T> collection, {
+    bool mutateProvided = false,
+    Comparator<T>? comparator,
+  }) : _comparator = comparator {
+    queue = collection.isEmpty
+        ? <List<T>>[[]]
+        : (collection.isEmpty
+                ? <T>[]
+                : ((mutateProvided ? collection : collection.sublist(0))
+                  ..sort(comparator)))
+            .fold(
+                [[]],
+                (p, e) => p.last.isEmpty
+                    ? (p..last.add(e))
+                    : this.comparator(p.last.last, e) == 0
+                        ? (p..last.add(e))
+                        : (p..add([e])));
+  }
+  static List<List<T>> sortAndUnflatten<T>(
+    List<T> list, {
+    bool mutateProvided = false,
+    Comparator<T>? comparator,
+  }) =>
+      unflatten(list.isEmpty
+          ? <T>[]
+          : ((mutateProvided ? list : list.sublist(0))..sort(comparator)));
+
+  static List<List<T>> unflatten<T>(
+    List<T> list, [
+    Comparator<T>? comparator,
+  ]) =>
+      list.isEmpty
+          ? <List<T>>[[]]
+          : list.fold(
+              [[]],
+              (p, e) => p.last.isEmpty
+                  ? (p..last.add(e))
+                  : (comparator?.call(p.last.last, e) ??
+                              (p.last.last as Comparable<T>).compareTo(e)) ==
+                          0
+                      ? (p..last.add(e))
+                      : (p..add([e])));
+
+  /// [indexBetween] is always greater than [indexOn] unless the desired index
+  /// is past [start], in which case [indexOn] will be [start] and
+  /// [indexBetween] will be [start] - 1. [indexOn] will always be a valid
+  /// index in [collection], even before [indFound] is called and (potentially)
+  /// modifies [collection]. If and only if the search wanted to expand past
+  /// [end], the desired index will be [indexBetween], which will = [end], and
+  /// [indexOn] will be [end] - 1, indicating the last valid index
+  /// pre-[indFound] modification to [collection], and [indexBetween] indicates
+  /// it wanted to expand beyond.
+  static void _defaultInsertion<T>({
+    required List<T> collection,
+    required T item,
+    required int index,
+    int? indexBetween,
+    int? start,
+    int? end,
+  }) {
+    start ??= 0;
+    end ??= collection.length;
+    assert((indexBetween != null
+            ? indexBetween != index &&
+                (indexBetween > index || indexBetween <= start)
+            : true) &&
+        index >= start &&
+        index < end);
+    if (indexBetween == collection.length) {
+      collection.add(item);
+    } else {
+      collection.insert(index, item);
+    }
+  }
+
+  /// [indexBetween] is always greater than [indexOn] unless the desired index
+  /// is past [start], in which case [indexOn] will be [start] and
+  /// [indexBetween] will be [start] - 1. [indexOn] will always be a valid
+  /// index in [collection], even before [indFound] is called and (potentially)
+  /// modifies [collection]. If and only if the search wanted to expand past
+  /// [end], the desired index will be [indexBetween], which will = [end], and
+  /// [indexOn] will be [end] - 1, indicating the last valid index
+  /// pre-[indFound] modification to [collection], and [indexBetween] indicates
+  /// it wanted to expand beyond.
+  static ({int indexOn, int? indexBetween})
+      binarySearch<T extends Comparable<T>>({
+    required List<T> collection,
+    required T item,
+    Function<T>({
+      required List<T> collection,
+      required T item,
+      required int index,
+      int? indexBetween,
+      int? start,
+      int? end,
+    })? indFound,
+    int start = 0,
+    int? end,
+  }) =>
+          customBinarySearch(
+            collection: collection,
+            item: item,
+            comparator: (a, b) => a.compareTo(b),
+            indFound: indFound,
+            start: start,
+            end: end ?? collection.length,
+          );
+
+  /// [indexBetween] is always greater than [indexOn] unless the desired index
+  /// is past [start], in which case [indexOn] will be [start] and
+  /// [indexBetween] will be [start] - 1. [indexOn] will always be a valid
+  /// index in [collection], even before [indFound] is called and (potentially)
+  /// modifies [collection]. If and only if the search wanted to expand past
+  /// [end], the desired index will be [indexBetween], which will = [end], and
+  /// [indexOn] will be [end] - 1, indicating the last valid index
+  /// pre-[indFound] modification to [collection], and [indexBetween] indicates
+  /// it wanted to expand beyond.
+  static ({int indexOn, int? indexBetween}) customBinarySearch<T>({
+    required List<T> collection,
+    required T item,
+    Function<T>({
+      required List<T> collection,
+      required T item,
+      required int index,
+      int? indexBetween,
+      int? start,
+      int? end,
+    })? indFound /*  = _defaultInsertion */,
+    int start = 0,
+    int? end,
+    required Comparator<T> comparator,
+  }) {
+    end ??= collection.length;
+    var i = end + start ~/ 2;
+    var placed = false;
+    // TODO: Show-off recursive skills
+    while (!placed) {
+      var comp = comparator(item, collection[i]);
+      switch (comp) {
+        case < 0:
+          if (i == start) {
+            indFound?.call(
+              collection: collection,
+              item: item,
+              index: start,
+              indexBetween: -1,
+              start: start,
+              end: end,
+            );
+            return (indexOn: start, indexBetween: -1);
+          } else {
+            var indNext = i - 1;
+            switch (comparator(item, collection[indNext])) {
+              case == 0:
+                indFound?.call(
+                  collection: collection,
+                  item: item,
+                  index: indNext,
+                  start: start,
+                  end: end,
+                );
+                return (indexOn: indNext, indexBetween: null);
+              case > 0:
+                indFound?.call(
+                  collection: collection,
+                  item: item,
+                  index: i,
+                  indexBetween: indNext,
+                  start: start,
+                  end: end,
+                );
+                return (indexOn: i, indexBetween: indNext);
+              // case < 0:
+              default:
+                if (indNext == start) {
+                  indFound?.call(
+                    collection: collection,
+                    item: item,
+                    index: start,
+                    indexBetween: -1,
+                    start: start,
+                    end: end,
+                  );
+                  return (indexOn: start, indexBetween: -1);
+                }
+                i = indNext ~/ 2;
+                break;
+            }
+          }
+          break;
+        case > 0:
+          if (i == end - 1) {
+            indFound?.call(
+              collection: collection,
+              item: item,
+              index: i,
+              indexBetween: end,
+              start: start,
+              end: end,
+            );
+            return (indexOn: i, indexBetween: end);
+          } else {
+            var indNext = i + 1;
+            switch (comparator(item, collection[indNext])) {
+              case == 0:
+                indFound?.call(
+                  collection: collection,
+                  item: item,
+                  index: indNext,
+                  start: start,
+                  end: end,
+                );
+                return (indexOn: indNext, indexBetween: null);
+              case < 0:
+                indFound?.call(
+                  collection: collection,
+                  item: item,
+                  index: i,
+                  indexBetween: indNext,
+                  start: start,
+                  end: end,
+                );
+                return (indexOn: i, indexBetween: indNext);
+              // case > 0:
+              default:
+                if (indNext == end - 1) {
+                  indFound?.call(
+                    collection: collection,
+                    item: item,
+                    index: indNext,
+                    indexBetween: indNext + 1,
+                    start: start,
+                    end: end,
+                  );
+                  return (indexOn: indNext, indexBetween: indNext + 1);
+                }
+                i = (indNext + end) ~/ 2;
+                break;
+            }
+          }
+          break;
+        // case == 0:
+        default:
+          indFound?.call(
+            collection: collection,
+            item: item,
+            index: i,
+            start: start,
+            end: end,
+          );
+          return (indexOn: i, indexBetween: null);
+      }
+    }
+  }
+
+  // static int customInsertSortedList<T>({
+  //   required List<T> collection,
+  //   required List<T> items,
+  //   Function<T>({
+  //     required List<T> collection,
+  //     required T item,
+  //     required int index,
+  //     int? indexBetween,
+  //     int? start,
+  //     int? end,
+  //   })? indFound = _defaultInsertion,
+  //   int start = 0,
+  //   int? end,
+  //   required Comparator<T> comparator,
+  // }) {
+  //   end ??= collection.length;
+  //   if (end - start == 1) {
+  //     return customInsertInto(
+  //       collection: collection,
+  //       item: items[start],
+  //       comparator: comparator,
+  //       end: end,
+  //       start: start,
+  //       indFound: indFound,
+  //     );
+  //   } else {
+  //     var (indexOn:low, indexBetween:high) = customBinarySearch(
+  //       collection: collection,
+  //       item: collection.removeAt(end - 1),
+  //       comparator: comparator,
+  //       end: end,
+  //       start: start,
+  //       indFound: indFound,
+  //     );
+  //     // TODO: FINISH. Use start and end
+  //   }
+  //   binarySearch(
+  //     collection: collection,
+  //     item: items,
+  //     start: start,
+  //     end: end,
+  //     indFound: indFound,
+  //   );
+  // }
+
+  /// [indexBetween] is always greater than [index] unless the desired index
+  /// is past [start], in which case [index] will be [start] and
+  /// [indexBetween] will be [start] - 1. [index] will always be a valid
+  /// index in [collection], even before [indFound] is called and (potentially)
+  /// modifies [collection]. If and only if the search wanted to expand past
+  /// [end], the desired index will be [indexBetween], which will = [end], and
+  /// [index] will be [end] - 1, indicating the last valid index
+  /// pre-[indFound] modification to [collection], and [indexBetween] indicates
+  /// it wanted to expand beyond.
+  static int insertInto<T extends Comparable<T>>({
+    required List<T> collection,
+    required T item,
+    // Function<T>({
+    //   required List<T> collection,
+    //   required T item,
+    //   required int index,
+    //   int? indexBetween,
+    //   int? start,
+    //   int? end,
+    // })? indFound/*  = _defaultInsertion */,
+    int start = 0,
+    int? end,
+  }) =>
+      customInsertInto(
+        collection: collection,
+        item: item,
+        comparator: (a, b) => a.compareTo(b),
+        indFound: _defaultInsertion,
+        start: start,
+        end: end ?? collection.length,
+      );
+
+  /// [indexBetween] is always greater than [index] unless the desired index
+  /// is past [start], in which case [index] will be [start] and
+  /// [indexBetween] will be [start] - 1. [index] will always be a valid
+  /// index in [collection], even before [indFound] is called and (potentially)
+  /// modifies [collection]. If and only if the search wanted to expand past
+  /// [end], the desired index will be [indexBetween], which will = [end], and
+  /// [index] will be [end] - 1, indicating the last valid index
+  /// pre-[indFound] modification to [collection], and [indexBetween] indicates
+  /// it wanted to expand beyond.
+  static int customInsertInto<T>({
+    required List<T> collection,
+    required T item,
+    Function<T>({
+      required List<T> collection,
+      required T item,
+      required int index,
+      int? indexBetween,
+      int? start,
+      int? end,
+    })? indFound = _defaultInsertion,
+    int start = 0,
+    int? end,
+    required Comparator<T> comparator,
+  }) =>
+      switch (customBinarySearch(
+        collection: collection,
+        item: item,
+        comparator: comparator,
+        indFound: indFound,
+        start: start,
+        end: end ?? collection.length,
+      )) {
+        // TODO: Does the first fire?
+        (indexOn: int _, :int indexBetween)
+            when indexBetween == (end ?? collection.length - 1) =>
+          indexBetween,
+        (indexOn: int _, :int? indexBetween)
+            when indexBetween == (end ?? collection.length - 1) =>
+          indexBetween!,
+        (:int indexOn, indexBetween: int? _) => indexOn,
+      };
+
+  /// The return value will always a valid index in the post-insertion [collection].
+  int insert(T element, {int start = 0, int? end}) => insertInto(
+        collection: queue,
+        item: element,
+        start: start,
+        end: end ?? queue.length,
+      );
+  // TODO: IMPLEMENT
+  // static void getSortedByPriority<T>(List<T> collection) {
+  //   collection
+  // }
+} */
+
+class _PriorityQueue<
+    T /*  extends Comparable<T> */ > /*  extends Iterable<T> */ {
   // @override
   // // TODO: implement iterator
   // Iterator<T> get iterator => throw UnimplementedError();
+  final Comparator<T> comparator;
 
+  /// Used to sort elements at the same level of priority with [comparator].
+  final Comparator<T>? secondaryComparator;
   final List<List<T>> queue = [];
-  final LateFinal<List<T>> _queueToList = LateFinal();
-  List<T> get squashedList => _queueToList.isAssigned
-      ? _queueToList.$
-      : (_queueToList.$ = queue.fold(
-          <T>[], (previousValue, element) => previousValue..addAll(element)));
+  List<T> get squashedList => queue
+      .fold(<T>[], (previousValue, element) => previousValue..addAll(element));
 
-  _PriorityQueue(List<T> collection) {
+  _PriorityQueue(List<T> collection, this.comparator,
+      [this.secondaryComparator]) {
     // collection.sort(/* (a, b) => b.compareTo(a) */);
     // var queue = <List<T>>[];
-    queue.add([collection.first]);
+    queue.add(collection.isEmpty ? [] : [collection.first]);
     for (var element in collection) {
       if (element == queue[0][0]) continue;
       var i = queue.length ~/ 2;
       var placed = false;
       // TODO: Show-off recursive skills
       while (!placed) {
-        var comp = element.compareTo(queue[i][0]);
+        var comp = comparator(element, queue[i][0]);
+        // var comp = element.compareTo(queue[i][0]);
         switch (comp) {
           case < 0:
             if (i == 0) {
               queue.insert(0, [element]);
               placed = true;
             } else {
-              var compNext = element.compareTo(queue[i - 1][0]);
+              // var compNext = element.compareTo(queue[i - 1][0]);
+              var compNext = comparator(element, queue[i - 1][0]);
               if (compNext == 0) {
                 queue[i - 1].add(element);
                 placed = true;
@@ -543,7 +955,8 @@ class _PriorityQueue<T extends Comparable<T>> /*  extends Iterable<T> */ {
               queue.add([element]);
               placed = true;
             } else {
-              var compNext = element.compareTo(queue[i + 1][0]);
+              // var compNext = element.compareTo(queue[i + 1][0]);
+              var compNext = comparator(element, queue[i + 1][0]);
               if (compNext == 0) {
                 queue[i + 1].add(element);
                 placed = true;
@@ -565,8 +978,16 @@ class _PriorityQueue<T extends Comparable<T>> /*  extends Iterable<T> */ {
             break;
         }
       }
+      sortBySecondaryComparator();
     }
     // this.queue = List.from(queue, growable: false);
+  }
+  void sortBySecondaryComparator() {
+    if (secondaryComparator != null) {
+      for (final e in queue) {
+        e.sort(secondaryComparator);
+      }
+    }
   }
   // TODO: IMPLEMENT
   // static void getSortedByPriority<T>(List<T> collection) {
@@ -578,19 +999,20 @@ class CoarsePriorityQueue<T extends IComparable<T>>
     implements _PriorityQueue<T> {
   // CoarsePriorityQueue(super.collection);
   @override
+  Comparator<T> get comparator => (T a, T b) => a.compareTo(b);
+  @override
+  final Comparator<T>? secondaryComparator;
+  @override
   final List<List<T>> queue = [];
   @override
-  final LateFinal<List<T>> _queueToList = LateFinal();
-  @override
-  List<T> get squashedList => _queueToList.isAssigned
-      ? _queueToList.$
-      : (_queueToList.$ = queue.fold(
-          <T>[], (previousValue, element) => previousValue..addAll(element)));
+  List<T> get squashedList => queue
+      .fold(<T>[], (previousValue, element) => previousValue..addAll(element));
 
-  CoarsePriorityQueue(List<T> collection) /*  : super(collection) */ {
+  CoarsePriorityQueue(List<T> collection,
+      [this.secondaryComparator]) /*  : super(collection) */ {
     // collection.sort(/* (a, b) => b.compareTo(a) */);
     // var queue = <List<T>>[];
-    queue.add([collection.first]);
+    queue.add(collection.isEmpty ? [] : [collection.first]);
     for (var element in collection) {
       if (element == queue[0][0]) continue;
       var i = queue.length ~/ 2;
@@ -644,7 +1066,16 @@ class CoarsePriorityQueue<T extends IComparable<T>>
         }
       }
     }
+    sortBySecondaryComparator();
     // this.queue = List.from(queue, growable: false);
+  }
+  @override
+  void sortBySecondaryComparator() {
+    if (secondaryComparator != null) {
+      for (final e in queue) {
+        e.sort(secondaryComparator);
+      }
+    }
   }
   // TODO: IMPLEMENT
   // static void getSortedByPriority<T>(List<T> collection) {
@@ -652,160 +1083,97 @@ class CoarsePriorityQueue<T extends IComparable<T>>
   // }
 }
 
-class SetNotifier<T> extends ChangeNotifier with SetMixin<T> {
-  final Set<T> _backing;
-
-  /// Creates an empty Set.
-  SetNotifier() : _backing = <T>{};
-
-  /// Creates a Set that contains all elements.
-  SetNotifier.from(Iterable elements) : _backing = Set.from(elements);
-
-  /// Creates an empty identity Set.
-  SetNotifier.identity() : _backing = Set.identity();
-
-  /// Creates a Set from elements.
-  SetNotifier.of(Iterable<T> elements) : _backing = Set.of(elements);
-
-  /// Creates an unmodifiable Set from elements.
-  SetNotifier.unmodifiable(Iterable<T> elements)
-      : _backing = Set.unmodifiable(elements);
+class StandardPriorityQueue<T> implements _PriorityQueue<T> {
+  // StandardPriorityQueue(super.collection);
   @override
-  bool add(T value, [bool notifyRegardless = false]) {
-    var t = _backing.add(value);
-    if (t || notifyRegardless) {
-      notifyListeners();
+  final Comparator<T> comparator;
+  @override
+  final Comparator<T>? secondaryComparator;
+  @override
+  final List<List<T>> queue = [];
+  @override
+  List<T> get squashedList => queue
+      .fold(<T>[], (previousValue, element) => previousValue..addAll(element));
+
+  StandardPriorityQueue(
+    List<T> collection,
+    this.comparator, [
+    this.secondaryComparator,
+  ]) /*  : super(collection) */ {
+    // collection.sort(/* (a, b) => b.compareTo(a) */);
+    // var queue = <List<T>>[];
+    queue.add(collection.isEmpty ? [] : [collection.first]);
+    for (var element in collection) {
+      if (element == queue[0][0]) continue;
+      var i = queue.length ~/ 2;
+      var placed = false;
+      // TODO: Show-off recursive skills
+      while (!placed) {
+        var comp = comparator(element, queue[i][0]);
+        // var comp = element.compareTo(queue[i][0]);
+        switch (comp) {
+          case < 0:
+            if (i == 0) {
+              queue.insert(0, [element]);
+              placed = true;
+            } else {
+              // var compNext = element.compareTo(queue[i - 1][0]);
+              var compNext = comparator(element, queue[i - 1][0]);
+              if (compNext == 0) {
+                queue[i - 1].add(element);
+                placed = true;
+              } else if (compNext > 0) {
+                queue[i].add(element);
+                placed = true;
+              } else {
+                i ~/= 2;
+              }
+            }
+            break;
+          case > 0:
+            if (i == queue.length - 1) {
+              queue.add([element]);
+              placed = true;
+            } else {
+              var compNext = comparator(element, queue[i + 1][0]);
+              // var compNext = element.compareTo(queue[i + 1][0]);
+              if (compNext == 0) {
+                queue[i + 1].add(element);
+                placed = true;
+              } else if (compNext < 0) {
+                queue[i].add(element);
+                placed = true;
+              } else if (i == queue.length - 2) {
+                i = queue.length - 1;
+                break;
+              } else {
+                i = (i + queue.length /*  - 1 */) ~/ 2;
+              }
+            }
+            break;
+          case == 0:
+          default:
+            queue[i].add(element);
+            placed = true;
+            break;
+        }
+      }
     }
-    return t;
+    sortBySecondaryComparator();
+    // this.queue = List.from(queue, growable: false);
   }
-
   @override
-  bool contains(Object? element) => _backing.contains(element);
-
-  @override
-  void clear() {
-    _backing.clear();
-    notifyListeners();
-  }
-
-  @override
-  Iterator<T> get iterator => _backing.iterator;
-
-  @override
-  int get length => _backing.length;
-
-  @override
-  T? lookup(Object? element) => _backing.lookup(element);
-
-  @override
-  bool remove(Object? value, [bool notifyRegardless = false]) {
-    var t = _backing.remove(value);
-    if (t || notifyRegardless) {
-      notifyListeners();
+  void sortBySecondaryComparator() {
+    if (secondaryComparator != null) {
+      for (final e in queue) {
+        e.sort(secondaryComparator);
+      }
     }
-    return t;
   }
-
-  @override
-  Set<T> toSet() {
-    return _backing.toSet();
-  }
-}
-
-class ListNotifier<T> extends ChangeNotifier with ListMixin<T> {
-  final List<T> _backing;
-
-  ListNotifier() : _backing = <T>[];
-  // ListNotifier.empty({bool growable = false}) : this.empty1(growable);
-  ListNotifier.empty([bool growable = false])
-      : _backing = List.empty(growable: growable);
-  ListNotifier.filled(int length, T fill, [bool growable = false])
-      : _backing = List.filled(length, fill, growable: growable);
-  ListNotifier.from(Iterable<T> elements, [bool growable = true])
-      : _backing = List.from(elements, growable: growable);
-  ListNotifier.generate(int length, T Function(int) generator,
-      [bool growable = true])
-      : _backing = List.generate(length, generator, growable: growable);
-  ListNotifier.of(Iterable<T> elements, [bool growable = true])
-      : _backing = List.of(elements, growable: growable);
-
-  @override
-  int get length => _backing.length;
-  @override
-  set length(int v) {
-    _backing.length = v;
-    notifyListeners();
-  }
-
-  @override
-  T operator [](int index) => _backing[index];
-
-  @override
-  void operator []=(int index, T value) {
-    _backing[index] = value;
-    notifyListeners();
-  }
-
-  /// Default requires nullable type
-  @override
-  void add(T element) {
-    _backing.add(element);
-  }
-}
-
-extension ListToNotifier<T> on List<T> {
-  ListNotifier<T> toNotifier() => ListNotifier.of(this);
-}
-
-class MapNotifier<K, V> extends ChangeNotifier with MapMixin<K, V> {
-  final Map<K, V> _map;
-
-  MapNotifier() : _map = <K, V>{};
-  MapNotifier.from(Map map) : _map = Map<K, V>.from(map);
-  MapNotifier.fromEntries(Iterable<MapEntry<K, V>> entries)
-      : _map = Map<K, V>.fromEntries(entries);
-  MapNotifier.fromIterable(
-    Iterable iterable, {
-    K Function(dynamic element)? key,
-    V Function(dynamic element)? value,
-  }) : _map = Map<K, V>.fromIterable(iterable, key: key, value: value);
-  MapNotifier.fromIterables(Iterable<K> keys, Iterable<V> values)
-      : _map = Map<K, V>.fromIterables(keys, values);
-  MapNotifier.identity() : _map = Map<K, V>.identity();
-  MapNotifier.of(Map<K, V> map) : _map = Map<K, V>.of(map);
-  MapNotifier.unmodifiable(Map map) : _map = Map<K, V>.unmodifiable(map);
-
-  @override
-  V? operator [](Object? key) => _map[key];
-
-  @override
-  void operator []=(K key, V value) {
-    _map[key] = value;
-    notifyListeners();
-  }
-
-  @override
-  void clear() {
-    _map.clear();
-    notifyListeners();
-  }
-
-  @override
-  Iterable<K> get keys => _map.keys;
-
-  @override
-  V? remove(Object? key, [bool checkForKey = true]) {
-    V? doIt() {
-      final r = _map.remove(key);
-      notifyListeners();
-      return r;
-    }
-
-    if (checkForKey) {
-      return _map.containsKey(key) ? doIt() : null;
-    }
-    return doIt();
-  }
+  // TODO: IMPLEMENT
+  // static void getSortedByPriority<T>(List<T> collection) {
+  //   collection
+  // }
 }
 
 @Deprecated("Use Precondition")
