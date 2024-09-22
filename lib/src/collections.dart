@@ -1,22 +1,23 @@
 import 'dart:collection';
 
-import 'package:flutter/foundation.dart';
-import 'package:j_util/src/types.dart' show LateFinal;
+// import 'package:flutter/foundation.dart';
+// import 'package:j_util/src/types.dart' show LateFinal;
 
 typedef ReduceConditional<T, U> = bool Function(
-    U accumulator, T elem, int index, Iterable<T> list);
-typedef Reducer<T, U> = U Function(
-    U accumulator, T elem, int index, Iterable<T> list);
+    U accumulator, T e, int i, Iterable<T> list);
+typedef Reducer<T, U> = U Function(U accumulator, T e, int i, Iterable<T> list);
 typedef ConditionalReducer<T, U> = (U, bool) Function(
-    U accumulator, T elem, int index, Iterable<T> list);
-typedef Mapper<T, U> = U Function(T elem, int index, Iterable<T> list);
-typedef MapperSparse<T, U> = U Function(T elem, Iterable<T> list);
+    U accumulator, T e, int i, Iterable<T> list);
+typedef Mapper<T, U> = U Function(T e, int i, Iterable<T> list);
+typedef MapperSparse<T, U> = U Function(T e, Iterable<T> list);
 
+/// Creates an iterable that lazily applies a mapping function that accepts
+/// the index and original iterable as parameters.
 class IterableInjector<From, To> extends Iterable<To> {
   final Iterable<From> _baseIterable;
   final Mapper<From, To> _mapper;
 
-  IterableInjector({
+  const IterableInjector({
     required Iterable<From> baseIterable,
     required Mapper<From, To> mapper,
   })  : _baseIterable = baseIterable,
@@ -36,6 +37,7 @@ class IteratorInjector<From, To> implements Iterator<To> {
   IteratorInjector({required Iterable<From> baseIterable, required this.mapper})
       : _baseIterable = baseIterable;
   int _index = -1;
+  int get index => _index;
   To? _current;
   @override
   To get current =>
@@ -45,6 +47,49 @@ class IteratorInjector<From, To> implements Iterator<To> {
   bool moveNext() {
     this._index++;
     return _currentIterator.moveNext();
+  }
+}
+
+class FilterIterableInjector<From> extends Iterable<From> {
+  final Iterable<From> _baseIterable;
+  final Mapper<From, bool> _mapper;
+
+  const FilterIterableInjector({
+    required Iterable<From> baseIterable,
+    required Mapper<From, bool> mapper,
+  })  : _baseIterable = baseIterable,
+        _mapper = mapper;
+  @override
+  FilterIteratorInjector<From> get iterator =>
+      FilterIteratorInjector(baseIterable: _baseIterable, mapper: _mapper);
+}
+
+class FilterIteratorInjector<From> implements Iterator<From> {
+  final Iterable<From> _baseIterable;
+  Iterator<From>? _currentIteratorStore;
+  Iterator<From> get _currentIterator =>
+      _currentIteratorStore ??= _baseIterable.iterator;
+  final Mapper<From, bool> mapper;
+
+  FilterIteratorInjector({
+    required Iterable<From> baseIterable,
+    required this.mapper,
+  }) : _baseIterable = baseIterable;
+  int _index = -1;
+  int get index => _index;
+  From? _current;
+  @override
+  From get current => _current ??= _currentIterator.current;
+
+  @override
+  bool moveNext() {
+    bool r;
+    do {
+      this._index++;
+      r = _currentIterator.moveNext();
+    } while (r &&
+        !mapper(_current = _currentIterator.current, _index, _baseIterable));
+    return r;
   }
 }
 

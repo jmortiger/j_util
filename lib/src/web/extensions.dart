@@ -39,7 +39,7 @@ extension MethodJumpTable on http.Client {
     Object? body,
     dc.Encoding? encoding,
   }) =>
-      (method.canHaveBody())
+      (method.allowsBody)
           ? jumper(method)(
               url,
               headers: headers,

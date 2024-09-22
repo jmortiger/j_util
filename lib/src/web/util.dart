@@ -50,7 +50,9 @@ enum HttpMethod with PrettyPrintEnum {
         "PATCH" => patch,
         _ => throw UnsupportedError("Unsupported method"),
       };
-  bool canHaveBody() => this == HttpMethod.get || this == HttpMethod.head;
+  @Deprecated("Use allowsBody")
+  bool canHaveBody() => this != HttpMethod.get && this != HttpMethod.head;
+  bool get allowsBody => this != HttpMethod.get && this != HttpMethod.head;
 
   @override
   String toString() => nameUpper;

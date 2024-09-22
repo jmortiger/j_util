@@ -96,11 +96,8 @@ class _WPullTabState extends State<WPullTab>
   void _toggle() {
     setState(() {
       _expanded = !_expanded;
-      if (_expanded) {
-        _controller.forward();
-      } else {
-        _controller.reverse();
-      }
+      final tf = _expanded ? _controller.forward() : _controller.reverse();
+      tf.ignore();
     });
     widget.onToggle?.call(_expanded);
   }

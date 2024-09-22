@@ -61,19 +61,20 @@ void main() {
       assert([5, 6, 7, 8, 9].toString() == l5To9growable.toString());
       assert([5, 6, 7, 8, 9].toString() == l5To9notGrowable.toString());
     });
-    group("List.filter extension", () {
+    group("Filter extension", () {
       test("Don't Mutate Non Growable", () {
-        expect(l0To4notGrowable.filter((e, i, list) => e % 2 == 0), [0, 2, 4]);
+        expect(
+            l0To4notGrowable.whereList((e, i, list) => e % 2 == 0), [0, 2, 4]);
       });
       test("Mutate Growable; fail silently", () {
-        var ret = l0To4growable.filter((e, i, list) => e % 2 == 0,
+        var ret = l0To4growable.whereList((e, i, list) => e % 2 == 0,
             mutate: true, failSilently: true);
         expect(ret, [0, 2, 4]);
         expect(l0To4growable, [0, 2, 4]);
         expect(l0To4growable, isNot(same(ret)));
       });
       test("Mutate Growable; don't fail silently", () {
-        var ret = l0To4growable.filter((e, i, list) => e % 2 == 0,
+        var ret = l0To4growable.whereList((e, i, list) => e % 2 == 0,
             mutate: true, failSilently: false);
         expect(ret, [0, 2, 4]);
         expect(l0To4growable, [0, 2, 4]);
@@ -81,8 +82,12 @@ void main() {
       });
       test("Mutate Non Growable; fail silently", () {
         expect(
-            l0To4notGrowable.filter((e, i, list) => e % 2 == 0,
+            l0To4notGrowable.whereList((e, i, list) => e % 2 == 0,
                 mutate: true, failSilently: true),
+            [0, 2, 4]);
+      });
+      test("whereFull", () {
+        expect(l0To4notGrowable.whereFull((e, i, list) => e % 2 == 0).toList(),
             [0, 2, 4]);
       });
     });

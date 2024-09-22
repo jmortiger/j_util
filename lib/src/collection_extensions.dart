@@ -9,20 +9,14 @@ extension ListIterators<T> on List<T> {
   /// 1. Allows the current index and the list as a whole to affect the outcome
   /// 1. Returns a [List] instead of an [Iterable]
   List<U> mapAsList<U>(
-    U Function(T e, int index, List<T> list) mapper, [
+    U Function(T e, int index, List<T> list) mapper, {
     bool growable = true,
-  ]) {
-    // final r = <U>[];
-    // for (int i = 0; i < length; i++) {
-    //   r.add(mapper(this[i], i, this));
-    // }
-    // return r;
-    return List<U>.generate(
-      length,
-      (index) => mapper(this[index], index, this),
-      growable: growable,
-    );
-  }
+  }) =>
+      List<U>.generate(
+        length,
+        (index) => mapper(this[index], index, this),
+        growable: growable,
+      );
 
   void mutate(
     T Function(T e, int i, List<T> l) mapper, [
@@ -52,7 +46,6 @@ extension ListIterators<T> on List<T> {
     }
   }
 
-  ///
   /// [failSilently] handles non-growable lists.
   ///
   /// If [mutate] and:
@@ -61,7 +54,23 @@ extension ListIterators<T> on List<T> {
   /// * ![failSilently] -> don't create new list, mutate and return this list, no error handling.
   ///
   /// Else JS behavior; create new list, mutate only new list, return new list.
+  @Deprecated("whereList better fits naming conventions.")
   List<T> filter(
+    bool Function(T e, int i, List<T> l) compareFunction, {
+    bool mutate = false,
+    bool failSilently = false,
+  }) =>
+      whereList(compareFunction, mutate: mutate, failSilently: failSilently);
+
+  /// [failSilently] handles non-growable lists.
+  ///
+  /// If [mutate] and:
+  ///
+  /// * [failSilently] -> create new list, mutate this list and new list, return copy.
+  /// * ![failSilently] -> don't create new list, mutate and return this list, no error handling.
+  ///
+  /// Else JS behavior; create new list, mutate only new list, return new list.
+  List<T> whereList(
     bool Function(T e, int i, List<T> l) compareFunction, {
     bool mutate = false,
     bool failSilently = false,
@@ -94,36 +103,73 @@ extension ListIterators<T> on List<T> {
   }
 }
 
-extension Iterators<T> on Iterable<T> {
-  List<U> mapAsList<U>(Mapper<T, U> mapper) {
+extension Iterators<E> on Iterable<E> {
+  /// Unlike the built-in [Iterable.map] this:
+  /// 1. Completes synchronously
+  /// 1. Allows the current index and the list as a whole to affect the outcome
+  /// 1. Returns a [List] instead of an [Iterable]
+  /// 1. Allows execution to be short-circuited.
+  List<U> mapAsList<U>(
+    Mapper<E, U> mapper, {
+    bool growable = true,
+  }) =>
+      List<U>.generate(
+        length,
+        (index) => mapper(elementAt(index), index, this),
+        growable: growable,
+      );
+
+  /// Unlike the built-in [Iterable.map] this:
+  /// 1. Completes synchronously
+  /// 1. Allows the current index and the iterable as a whole to affect the outcome
+  /// 1. Returns a [List] instead of an [Iterable]
+  /// 1. Allows execution to be short-circuited.
+  List<U> mapFull<U>(
+    Mapper<E, U> mapper, {
+    Mapper<E, bool>? breakIfTrue,
+  }) {
     final r = <U>[];
     final iterator = this.iterator;
-    for (int i = 0; i < length && iterator.moveNext(); i++) {
+    for (int i = 0;
+        i < length &&
+            iterator.moveNext() &&
+            (breakIfTrue?.call(iterator.current, i, this) ?? true);
+        i++) {
       r.add(mapper(iterator.current, i, this));
     }
     return r;
   }
 
-  Iterable<U> mapTo<U>(Mapper<T, U> mapper) =>
+  /// Lazy equivalent to [mapAsList].
+  Iterable<U> mapTo<U>(Mapper<E, U> mapper) =>
       IterableInjector(baseIterable: this, mapper: mapper);
-
+  @Deprecated("Use foldTo; better matches naming conventions")
   U reduceToType<U>(
-    Reducer<T, U> reducer,
+    Reducer<E, U> reducer,
     U initialValue, {
-    ReduceConditional<T, U>? breakIfTrue,
+    ReduceConditional<E, U>? breakIfTrue,
+  }) =>
+      foldTo(initialValue, reducer, breakIfTrue: breakIfTrue);
+
+  /// Analog for [fold] with ability to short-circuit execution and depend on
+  /// the index and the iterable.
+  U foldTo<U>(
+    U initialValue,
+    Reducer<E, U> combine, {
+    ReduceConditional<E, U>? breakIfTrue,
   }) {
     final iterator = this.iterator;
     for (int i = 0; i < length && iterator.moveNext(); i++) {
       if (breakIfTrue?.call(initialValue, iterator.current, i, this) ?? false) {
         break;
       }
-      initialValue = reducer(initialValue, iterator.current, i, this);
+      initialValue = combine(initialValue, iterator.current, i, this);
     }
     return initialValue;
   }
 
   U reduceUntilTrue<U>(
-    ConditionalReducer<T, U> reducer,
+    ConditionalReducer<E, U> reducer,
     U initialValue,
   ) {
     final iterator = this.iterator;
@@ -136,7 +182,7 @@ extension Iterators<T> on Iterable<T> {
 
   U iterateUntilTrueLazy<U>(
     (U, bool) Function(
-            U accumulator, int index, Iterable<T> list, Iterator<T> iterator)
+            U accumulator, int index, Iterable<E> list, Iterator<E> iterator)
         reducer,
     U initialValue,
   ) {
@@ -148,6 +194,9 @@ extension Iterators<T> on Iterable<T> {
     }
     return initialValue;
   }
+
+  Iterable<E> whereFull(bool Function(E e, int i, Iterable<E> l) test) =>
+      FilterIterableInjector(baseIterable: this, mapper: test);
 }
 
 extension PrettyPrintCollection on Iterable {
